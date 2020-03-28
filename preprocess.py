@@ -7,7 +7,7 @@ import cv2
 
 def preprocess(img, imgSize, dataAug=False):
     if img is None:
-        img = np.zeros ([imgSize[1], imgSize[0]])
+        img = np.zeros([imgSize[1], imgSize[0]])
 
     if dataAug:
         stretch = (random.random()-0.5)
@@ -26,7 +26,7 @@ def preprocess(img, imgSize, dataAug=False):
     newSize = (max(min(wt, int(w/f)), 1), max(min(ht, int(h/f)), 1))
     img = cv2.resize(img, newSize)
     target = np.ones([ht, wt])*255
-    target = [0:newSize[1], 0:newSize[0]] = img
+    img = target[0:newSize[1], 0:newSize[0]]
 
     #transpose
     img = cv2.transpose(target)
