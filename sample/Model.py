@@ -3,7 +3,8 @@ from __future__ import print_function
 
 import sys
 import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
+from tf import tensorflow as tf
 import os
 
 
