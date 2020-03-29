@@ -5,7 +5,7 @@ import random
 import numpy as np
 import cv2
 
-def preprocess(img, imgSize, dataAug=False):
+def Preprocess(img, imgSize, dataAug=False):
     if img is None:
         img = np.zeros([imgSize[1], imgSize[0]])
 
