@@ -5,18 +5,18 @@ import sys
 import argparse
 import cv2
 import editdistance
-from data import DataLoader, Batch
-from model import Model, DecoderType
-from preprocess import Preprocess
+from DataLoader import DataLoader, Batch
+from Model import Model, DecoderType
+from SamplePreprocessor import preprocess
 
 
 class FilePaths:
 	"filenames and paths to data"
-	fnCharList = 'model/charList.txt'
-	fnAccuracy = 'model/accuracy.txt'
-	fnTrain = 'data/'
-	fnInfer = 'data/analyze.png'
-	fnCorpus = 'data/corpus.txt'
+	fnCharList = '/model/charList.txt'
+	fnAccuracy = '/model/accuracy.txt'
+	fnTrain = '/data/'
+	fnInfer = '/data/test.png'
+	fnCorpus = '/data/corpus.txt'
 
 
 def train(model, loader):
@@ -90,7 +90,7 @@ def validate(model, loader):
 
 def infer(model, fnImg):
 	"recognize text in image provided by file path"
-	img = Preprocess(cv2.imread(fnImg, cv2.IMREAD_GRAYSCALE), Model.imgSize)
+	img = preprocess(cv2.imread(fnImg, cv2.IMREAD_GRAYSCALE), Model.imgSize)
 	batch = Batch(None, [img])
 	(recognized, probability) = model.inferBatch(batch, True)
 	print('Recognized:', '"' + recognized[0] + '"')
