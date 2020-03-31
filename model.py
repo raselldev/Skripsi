@@ -3,9 +3,9 @@ from __future__ import print_function
 
 import sys
 import numpy as np
-#import tensorflow as tf
+import tensorflow as tf
 import os
-from backend import tensorflow as tf
+#from backend import tensorflow as tf
 
 
 class DecoderType:
