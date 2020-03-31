@@ -5,6 +5,7 @@ import sys
 import numpy as np
 #import tensorflow as tf
 import os
+from backend import tensorflow as tf
 
 
 class DecoderType:
@@ -14,8 +15,6 @@ class DecoderType:
 
 
 class Model: 
-	"minimalistic TF model for HTR"
-
 	# model constants
 	batchSize = 50
 	imgSize = (128, 32)
