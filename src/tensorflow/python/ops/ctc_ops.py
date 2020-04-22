@@ -19,13 +19,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import sparse_tensor
-from tensorflow.python.ops import gen_ctc_ops
-from tensorflow.python.ops import array_ops
 from tensorflow.python.ops.nn_grad import _BroadcastMul
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import gen_ctc_ops
+from tensorflow.python.framework import sparse_tensor
+from tensorflow.python.framework import ops
 from tensorflow.python.util.tf_export import tf_export
-
 
 @tf_export("nn.ctc_loss")
 def ctc_loss(labels, inputs, sequence_length,

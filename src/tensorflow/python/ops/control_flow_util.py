@@ -25,8 +25,6 @@ from __future__ import print_function
 
 import traceback
 
-from tensorflow.python.platform import tf_logging as logging
-
 
 def IsInXLAContext(op):
   try:

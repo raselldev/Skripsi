@@ -1,6 +1,6 @@
-# Copyright 2016 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 #
-# Licensed unde_sdca_opsr the Apache License, Version 2.0 (the "License");
+# Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""A Dual Coordinate Ascent optimizer library for training fast linear models.
+
+"""Support for launching graphs and executing operations.
+
+See the [Client](https://tensorflow.org/api_guides/python/client) guide.
 """
 
-# pylint: disable=g-bad-name
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tensorflow.python.framework import ops
+# pylint: disable=unused-import
+from tensorflow.python.session import InteractiveSession
+from tensorflow.python.session import Session
 
-# go/tf-wildcard-import
-# pylint: disable=wildcard-import
-from tensorflow.python.ops.gen_sdca_ops import *
-# pylint: enable=wildcard-import
+from tensorflow.python.framework import errors
+from tensorflow.python.framework.errors import OpError
 
-ops.NotDifferentiable("SdcaFprint")
-ops.NotDifferentiable("SdcaOptimizer")
-ops.NotDifferentiable("SdcaShrinkL1")
+from tensorflow.python.framework.ops import get_default_session

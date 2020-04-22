@@ -14,7 +14,7 @@ from tensorflow.python.framework import errors
 from tensorflow.python.framework import graph_util
 
 # Session
-from tensorflow.python.client.client_lib import *
+from tensorflow.python.client_lib import *
 
 # Ops
 from tensorflow.python.ops.standard_ops import *

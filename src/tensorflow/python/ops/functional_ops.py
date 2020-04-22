@@ -23,26 +23,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tensorflow.core.framework import attr_value_pb2
-from tensorflow.python.eager import context
-from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import function
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import sparse_tensor
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import control_flow_ops
-from tensorflow.python.ops import gen_functional_ops
-from tensorflow.python.ops import math_ops
-from tensorflow.python.ops import tensor_array_ops
-from tensorflow.python.ops import variable_scope as vs
-# pylint: disable=unused-import
-from tensorflow.python.ops.gen_functional_ops import remote_call
-# pylint: enable=unused-import
-from tensorflow.python.ops.gen_functional_ops import symbolic_gradient
-from tensorflow.python.platform import tf_logging as logging
-from tensorflow.python.util import nest
 from tensorflow.python.util.tf_export import tf_export
 
 
