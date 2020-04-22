@@ -19,11 +19,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
 
+import os
 
 from tensorflow.contrib import rnn
 from tensorflow.contrib import jit
+from tensorflow.contrib import arg_scope
 from tensorflow.python.util.lazy_loader import LazyLoader
 ffmpeg = LazyLoader("ffmpeg", globals(),
                     "tensorflow.contrib.ffmpeg")

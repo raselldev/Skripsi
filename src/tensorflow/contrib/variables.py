@@ -22,9 +22,9 @@ from __future__ import print_function
 import functools
 import re
 
-from tensorflow.contrib.framework.python.ops import add_arg_scope as contrib_add_arg_scope
-from tensorflow.contrib.framework.python.ops import gen_variable_ops
-from tensorflow.contrib.util import loader
+from tensorflow.contrib.arg_scope import add_arg_scope as contrib_add_arg_scope
+from tensorflow.contrib import gen_variable_ops
+from tensorflow.contrib import loader
 from tensorflow.core.protobuf import saver_pb2
 from tensorflow.python import pywrap_tensorflow
 from tensorflow.python.framework import device as tf_device
