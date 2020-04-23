@@ -54,7 +54,7 @@ from tensorflow.python.ops import random_grad  # pylint: disable=unused-import
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import spectral_grad  # pylint: disable=unused-import
 from tensorflow.python.ops import tensor_array_ops
-from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python import tf_logging as logging
 from tensorflow.python.util import compat
 from tensorflow.python.util.tf_export import tf_export
 

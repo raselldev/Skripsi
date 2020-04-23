@@ -18,7 +18,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tensorflow.python.framework import errors_impl as _impl
 from tensorflow.python.framework.errors_impl import *
 
 

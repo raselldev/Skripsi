@@ -24,14 +24,11 @@ import copy
 import random
 import threading
 
-from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import pywrap_tensorflow
-from tensorflow.python.framework import c_api_util
-from tensorflow.python.framework import device as pydev
-from tensorflow.python.util import compat
-from tensorflow.python.util import is_in_graph_mode
 from tensorflow.python.util import tf_contextlib
 from tensorflow.python.util.tf_export import tf_export
+from tensorflow.python.util import is_in_graph_mode
+from tensorflow.python.framework import device as pydev
 
 GRAPH_MODE = 0
 EAGER_MODE = 1

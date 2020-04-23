@@ -28,7 +28,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
-from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python import tf_logging as logging
 from tensorflow.python.util import deprecation
 from tensorflow.python.util.tf_export import tf_export
 

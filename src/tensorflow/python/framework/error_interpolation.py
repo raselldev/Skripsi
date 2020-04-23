@@ -29,7 +29,6 @@ import re
 
 import six
 
-from tensorflow.python.util import tf_stack
 
 _NAME_REGEX = r"[A-Za-z0-9.][A-Za-z0-9_.\-/]*?"
 _TAG_REGEX = r"{{{{({name}) ({name})}}}}".format(name=_NAME_REGEX)

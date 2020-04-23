@@ -35,7 +35,7 @@ from tensorflow.python.ops import string_ops
 # pylint: disable=wildcard-import
 from tensorflow.python.ops.gen_logging_ops import *
 # pylint: enable=wildcard-import
-from tensorflow.python.platform import tf_logging
+from tensorflow.python import tf_logging
 from tensorflow.python.util import nest
 from tensorflow.python.util.deprecation import deprecated
 from tensorflow.python.util.tf_export import tf_export

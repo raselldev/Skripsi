@@ -29,31 +29,11 @@ import weakref
 import numpy as np
 import six
 
-from tensorflow.core.framework import attr_value_pb2
-from tensorflow.core.framework import function_pb2
-from tensorflow.python import pywrap_tensorflow
-from tensorflow.python.eager import context
-from tensorflow.python.eager import execute
-from tensorflow.python.eager import tape
-from tensorflow.python.eager.graph_only_ops import graph_placeholder
-from tensorflow.python.framework import c_api_util
-from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import device as pydev
-from tensorflow.python.framework import dtypes as dtypes_module
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import tensor_spec
-from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import cond_v2_impl
-from tensorflow.python.ops import control_flow_ops
-from tensorflow.python.ops import functional_ops
 from tensorflow.python.ops import gradients_impl
-from tensorflow.python.ops import resource_variable_ops
-from tensorflow.python.ops import variable_scope
-from tensorflow.python.training import distribution_strategy_context
-from tensorflow.python.util import compat
-from tensorflow.python.util import nest
-from tensorflow.python.util import tf_decorator
-from tensorflow.python.util import tf_inspect
+from tensorflow.python.framework import ops
+from tensorflow.python import pywrap_tensorflow
+
 
 # This is to avoid a circular dependency with cond_v2_impl
 # (function -> gradients_impl -> control_flow_ops -> cond_v2_impl).

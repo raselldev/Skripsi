@@ -20,7 +20,6 @@ from __future__ import print_function
 
 import collections
 
-from tensorflow.python import pywrap_tensorflow
 
 
 VSpace = collections.namedtuple("VSpace", [

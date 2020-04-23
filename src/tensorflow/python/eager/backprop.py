@@ -23,25 +23,13 @@ import operator
 
 import six
 
+
 from tensorflow.python import pywrap_tensorflow
-from tensorflow.python.eager import context
 from tensorflow.python.eager import execute
 from tensorflow.python.eager import imperative_grad
-from tensorflow.python.eager import tape
-from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gen_array_ops
-from tensorflow.python.ops import gen_math_ops
-from tensorflow.python.ops import math_ops
-from tensorflow.python.ops import resource_variable_ops
-from tensorflow.python.platform import tf_logging as logging
-from tensorflow.python.util import nest
-from tensorflow.python.util import tf_contextlib
-from tensorflow.python.util import tf_inspect
 from tensorflow.python.util.tf_export import tf_export
+from tensorflow.python.util import tf_contextlib
 
 
 _op_attr_type_cache = {}

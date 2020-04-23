@@ -23,7 +23,7 @@ from tensorflow.python.ops import io_ops
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.util import compat
-from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python import tf_logging as logging
 from tensorflow.python.util.tf_export import tf_export
 
 

@@ -20,12 +20,9 @@ from __future__ import print_function
 
 import six
 
-from google.protobuf import text_format
 from tensorflow.core.framework import tensor_pb2
-from tensorflow.python import pywrap_tensorflow
-from tensorflow.python.eager import core
+from google.protobuf import text_format
 from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.util import compat
 

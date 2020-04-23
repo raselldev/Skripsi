@@ -33,7 +33,7 @@ from tensorflow.python.ops import gen_array_ops
 from tensorflow.python.ops import gen_state_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import state_ops
-from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python import tf_logging as logging
 from tensorflow.python.training import base as checkpointable
 from tensorflow.python.util import compat
 from tensorflow.python.util import tf_should_use

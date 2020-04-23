@@ -20,12 +20,7 @@ from __future__ import print_function
 import numpy as np
 import six.moves
 
-from tensorflow.python import pywrap_tensorflow
-from tensorflow.python.framework import cpp_shape_inference_pb2
-from tensorflow.python.framework import errors
 from tensorflow.python.framework import ops
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.framework import tensor_util
 
 
 def has_fully_defined_shape(tensor):
