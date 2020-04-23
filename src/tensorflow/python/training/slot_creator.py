@@ -38,14 +38,13 @@ update_mavg = mavg.assign_sub((mavg - var) * (1 - decay))
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
 from tensorflow.python.eager import context
+from tensorflow.python.ops import variable_scope
+from tensorflow.python.training import distribution_strategy_context
+from tensorflow.python.ops import resource_variable_ops
+from tensorflow.python.ops import variables
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import init_ops
-from tensorflow.python.ops import resource_variable_ops
-from tensorflow.python.ops import variable_scope
-from tensorflow.python.ops import variables
-from tensorflow.python.training import distribution_strategy_context
 
 
 def _create_slot_var(primary, val, scope, validate_shape, shape, dtype):

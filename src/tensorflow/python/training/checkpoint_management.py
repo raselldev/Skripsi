@@ -9,12 +9,11 @@ import time
 
 from google.protobuf import text_format
 
-from tensorflow.core.protobuf import saver_pb2
-from tensorflow.python.framework import errors
 from tensorflow.python.lib.io import file_io
-from tensorflow.python.training.checkpoint_state_pb2 import CheckpointState
+from tensorflow.python.framework import errors
+from tensorflow.core.protobuf import saver_pb2
 from tensorflow.python.util.tf_export import tf_export
-
+from tensorflow.python.training.checkpoint_state_pb2 import CheckpointState
 
 def _GetCheckpointFilename(save_dir, latest_filename):
   """Returns a filename for storing the CheckpointState.

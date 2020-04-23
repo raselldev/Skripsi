@@ -25,19 +25,11 @@ import weakref
 
 import six
 
-from tensorflow.python import pywrap_tensorflow
-from tensorflow.python.eager import context
-from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import control_flow_ops
-from tensorflow.python.ops import gen_io_ops as io_ops
-from tensorflow.python.platform import tf_logging as logging
 from tensorflow.python.training import saveable_object
-from tensorflow.python.util import nest
-from tensorflow.python.util import serialization
 from tensorflow.python.util import tf_decorator
+from tensorflow.python.framework import dtypes
+from tensorflow.python.eager import context
 
 
 # Key where the object graph proto is saved in a TensorBundle
