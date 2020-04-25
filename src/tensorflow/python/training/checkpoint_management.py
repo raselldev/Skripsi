@@ -10,7 +10,7 @@ import time
 from google.protobuf import text_format
 
 from tensorflow.python import file_io
-from tensorflow.python.framework import errors
+from tensorflow.python.framework import errors_impl as errors
 from tensorflow.core.protobuf import saver_pb2
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.training.checkpoint_state_pb2 import CheckpointState

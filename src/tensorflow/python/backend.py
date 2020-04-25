@@ -42,8 +42,7 @@ from tensorflow.python.ops import clip_ops
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import ctc_ops as ctc
 from tensorflow.python.ops import functional_ops
-from tensorflow.python.ops import gradients as gradients_module
-from tensorflow.python.ops import image_ops
+from tensorflow.python.ops.gradients_impl import gradients as gradients_module
 from tensorflow.python.ops import init_ops
 from tensorflow.python.ops import linalg_ops
 from tensorflow.python.ops import logging_ops

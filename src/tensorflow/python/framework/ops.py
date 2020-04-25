@@ -34,7 +34,8 @@ from tensorflow.python.framework import tensor_shape
 from tensorflow.python import tape
 from tensorflow.python.ops import control_flow_util
 from tensorflow.core.framework import op_def_pb2
-from tensorflow.python.framework import errors
+from tensorflow.python.framework import errors_impl as errors
+#from tensorflow.python.framework import errors
 from tensorflow.core.framework import attr_value_pb2
 from tensorflow.python.framework import dtypes
 from tensorflow.python.util import tf_stack

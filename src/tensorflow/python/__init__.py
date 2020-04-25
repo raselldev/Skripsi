@@ -10,18 +10,25 @@ from tensorflow.python import pywrap_tensorflow
 from tensorflow.core.protobuf.tensorflow_server_pb2 import *
 from tensorflow.python.framework.framework_lib import *
 from tensorflow.python.framework.versions import *
-from tensorflow.python.framework import errors
-from tensorflow.python.framework import graph_util
+from tensorflow.python.framework import errors_impl as errors
+#from tensorflow.python.framework import errors
+#from tensorflow.python.framework import graph_util
 
 # Session
 from tensorflow.python.client_lib import *
 
 # Ops
-from tensorflow.python.ops.standard_ops import *
+
+from tensorflow.python.ops.array_ops import *
+from tensorflow.python.ops.math_ops import *
+from tensorflow.python.ops.random_ops import *
+from tensorflow.python.ops.variables import *
 
 from tensorflow.python.ops import nn
 from tensorflow.python.ops import rnn
-from tensorflow.python.ops import rnn_cell
+#from tensorflow.python.ops import rnn_cell
+#from tensorflow.python.ops.rnn_cell_impl import *
+from tensorflow.python.ops import rnn_cell_impl as rnn_cell
 nn.bidirectional_dynamic_rnn = rnn.bidirectional_dynamic_rnn
 nn.dynamic_rnn = rnn.dynamic_rnn
 nn.raw_rnn = rnn.raw_rnn

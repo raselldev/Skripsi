@@ -30,7 +30,7 @@ from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import pywrap_tensorflow as tf_session
 from tensorflow.python.framework import device
 from tensorflow.python.framework import error_interpolation
-from tensorflow.python.framework import errors
+from tensorflow.python.framework import errors_impl as errors
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import sparse_tensor
 from tensorflow.python.ops import session_ops

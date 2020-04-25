@@ -26,7 +26,8 @@ from __future__ import print_function
 from tensorflow.python.session import InteractiveSession
 from tensorflow.python.session import Session
 
-from tensorflow.python.framework import errors
-from tensorflow.python.framework.errors import OpError
+from tensorflow.python.framework import errors_impl as errors
+from tensorflow.python.framework.errors_impl import OpError
+#from tensorflow.python.framework.errors import OpError
 
 from tensorflow.python.framework.ops import get_default_session

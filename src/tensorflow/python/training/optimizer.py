@@ -27,7 +27,7 @@ from tensorflow.python import context
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import control_flow_ops
-from tensorflow.python.ops import gradients
+from tensorflow.python.ops import gradients_impl as gradients
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import variables
 from tensorflow.python.ops import variable_scope
