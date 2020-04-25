@@ -43,7 +43,7 @@ from tensorflow.core.framework import node_def_pb2
 from tensorflow.python.util import compat
 from tensorflow.python.framework import c_api_util
 from tensorflow.python.framework import op_def_registry
-from tensorflow.python.framework import versions
+#from tensorflow.python.framework import versions
 from tensorflow.core.framework import versions_pb2
 from tensorflow.python.framework import traceable_stack
 from tensorflow.python.util import lock_util
@@ -2837,9 +2837,9 @@ class Graph(object):
     # Functions defined in the graph
     self._functions = collections.OrderedDict()
     # Default GraphDef versions
-    self._graph_def_versions = versions_pb2.VersionDef(
+    """self._graph_def_versions = versions_pb2.VersionDef(
         producer=versions.GRAPH_DEF_VERSION,
-        min_consumer=versions.GRAPH_DEF_VERSION_MIN_CONSUMER)
+        min_consumer=versions.GRAPH_DEF_VERSION_MIN_CONSUMER)"""
     self._building_function = False
     # Stack of colocate_with ops. After switch_to_thread_local(),
     # self._thread_local._colocation_stack is used instead.

@@ -73,10 +73,10 @@ class Model:
 		rnnIn3d = b.squeeze(self.cnnOut4d, axis=[2])
 
 		numHidden = 256
-		cells = [b.contrib.rnn.LSTMCell(num_units=numHidden, state_is_tuple=True) for _ in range(2)] # 2 layers
+		cells = [b.rnn.LSTMCell(num_units=numHidden, state_is_tuple=True) for _ in range(2)] # 2 layers
 
 		#stack cell
-		stacked = b.contrib.rnn.MultiRNNCell(cells, state_is_tuple=True)
+		stacked = b.rnn.MultiRNNCell(cells, state_is_tuple=True)
 
 		#bidirectional RNN
 		#BxTxF -> BxTx2H

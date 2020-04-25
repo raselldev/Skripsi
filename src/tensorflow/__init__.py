@@ -8,6 +8,8 @@ from tensorflow.dl import nn
 from tensorflow.dl import layers
 from tensorflow.dl import train
 
+
+from tensorflow.python.ops import rnn_cell_impl as rnn
 from tensorflow.python import placeholder
 from tensorflow.python import expand_dims
 from tensorflow.python import VariableV1 as Variable
@@ -26,6 +28,3 @@ from tensorflow.python.framework.dtypes import bool
 from tensorflow.python.framework.dtypes import float32
 from tensorflow.python.framework.dtypes import int32
 from tensorflow.python.framework.dtypes import int64
-
-from tensorflow.python.util.lazy_loader import LazyLoader  
-contrib = LazyLoader('contrib', globals(), 'tensorflow.contrib')

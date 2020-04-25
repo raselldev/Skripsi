@@ -7,9 +7,15 @@ import numpy as np
 
 from tensorflow.python import pywrap_tensorflow
 
+
+from tensorflow.python.framework.sparse_tensor import SparseTensor
+from tensorflow.python.framework.ops import get_collection
+from tensorflow.python.framework.ops import GraphKeys
+from tensorflow.python.framework.ops import control_dependencies
+
 from tensorflow.core.protobuf.tensorflow_server_pb2 import *
-from tensorflow.python.framework.framework_lib import *
-from tensorflow.python.framework.versions import *
+#from tensorflow.python.framework.framework_lib import *
+#from tensorflow.python.framework.versions import *
 from tensorflow.python.framework import errors_impl as errors
 #from tensorflow.python.framework import errors
 #from tensorflow.python.framework import graph_util

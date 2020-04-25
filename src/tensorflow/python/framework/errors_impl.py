@@ -23,7 +23,7 @@ import warnings
 
 from tensorflow.python.framework import c_api_util
 from tensorflow.python import pywrap_tensorflow as c_api
-from tensorflow.core.lib.core import error_codes_pb2
+from tensorflow.core import error_codes_pb2
 from tensorflow.python.util import deprecation
 from tensorflow.python.util.tf_export import tf_export
 
