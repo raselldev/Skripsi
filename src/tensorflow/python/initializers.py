@@ -21,8 +21,8 @@ from __future__ import print_function
 import six
 
 from tensorflow.python.framework import dtypes
-from tensorflow.python.keras.utils.generic_utils import deserialize_keras_object
-from tensorflow.python.keras.utils.generic_utils import serialize_keras_object
+from tensorflow.python.generic_utils import deserialize_keras_object
+from tensorflow.python.generic_utils import serialize_keras_object
 
 # These imports are brought in so that keras.initializers.deserialize
 # has them available in module_objects.

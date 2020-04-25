@@ -22,7 +22,7 @@ import copy
 from tensorflow.python import context
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
-from tensorflow.python.keras.engine import base_layer
+from tensorflow.python import base_layer
 from tensorflow.python.ops import variable_scope as vs
 from tensorflow.python.ops import variables as tf_variables
 from tensorflow.python.util import function_utils

@@ -34,16 +34,16 @@ from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.framework import tensor_util
 from tensorflow.python.framework import ops
-from tensorflow.python.keras import initializers
+from tensorflow.python import initializers
 from tensorflow.python import context
-from tensorflow.python.keras.utils import tf_utils
+from tensorflow.python import tf_utils
 from tensorflow.python.layers import base as base_layer
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import variable_scope as vs
 from tensorflow.python.ops import variables as tf_variables
 from tensorflow.python.ops import init_ops
-from tensorflow.python.ops import nn_ops
+from tensorflow.python.ops import nn as nn_ops
 from tensorflow.python.training import base as checkpointable
 from tensorflow.python.util import nest
 from tensorflow.python.util.deprecation import deprecated

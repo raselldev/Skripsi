@@ -26,30 +26,22 @@ import inspect  # Necessary supplement to tf_inspect to deal with variadic args.
 import numpy as np
 from six.moves import zip  # pylint: disable=redefined-builtin
 
-from tensorflow.python import context
 from tensorflow.python import function as eager_function
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.framework import tensor_util
-from tensorflow.python.keras import backend
-from tensorflow.python.keras import constraints
-from tensorflow.python.keras import initializers
-from tensorflow.python.keras import regularizers
-from tensorflow.python.keras.utils import generic_utils
-from tensorflow.python.keras.utils import tf_utils
-# A module that only depends on `keras.layers` import these from here.
-from tensorflow.python.keras.utils.generic_utils import to_snake_case  # pylint: disable=unused-import
-from tensorflow.python.keras.utils.tf_utils import is_tensor_or_tensor_list  # pylint: disable=unused-import
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import init_ops
-from tensorflow.python.ops import variables as tf_variables
-from tensorflow.python.training import base as checkpointable
-from tensorflow.python.util import function_utils
+from tensorflow.python import generic_utils
+from tensorflow.python import constraints
+from tensorflow.python import regularizers
+from tensorflow.python import initializers
+from tensorflow.python import context
 from tensorflow.python.util import nest
-from tensorflow.python.util import tf_decorator
 from tensorflow.python.util import tf_inspect
+from tensorflow.python.util import function_utils
+from tensorflow.python import backend
+from tensorflow.python.framework import ops
+from tensorflow.python.generic_utils import to_snake_case
+from tensorflow.python.framework import dtypes
+from tensorflow.python.ops import variables as tf_variables
 from tensorflow.python.util.tf_export import tf_export
+from tensorflow.python.training import base as checkpointable
 from tensorflow import doc_controls
 
 

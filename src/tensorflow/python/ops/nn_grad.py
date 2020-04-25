@@ -24,7 +24,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_util
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gen_nn_ops
-from tensorflow.python.ops import nn_ops
+from tensorflow.python.ops import nn as nn_ops
 
 
 @ops.RegisterGradient("Conv2DBackpropInput")

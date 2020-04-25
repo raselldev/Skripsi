@@ -18,27 +18,21 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tensorflow.python import context
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.keras import backend as K
-from tensorflow.python.keras import constraints
-from tensorflow.python.keras import initializers
-from tensorflow.python.keras import regularizers
-from tensorflow.python.keras.engine.base_layer import InputSpec
-from tensorflow.python.keras.engine.base_layer import Layer
-from tensorflow.python.keras.utils import tf_utils
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import init_ops
-from tensorflow.python.ops import math_ops
-from tensorflow.python.ops import nn
 from tensorflow.python.ops import state_ops
+from tensorflow.python.ops import math_ops
+from tensorflow.python.framework import ops
+from tensorflow.python.ops import nn
+from tensorflow.python import tf_utils
+from tensorflow.python import context
 from tensorflow.python.ops import variables as tf_variables
-from tensorflow.python import tf_logging as logging
-from tensorflow.python.training import distribution_strategy_context
+from tensorflow.python.base_layer import InputSpec
+from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import tensor_shape
+from tensorflow.python import constraints
+from tensorflow.python import regularizers
+from tensorflow.python import initializers
+from tensorflow.python.base_layer import Layer
 from tensorflow.python.util.tf_export import tf_export
-
 
 @tf_export('keras.layers.BatchNormalization')
 class BatchNormalization(Layer):
