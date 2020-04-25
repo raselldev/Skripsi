@@ -41,7 +41,7 @@ class Model:
 		self.learningRate = b.placeholder(b.float32, shape=[])
 		self.update_ops = b.get_collection(b.GraphKeys.UPDATE_OPS) 
 		with b.control_dependencies(self.update_ops):
-			self.optimizer = b.train.RMSPropOptimizer(self.learningRate).minimize(self.loss)
+			self.optimizer = b.RMSPropOptimizer(self.learningRate).minimize(self.loss)
 
 		#inisialisasi backend
 		(self.sess, self.saver) = self.setupb()
@@ -61,10 +61,10 @@ class Model:
 		pool = cnnIn4d
 		for i in range(numLayers):
 			kernel = b.Variable(b.truncated_normal([kernelVals[i], kernelVals[i], featureVals[i], featureVals[i + 1]], stddev=0.1))
-			conv = b.nn.conv2d(pool, kernel, padding='SAME',  strides=(1,1,1,1))
-			conv_norm = b.layers.batch_normalization(conv, training=self.is_train)
-			relu = b.nn.relu(conv_norm)
-			pool = b.nn.max_pool(relu, (1, poolVals[i][0], poolVals[i][1], 1), (1, strideVals[i][0], strideVals[i][1], 1), 'VALID')
+			conv = b.conv2d(pool, kernel, padding='SAME',  strides=(1,1,1,1))
+			conv_norm = b.batch_normalization(conv, training=self.is_train)
+			relu = b.relu(conv_norm)
+			pool = b.max_pool(relu, (1, poolVals[i][0], poolVals[i][1], 1), (1, strideVals[i][0], strideVals[i][1], 1), 'VALID')
 
 		self.cnnOut4d = pool
 
@@ -80,14 +80,14 @@ class Model:
 
 		#bidirectional RNN
 		#BxTxF -> BxTx2H
-		((fw, bw), _) = b.nn.bidirectional_dynamic_rnn(cell_fw=stacked, cell_bw=stacked, inputs=rnnIn3d, dtype=rnnIn3d.dtype)
+		((fw, bw), _) = b.bidirectional_dynamic_rnn(cell_fw=stacked, cell_bw=stacked, inputs=rnnIn3d, dtype=rnnIn3d.dtype)
 									
 		#BxTxH + BxTxH -> BxTx2H -> BxTx1X2H
 		concat = b.expand_dims(b.concat([fw, bw], 2), 2)
 									
 		#output to char inc blank BxTx1x2H -> BxTx1xC -> BxTxC
 		kernel = b.Variable(b.truncated_normal([1, 1, numHidden * 2, len(self.charList) + 1], stddev=0.1))
-		self.rnnOut3d = b.squeeze(b.nn.atrous_conv2d(value=concat, filters=kernel, rate=1, padding='SAME'), axis=[2])
+		self.rnnOut3d = b.squeeze(b.atrous_conv2d(value=concat, filters=kernel, rate=1, padding='SAME'), axis=[2])
 		
 
 	def setupCTC(self):
@@ -98,15 +98,15 @@ class Model:
 
 		#calc loss batch
 		self.seqLen = b.placeholder(b.int32, [None])
-		self.loss = b.reduce_mean(b.nn.ctc_loss(labels=self.gtTexts, inputs=self.ctcIn3dTBC, sequence_length=self.seqLen, ctc_merge_repeated=True))
+		self.loss = b.reduce_mean(b.ctc_loss(labels=self.gtTexts, inputs=self.ctcIn3dTBC, sequence_length=self.seqLen, ctc_merge_repeated=True))
 
 		#calc loss prob
 		self.savedCtcInput = b.placeholder(b.float32, shape=[Model.maxTextLen, None, len(self.charList) + 1])
-		self.lossPerElement = b.nn.ctc_loss(labels=self.gtTexts, inputs=self.savedCtcInput, sequence_length=self.seqLen, ctc_merge_repeated=True)
+		self.lossPerElement = b.ctc_loss(labels=self.gtTexts, inputs=self.savedCtcInput, sequence_length=self.seqLen, ctc_merge_repeated=True)
 
 		# decoder: either best path decoding or beam search decoding
 		if self.decoderType == DecoderType.BestPath:
-			self.decoder = b.nn.ctc_greedy_decoder(inputs=self.ctcIn3dTBC, sequence_length=self.seqLen)
+			self.decoder = b.ctc_greedy_decoder(inputs=self.ctcIn3dTBC, sequence_length=self.seqLen)
 			chars = str().join(self.charList)
 			wordChars = open('../model/wordCharList.txt').read().splitlines()[0]
 			corpus = open('../data/corpus.txt').read()
@@ -115,9 +115,9 @@ class Model:
 	def setupb(self):
 		sess=b.Session()
 
-		saver = b.train.Saver(max_to_keep=1) # saver saves model to file
+		saver = b.Saver(max_to_keep=1) # saver saves model to file
 		modelDir = '../model/'
-		latestSnapshot = b.train.latest_checkpoint(modelDir)
+		latestSnapshot = b.latest_checkpoint(modelDir)
 		if latestSnapshot:
 			print('Snap Terakhir: ' + latestSnapshot)
 			saver.restore(sess, latestSnapshot)
