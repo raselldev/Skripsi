@@ -20,17 +20,8 @@ from __future__ import print_function
 
 import numpy as np
 
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import control_flow_ops
-from tensorflow.python.ops import functional_ops
-from tensorflow.python.ops import gen_linalg_ops
-from tensorflow.python.ops import linalg_ops_impl
-from tensorflow.python.ops import math_ops
-# pylint: disable=wildcard-import
 from tensorflow.python.ops.gen_linalg_ops import *
-# pylint: enable=wildcard-import
+from tensorflow.python.framework import dtypes
 from tensorflow.python.util import deprecation
 from tensorflow.python.util.tf_export import tf_export
 

@@ -31,7 +31,7 @@ from tensorflow.python.ops import gen_array_ops
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.ops.gen_array_ops import *
-from tensorflow.python.eager import context
+from tensorflow.python import context
 from tensorflow.python.framework.constant_op import constant
 from tensorflow.python.framework import sparse_tensor
 from tensorflow.python.framework import constant_op

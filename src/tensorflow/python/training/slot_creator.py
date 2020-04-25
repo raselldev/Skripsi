@@ -38,7 +38,7 @@ update_mavg = mavg.assign_sub((mavg - var) * (1 - decay))
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from tensorflow.python.eager import context
+from tensorflow.python import context
 from tensorflow.python.ops import variable_scope
 from tensorflow.python.training import distribution_strategy_context
 from tensorflow.python.ops import resource_variable_ops

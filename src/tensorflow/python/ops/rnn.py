@@ -21,7 +21,7 @@ from __future__ import print_function
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.ops import rnn_cell_impl
 from tensorflow.python.ops import variable_scope as vs
-from tensorflow.python.eager import context
+from tensorflow.python import context
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import control_flow_util
 from tensorflow.python.util import nest

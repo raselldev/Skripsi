@@ -29,7 +29,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.training import saveable_object
 from tensorflow.python.util import tf_decorator
 from tensorflow.python.framework import dtypes
-from tensorflow.python.eager import context
+from tensorflow.python import context
 
 
 # Key where the object graph proto is saved in a TensorBundle

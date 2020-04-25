@@ -27,22 +27,8 @@ import collections
 import numbers
 
 import numpy as np
-
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import sparse_tensor
-from tensorflow.python.framework import tensor_util
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import check_ops
-from tensorflow.python.ops import control_flow_ops
-from tensorflow.python.ops import gen_sparse_ops
-from tensorflow.python.ops import math_ops
-# go/tf-wildcard-import
-# pylint: disable=wildcard-import
-from tensorflow.python.ops.gen_sparse_ops import *
-# pylint: enable=wildcard-import
-from tensorflow.python.util import compat
 from tensorflow.python.util import deprecation
+from tensorflow.python.framework import dtypes
 from tensorflow.python.util.tf_export import tf_export
 
 

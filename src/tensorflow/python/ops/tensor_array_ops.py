@@ -22,19 +22,14 @@ from __future__ import print_function
 import contextlib
 import weakref
 
-from tensorflow.python.eager import context
-from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import errors_impl
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.framework import tensor_util
+from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gen_data_flow_ops
-from tensorflow.python.ops import math_ops
-from tensorflow.python.util import tf_should_use
+from tensorflow.python.framework import ops
+from tensorflow.python.framework import tensor_shape
+from tensorflow.python import context
 from tensorflow.python.util.tf_export import tf_export
-
+from tensorflow.python.util import tf_should_use
 
 # _GraphTensorArray accesses many of the hidden generated ops, but is in
 # fact built to wrap these methods.

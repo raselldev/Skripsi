@@ -26,14 +26,7 @@ from __future__ import print_function
 
 import numpy as np
 
-from tensorflow.core.framework import resource_handle_pb2
-from tensorflow.python import pywrap_tensorflow_internal
-from tensorflow.python.framework import device as pydev
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import gen_data_flow_ops
-from tensorflow.python.util import compat
+
 from tensorflow.python.util.tf_export import tf_export
 
 

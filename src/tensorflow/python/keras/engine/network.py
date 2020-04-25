@@ -28,8 +28,8 @@ import numpy as np
 from six.moves import zip  # pylint: disable=redefined-builtin
 
 from tensorflow.python import pywrap_tensorflow
-from tensorflow.python.eager import context
-from tensorflow.python.eager import function as eager_function
+from tensorflow.python import context
+from tensorflow.python import function as eager_function
 from tensorflow.python.framework import errors
 from tensorflow.python.framework import errors_impl
 from tensorflow.python.framework import ops

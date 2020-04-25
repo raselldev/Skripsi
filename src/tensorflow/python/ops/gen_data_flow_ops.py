@@ -7,8 +7,8 @@ Original C++ source file: data_flow_ops.cc
 import collections as _collections
 import six as _six
 
-from tensorflow.python.eager import execute as _execute
-from tensorflow.python.eager import context as _context
+from tensorflow.python import execute as _execute
+from tensorflow.python import context as _context
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
 from tensorflow.python.framework import op_def_registry as _op_def_registry

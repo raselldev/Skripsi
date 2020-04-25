@@ -19,7 +19,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tensorflow.python.eager import context
+from tensorflow.python import context
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.engine import base_layer

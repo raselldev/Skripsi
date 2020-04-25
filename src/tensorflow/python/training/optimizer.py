@@ -22,8 +22,8 @@ from __future__ import print_function
 
 import abc
 
-from tensorflow.python.eager import backprop
-from tensorflow.python.eager import context
+from tensorflow.python import backprop
+from tensorflow.python import context
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops

@@ -19,7 +19,7 @@ from __future__ import print_function
 
 import copy
 
-from tensorflow.python.eager import context
+from tensorflow.python import context
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.keras.engine import base_layer

@@ -31,7 +31,7 @@ import numpy as np
 
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import session as session_module
-from tensorflow.python.eager import context
+from tensorflow.python import context
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes as dtypes_module
 from tensorflow.python.framework import ops

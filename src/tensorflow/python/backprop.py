@@ -23,13 +23,13 @@ import operator
 
 import six
 
-
 from tensorflow.python import pywrap_tensorflow
-from tensorflow.python.eager import execute
-from tensorflow.python.eager import imperative_grad
+from tensorflow.python import execute
+from tensorflow.python import imperative_grad
 from tensorflow.python.ops import gen_array_ops
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.util import tf_contextlib
+
 
 
 _op_attr_type_cache = {}

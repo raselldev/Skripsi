@@ -25,20 +25,9 @@ import sys
 
 import six
 
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import sparse_tensor
-from tensorflow.python.framework import tensor_util
-from tensorflow.python.ops import gen_logging_ops
-from tensorflow.python.ops import string_ops
-# go/tf-wildcard-import
-# pylint: disable=wildcard-import
-from tensorflow.python.ops.gen_logging_ops import *
-# pylint: enable=wildcard-import
-from tensorflow.python import tf_logging
-from tensorflow.python.util import nest
 from tensorflow.python.util.deprecation import deprecated
 from tensorflow.python.util.tf_export import tf_export
+from tensorflow.python.framework import ops
 
 # The python wrapper for Assert is in control_flow_ops, as the Assert
 # call relies on certain conditionals for its dependencies.  Use

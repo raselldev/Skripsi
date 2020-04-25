@@ -31,7 +31,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 from tensorflow.python.framework import device as pydev
 from tensorflow.python.util import function_utils
 from tensorflow.python.framework import tensor_shape
-from tensorflow.python.eager import tape
+from tensorflow.python import tape
 from tensorflow.python.ops import control_flow_util
 from tensorflow.core.framework import op_def_pb2
 from tensorflow.python.framework import errors
@@ -46,7 +46,7 @@ from tensorflow.python.framework import versions
 from tensorflow.core.framework import versions_pb2
 from tensorflow.python.framework import traceable_stack
 from tensorflow.python.util import lock_util
-from tensorflow.python.eager import context
+from tensorflow.python import context
 from tensorflow.python.util import deprecation
 from tensorflow.python.util import decorator_utils
 from tensorflow.python.util.deprecation import deprecated_args

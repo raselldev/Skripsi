@@ -7,8 +7,8 @@ Original C++ source file: training_ops.cc
 import collections as _collections
 import six as _six
 
-from tensorflow.python.eager import execute as _execute
-from tensorflow.python.eager import context as _context
+from tensorflow.python import execute as _execute
+from tensorflow.python import context as _context
 from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
 from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry

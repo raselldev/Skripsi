@@ -25,7 +25,7 @@ import warnings
 
 import numpy as np
 
-from tensorflow.python.eager import context
+from tensorflow.python import context
 from tensorflow.python.framework import common_shapes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape

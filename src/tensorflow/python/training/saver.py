@@ -13,7 +13,7 @@ import six
 from tensorflow.python.training import checkpoint_management
 from tensorflow.python.training import saveable_object
 from tensorflow.core.protobuf import saver_pb2
-from tensorflow.python.eager import context
+from tensorflow.python import context
 from tensorflow.python.ops import variables
 from tensorflow.python.training import base as checkpointable
 from tensorflow.python.ops import resource_variable_ops
