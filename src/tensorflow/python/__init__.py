@@ -20,8 +20,6 @@ from tensorflow.python.framework import errors_impl as errors
 #from tensorflow.python.framework import errors
 #from tensorflow.python.framework import graph_util
 
-# Session
-from tensorflow.python.client_lib import *
 
 # Ops
 
