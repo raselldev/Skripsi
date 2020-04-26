@@ -4,6 +4,10 @@ from __future__ import print_function
 
 import os
 
+from tensorflow.python.ops import nn
+from tensorflow.python.ops import rnn
+nn.bidirectional_dynamic_rnn = rnn.bidirectional_dynamic_rnn
+
 #nn
 from tensorflow.python.ops.gen_nn_ops import conv2d
 from tensorflow.python.ops.gen_nn_ops import relu

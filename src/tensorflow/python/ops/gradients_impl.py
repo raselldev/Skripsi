@@ -28,7 +28,6 @@ import six
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
 
-from tensorflow.python.ops import cond_v2_impl
 from tensorflow.python.framework import ops
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python import context
@@ -52,7 +51,7 @@ from tensorflow.python.ops import math_ops
 _function = None
 
 # This is to avoid a circular dependency with cond_v2_impl.
-cond_v2_impl._gradients_impl = sys.modules[__name__]  # pylint: disable=protected-access
+
 
 # Warn the user if we convert a sparse representation to dense with at
 # least this number of elements.

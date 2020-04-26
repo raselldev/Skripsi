@@ -29,7 +29,6 @@ import weakref
 import numpy as np
 import six
 
-from tensorflow.python.ops import cond_v2_impl
 from tensorflow.python.ops import gradients_impl
 from tensorflow.python.framework import ops
 from tensorflow.python import pywrap_tensorflow
@@ -37,7 +36,7 @@ from tensorflow.python import pywrap_tensorflow
 
 # This is to avoid a circular dependency with cond_v2_impl
 # (function -> gradients_impl -> control_flow_ops -> cond_v2_impl).
-cond_v2_impl._function = sys.modules[__name__]  # pylint: disable=protected-access
+
 
 # This is to avoid a circular dependency with gradients_impl
 gradients_impl._function = sys.modules[__name__]  # pylint: disable=protected-access
