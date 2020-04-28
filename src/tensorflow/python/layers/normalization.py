@@ -4,7 +4,7 @@ from __future__ import print_function
 
 
 from tensorflow.python import normalization as keras_layers
-from tensorflow.python.layers import base
+from tensorflow.python import base
 from tensorflow.python.ops import init_ops
 from tensorflow.python.util.tf_export import tf_export
 
@@ -113,6 +113,3 @@ def batch_normalization(inputs,
       _reuse=reuse,
       _scope=name)
   return layer.apply(inputs, training=training)
-
-BatchNorm = BatchNormalization
-batch_norm = batch_normalization

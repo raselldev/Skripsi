@@ -27,7 +27,7 @@ import threading
 from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
 from tensorflow.python.util import tf_contextlib
 from tensorflow.python.util.tf_export import tf_export
-from tensorflow.python.util import is_in_graph_mode
+#from tensorflow.python.util import is_in_graph_mode
 from tensorflow.python.framework import device as pydev
 
 GRAPH_MODE = 0
@@ -792,4 +792,4 @@ def _tmp_in_graph_mode():
   return not executing_eagerly()
 
 
-is_in_graph_mode.IS_IN_GRAPH_MODE = _tmp_in_graph_mode
+#is_in_graph_mode.IS_IN_GRAPH_MODE = _tmp_in_graph_mode

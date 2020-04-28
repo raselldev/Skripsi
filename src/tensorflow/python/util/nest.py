@@ -1,35 +1,3 @@
-# Copyright 2016 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-
-"""## Functions for working with arbitrarily nested sequences of elements.
-
-This module can perform operations on nested structures. A nested structure is a
-Python sequence, tuple (including `namedtuple`), or dict that can contain
-further sequences, tuples, and dicts.
-
-attr.s decorated classes (http://www.attrs.org) are also supported, in the
-same way as `namedtuple`.
-
-The utilities here assume (and do not check) that the nested structures form a
-'tree', i.e., no references in the structure of the input of these functions
-should be recursive.
-
-Example structures: `((3, 4), 5, (6, 7, (9, 10), 8))`, `(np.array(0),
-  (np.array([3, 4]), tf.constant([3, 4])))`
-"""
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

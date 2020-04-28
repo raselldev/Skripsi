@@ -1,77 +1,26 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# =============================================================================
-"""Contains the base Layer class, from which all layers inherit."""
+#Contains the base Layer class, from which all layers inherit
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import copy
 
-from tensorflow.python import context
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
 from tensorflow.python import base_layer
-from tensorflow.python.ops import variable_scope as vs
-from tensorflow.python.ops import variables as tf_variables
-from tensorflow.python.util import function_utils
-from tensorflow.python.util import nest
 from tensorflow.python.util.tf_export import tf_export
-
+from tensorflow.python.ops import variable_scope as vs
+from tensorflow.python import context
+from tensorflow.python.framework import ops
+from tensorflow.python.util import nest
+from tensorflow.python.ops import variables as tf_variables
+from tensorflow.python.framework import dtypes
 
 InputSpec = base_layer.InputSpec  # pylint: disable=invalid-name
 
 
 @tf_export('layers.Layer')
 class Layer(base_layer.Layer):
-  """Base layer class.
-
-  It is considered legacy, and we recommend the use of `tf.keras.layers.Layer`
-  instead.
-
-  Arguments:
-    trainable: Boolean, whether the layer's variables should be trainable.
-    name: String name of the layer.
-    dtype: Default dtype of the layer's weights (default of `None` means use the
-      type of the first input).
-
-  Read-only properties:
-    name: The name of the layer (string).
-    dtype: Default dtype of the layer's weights (default of `None` means use the
-      type of the first input).
-    trainable_variables: List of trainable variables.
-    non_trainable_variables: List of non-trainable variables.
-    variables: List of all variables of this layer, trainable and
-      non-trainable.
-    updates: List of update ops of this layer.
-    losses: List of losses added by this layer.
-    trainable_weights: List of variables to be included in backprop.
-    non_trainable_weights: List of variables that should not be
-      included in backprop.
-    weights: The concatenation of the lists trainable_weights and
-      non_trainable_weights (in this order).
-
-  Mutable properties:
-    trainable: Whether the layer should be trained (boolean).
-    input_spec: Optional (list of) `InputSpec` object(s) specifying the
-      constraints on inputs that can be accepted by the layer.
-  """
-
   def __init__(self, trainable=True, name=None, dtype=None,
                **kwargs):
-    # For backwards compatibility, legacy layers do not use `ResourceVariable`
-    # by default.
     self._use_resource_variables = False
     scope = kwargs.pop('_scope', None)
     self._reuse = kwargs.pop('_reuse', None)
@@ -174,52 +123,6 @@ class Layer(base_layer.Layer):
                  synchronization=vs.VariableSynchronization.AUTO,
                  aggregation=vs.VariableAggregation.NONE,
                  partitioner=None):
-    """Adds a new variable to the layer, or gets an existing one; returns it.
-
-    Arguments:
-      name: variable name.
-      shape: variable shape.
-      dtype: The type of the variable. Defaults to `self.dtype` or `float32`.
-      initializer: initializer instance (callable).
-      regularizer: regularizer instance (callable).
-      trainable: whether the variable should be part of the layer's
-        "trainable_variables" (e.g. variables, biases)
-        or "non_trainable_variables" (e.g. BatchNorm mean, stddev).
-        Note, if the current variable scope is marked as non-trainable
-        then this parameter is ignored and any added variables are also
-        marked as non-trainable. `trainable` defaults to `True` unless
-        `synchronization` is set to `ON_READ`.
-      constraint: constraint instance (callable).
-      use_resource: Whether to use `ResourceVariable`.
-      synchronization: Indicates when a distributed a variable will be
-        aggregated. Accepted values are constants defined in the class
-        `tf.VariableSynchronization`. By default the synchronization is set to
-        `AUTO` and the current `DistributionStrategy` chooses
-        when to synchronize. If `synchronization` is set to `ON_READ`,
-        `trainable` must not be set to `True`.
-      aggregation: Indicates how a distributed variable will be aggregated.
-        Accepted values are constants defined in the class
-        `tf.VariableAggregation`.
-      partitioner: (optional) partitioner instance (callable).  If
-        provided, when the requested variable is created it will be split
-        into multiple partitions according to `partitioner`.  In this case,
-        an instance of `PartitionedVariable` is returned.  Available
-        partitioners include `tf.fixed_size_partitioner` and
-        `tf.variable_axis_size_partitioner`.  For more details, see the
-        documentation of `tf.get_variable` and the  "Variable Partitioners
-        and Sharding" section of the API guide.
-
-    Returns:
-      The created variable.  Usually either a `Variable` or `ResourceVariable`
-      instance.  If `partitioner` is not `None`, a `PartitionedVariable`
-      instance is returned.
-
-    Raises:
-      RuntimeError: If called with partioned variable regularization and
-        eager execution is enabled.
-      ValueError: When trainable has been set to True with synchronization
-        set as `ON_READ`.
-    """
     if synchronization == vs.VariableSynchronization.ON_READ:
       if trainable:
         raise ValueError(
@@ -309,48 +212,12 @@ class Layer(base_layer.Layer):
     return variable
 
   def __call__(self, inputs, *args, **kwargs):
-    """Wraps `call`, applying pre- and post-processing steps.
-
-    Arguments:
-      inputs: input tensor(s).
-      *args: additional positional arguments to be passed to `self.call`.
-      **kwargs: additional keyword arguments to be passed to `self.call`.
-        **Note**: kwarg `scope` is reserved for use by the layer.
-
-    Returns:
-      Output tensor(s).
-
-    Note:
-      - If the layer's `call` method takes a `scope` keyword argument,
-        this argument will be automatically set to the current variable scope.
-      - If the layer's `call` method takes a `mask` argument (as some Keras
-        layers do), its default value will be set to the mask generated
-        for `inputs` by the previous layer (if `input` did come from
-        a layer that generated a corresponding mask, i.e. if it came from
-        a Keras layer with masking support.
-
-    Raises:
-      ValueError: if the layer's `call` method returns None (an invalid value).
-    """
     self._set_scope(kwargs.pop('scope', None))
-
-    if not context.executing_eagerly():
-      try:
-        # Set layer's "graph" at build time
-        self._graph = ops._get_graph_from_inputs(nest.flatten(inputs),  # pylint: disable=protected-access
-                                                 graph=self._graph)
-      except ValueError as e:
-        raise ValueError('Input graph and Layer graph are not the same: %s' % e)
 
     if self.built:
       try:
-        # Some classes which inherit from Layer do not use its constructor, so
-        # rather than initializing to None we check for an AttributeError.
         scope_context_manager = self._always_reuse_variable_scope
       except AttributeError:
-        # From this point we will always set reuse=True, so create a "final"
-        # variable scope with this setting. We avoid re-creating variable scopes
-        # after this point as an optimization.
         self._always_reuse_variable_scope = vs.variable_scope(
             self._scope, reuse=True, auxiliary_name_scope=False)
         scope_context_manager = self._always_reuse_variable_scope
@@ -377,24 +244,6 @@ class Layer(base_layer.Layer):
       # Update global default collections.
       _add_elements_to_collection(self.updates, ops.GraphKeys.UPDATE_OPS)
     return outputs
-
-  def __deepcopy__(self, memo):
-    no_copy = set(['_graph'])
-    shallow_copy = set(['_scope', '_always_reuse_variable_scope'])
-    cls = self.__class__
-    result = cls.__new__(cls)
-    memo[id(self)] = result
-    for k, v in self.__dict__.items():
-      if k in no_copy:
-        setattr(result, k, v)
-      elif k in shallow_copy:
-        setattr(result, k, copy.copy(v))
-      elif base_layer.is_tensor_or_tensor_list(v):
-        setattr(result, k, v)
-      else:
-        setattr(result, k, copy.deepcopy(v, memo))
-    return result
-
 
 def _add_elements_to_collection(elements, collection_list):
   if context.executing_eagerly():

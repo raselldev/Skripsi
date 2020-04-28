@@ -18,7 +18,7 @@ from tensorflow.python.ops.ctc_ops import ctc_loss
 from tensorflow.python.ops.ctc_ops import ctc_greedy_decoder
 
 #layers
-from tensorflow.python.layers.layers import batch_normalization
+from tensorflow.python.layers.normalization import batch_normalization
 
 #train
 from tensorflow.python.training.rmsprop import RMSPropOptimizer

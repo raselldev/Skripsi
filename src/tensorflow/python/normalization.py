@@ -28,7 +28,6 @@ from tensorflow.python.ops import variables as tf_variables
 from tensorflow.python.base_layer import InputSpec
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import tensor_shape
-from tensorflow.python import constraints
 from tensorflow.python import regularizers
 from tensorflow.python import initializers
 from tensorflow.python.base_layer import Layer
@@ -36,84 +35,6 @@ from tensorflow.python.util.tf_export import tf_export
 
 @tf_export('keras.layers.BatchNormalization')
 class BatchNormalization(Layer):
-  """Batch normalization layer (Ioffe and Szegedy, 2014).
-
-  Normalize the activations of the previous layer at each batch,
-  i.e. applies a transformation that maintains the mean activation
-  close to 0 and the activation standard deviation close to 1.
-
-  Arguments:
-    axis: Integer, the axis that should be normalized
-        (typically the features axis).
-        For instance, after a `Conv2D` layer with
-        `data_format="channels_first"`,
-        set `axis=1` in `BatchNormalization`.
-    momentum: Momentum for the moving average.
-    epsilon: Small float added to variance to avoid dividing by zero.
-    center: If True, add offset of `beta` to normalized tensor.
-        If False, `beta` is ignored.
-    scale: If True, multiply by `gamma`.
-        If False, `gamma` is not used.
-        When the next layer is linear (also e.g. `nn.relu`),
-        this can be disabled since the scaling
-        will be done by the next layer.
-    beta_initializer: Initializer for the beta weight.
-    gamma_initializer: Initializer for the gamma weight.
-    moving_mean_initializer: Initializer for the moving mean.
-    moving_variance_initializer: Initializer for the moving variance.
-    beta_regularizer: Optional regularizer for the beta weight.
-    gamma_regularizer: Optional regularizer for the gamma weight.
-    beta_constraint: Optional constraint for the beta weight.
-    gamma_constraint: Optional constraint for the gamma weight.
-    renorm: Whether to use Batch Renormalization
-      (https://arxiv.org/abs/1702.03275). This adds extra variables during
-      training. The inference is the same for either value of this parameter.
-    renorm_clipping: A dictionary that may map keys 'rmax', 'rmin', 'dmax' to
-      scalar `Tensors` used to clip the renorm correction. The correction
-      `(r, d)` is used as `corrected_value = normalized_value * r + d`, with
-      `r` clipped to [rmin, rmax], and `d` to [-dmax, dmax]. Missing rmax, rmin,
-      dmax are set to inf, 0, inf, respectively.
-    renorm_momentum: Momentum used to update the moving means and standard
-      deviations with renorm. Unlike `momentum`, this affects training
-      and should be neither too small (which would add noise) nor too large
-      (which would give stale estimates). Note that `momentum` is still applied
-      to get the means and variances for inference.
-    fused: if `None` or `True`, use a faster, fused implementation if possible.
-      If `False`, use the system recommended implementation.
-    trainable: Boolean, if `True` also add variables to the graph collection
-      `GraphKeys.TRAINABLE_VARIABLES` (see tf.Variable).
-    virtual_batch_size: An `int`. By default, `virtual_batch_size` is `None`,
-      which means batch normalization is performed across the whole batch. When
-      `virtual_batch_size` is not `None`, instead perform "Ghost Batch
-      Normalization", which creates virtual sub-batches which are each
-      normalized separately (with shared gamma, beta, and moving statistics).
-      Must divide the actual batch size during execution.
-    adjustment: A function taking the `Tensor` containing the (dynamic) shape of
-      the input tensor and returning a pair (scale, bias) to apply to the
-      normalized values (before gamma and beta), only during training. For
-      example, if axis==-1,
-        `adjustment = lambda shape: (
-          tf.random_uniform(shape[-1:], 0.93, 1.07),
-          tf.random_uniform(shape[-1:], -0.1, 0.1))`
-      will scale the normalized value by up to 7% up or down, then shift the
-      result by up to 0.1 (with independent scaling and bias for each feature
-      but shared across all examples), and finally apply gamma and/or beta. If
-      `None`, no adjustment is applied. Cannot be specified if
-      virtual_batch_size is specified.
-
-  Input shape:
-      Arbitrary. Use the keyword argument `input_shape`
-      (tuple of integers, does not include the samples axis)
-      when using this layer as the first layer in a model.
-
-  Output shape:
-      Same shape as input.
-
-  References:
-      - [Batch Normalization: Accelerating Deep Network Training by Reducing
-        Internal Covariate Shift](https://arxiv.org/abs/1502.03167)
-  """
-
   def __init__(self,
                axis=-1,
                momentum=0.99,
@@ -154,8 +75,7 @@ class BatchNormalization(Layer):
         moving_variance_initializer)
     self.beta_regularizer = regularizers.get(beta_regularizer)
     self.gamma_regularizer = regularizers.get(gamma_regularizer)
-    self.beta_constraint = constraints.get(beta_constraint)
-    self.gamma_constraint = constraints.get(gamma_constraint)
+#    self.gamma_constraint = constraints.get(gamma_constraint)
     self.renorm = renorm
     self.virtual_batch_size = virtual_batch_size
     self.adjustment = adjustment
@@ -272,7 +192,7 @@ class BatchNormalization(Layer):
           dtype=param_dtype,
           initializer=self.gamma_initializer,
           regularizer=self.gamma_regularizer,
-          constraint=self.gamma_constraint,
+#          constraint=self.gamma_constraint,
           trainable=True)
     else:
       self.gamma = None
@@ -287,7 +207,6 @@ class BatchNormalization(Layer):
           dtype=param_dtype,
           initializer=self.beta_initializer,
           regularizer=self.beta_regularizer,
-          constraint=self.beta_constraint,
           trainable=True)
     else:
       self.beta = None
@@ -419,72 +338,6 @@ class BatchNormalization(Layer):
 
     return output
 
-  def _renorm_correction_and_moments(self, mean, variance, training):
-    """Returns the correction and update values for renorm."""
-    stddev = math_ops.sqrt(variance + self.epsilon)
-    # Compute the average mean and standard deviation, as if they were
-    # initialized with this batch's moments.
-    mixed_renorm_mean = (self.renorm_mean +
-                         (1. - self.renorm_mean_weight) * mean)
-    mixed_renorm_stddev = (self.renorm_stddev +
-                           (1. - self.renorm_stddev_weight) * stddev)
-    # Compute the corrections for batch renorm.
-    r = stddev / mixed_renorm_stddev
-    d = (mean - mixed_renorm_mean) / mixed_renorm_stddev
-    # Ensure the corrections use pre-update moving averages.
-    with ops.control_dependencies([r, d]):
-      mean = array_ops.identity(mean)
-      stddev = array_ops.identity(stddev)
-    rmin, rmax, dmax = [self.renorm_clipping.get(key)
-                        for key in ['rmin', 'rmax', 'dmax']]
-    if rmin is not None:
-      r = math_ops.maximum(r, rmin)
-    if rmax is not None:
-      r = math_ops.minimum(r, rmax)
-    if dmax is not None:
-      d = math_ops.maximum(d, -dmax)
-      d = math_ops.minimum(d, dmax)
-    # When not training, use r=1, d=0.
-    r = tf_utils.smart_cond(training, lambda: r, lambda: array_ops.ones_like(r))
-    d = tf_utils.smart_cond(training,
-                            lambda: d,
-                            lambda: array_ops.zeros_like(d))
-
-    def _update_renorm_variable(var, weight, value):
-      """Updates a moving average and weight, returns the unbiased value."""
-      value = array_ops.identity(value)
-      def _do_update():
-        """Updates the var and weight, returns their updated ratio."""
-        # Update the variables without zero debiasing. The debiasing will be
-        # accomplished by dividing the exponential moving average by the weight.
-        # For example, after a single update, the moving average would be
-        # (1-decay) * value. and the weight will be 1-decay, with their ratio
-        # giving the value.
-        # Make sure the weight is not updated until before r and d computation.
-        with ops.control_dependencies([value]):
-          weight_value = array_ops.constant(1., dtype=weight.dtype)
-        new_var = self._assign_moving_average(var, value, self.renorm_momentum)
-        new_weight = self._assign_moving_average(weight, weight_value,
-                                                 self.renorm_momentum)
-        # TODO(yuefengz): the updates to var and weighted can not be batched
-        # together if we fetch their updated values here. Consider calculating
-        # new values and delaying the updates.
-        return new_var / new_weight
-
-      def _fake_update():
-        return array_ops.identity(var)
-      return tf_utils.smart_cond(training, _do_update, _fake_update)
-
-    # TODO(yuefengz): colocate the operations
-    new_mean = _update_renorm_variable(self.renorm_mean,
-                                       self.renorm_mean_weight, mean)
-    new_stddev = _update_renorm_variable(self.renorm_stddev,
-                                         self.renorm_stddev_weight, stddev)
-    # Make sqrt(moving_variance + epsilon) = new_stddev.
-    new_variance = math_ops.square(new_stddev) - self.epsilon
-
-    return (r, d, new_mean, new_variance)
-
   def call(self, inputs, training=None):
     original_training_value = training
     if training is None:
@@ -499,10 +352,6 @@ class BatchNormalization(Layer):
 
       # Will cause errors if virtual_batch_size does not divide the batch size
       inputs = array_ops.reshape(inputs, expanded_shape)
-
-      def undo_virtual_batching(outputs):
-        outputs = array_ops.reshape(outputs, original_shape)
-        return outputs
 
     if self.fused:
       outputs = self._fused_batch_norm(inputs, training=training)
@@ -533,14 +382,6 @@ class BatchNormalization(Layer):
       return v
 
     scale, offset = _broadcast(self.gamma), _broadcast(self.beta)
-
-    def _compose_transforms(scale, offset, then_scale, then_offset):
-      if then_scale is not None:
-        scale *= then_scale
-        offset *= then_scale
-      if then_offset is not None:
-        offset += then_offset
-      return (scale, offset)
 
     # Determine a boolean value for `training`: could be True, False, or None.
     training_value = tf_utils.constant_value(training)
@@ -631,41 +472,3 @@ class BatchNormalization(Layer):
     if not context.executing_eagerly() and original_training_value is None:
       outputs._uses_learning_phase = True  # pylint: disable=protected-access
     return outputs
-
-  def compute_output_shape(self, input_shape):
-    return input_shape
-
-  def get_config(self):
-    config = {
-        'axis': self.axis,
-        'momentum': self.momentum,
-        'epsilon': self.epsilon,
-        'center': self.center,
-        'scale': self.scale,
-        'beta_initializer': initializers.serialize(self.beta_initializer),
-        'gamma_initializer': initializers.serialize(self.gamma_initializer),
-        'moving_mean_initializer':
-            initializers.serialize(self.moving_mean_initializer),
-        'moving_variance_initializer':
-            initializers.serialize(self.moving_variance_initializer),
-        'beta_regularizer': regularizers.serialize(self.beta_regularizer),
-        'gamma_regularizer': regularizers.serialize(self.gamma_regularizer),
-        'beta_constraint': constraints.serialize(self.beta_constraint),
-        'gamma_constraint': constraints.serialize(self.gamma_constraint)
-    }
-    # Only add TensorFlow-specific parameters if they are set, so as to preserve
-    # model compatibility with external Keras.
-    if self.renorm:
-      config['renorm'] = True
-      config['renorm_clipping'] = self.renorm_clipping
-      config['renorm_momentum'] = self.renorm_momentum
-    if self.virtual_batch_size is not None:
-      config['virtual_batch_size'] = self.virtual_batch_size
-    # Note: adjustment is not serializable.
-    if self.adjustment is not None:
-      logging.warning('The `adjustment` function of this `BatchNormalization` '
-                      'layer cannot be serialized and has been omitted from '
-                      'the layer config. It will not be included when '
-                      're-creating the layer from the saved config.')
-    base_config = super(BatchNormalization, self).get_config()
-    return dict(list(base_config.items()) + list(config.items()))

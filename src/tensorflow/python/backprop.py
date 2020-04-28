@@ -25,7 +25,6 @@ import six
 
 from tensorflow.python import pywrap_tensorflow
 from tensorflow.python import execute
-from tensorflow.python import imperative_grad
 from tensorflow.python.ops import gen_array_ops
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.util import tf_contextlib
@@ -596,13 +595,7 @@ def _ones(shape, dtype):
   return _fast_fill(1, shape, dtype)
 
 
-_default_vspace = imperative_grad.VSpace(
-    num_elements_fn=_num_elements,
-    aggregate_fn=_aggregate_grads,
-    zeros_fn=_zeros,
-    ones_fn=_ones,
-    graph_shape_fn=gen_array_ops.shape)
-pywrap_tensorflow.TFE_Py_RegisterVSpace(_default_vspace)
+
 
 
 def _handle_or_self(x):

@@ -28,7 +28,7 @@ from six.moves import zip  # pylint: disable=redefined-builtin
 
 from tensorflow.python import function as eager_function
 from tensorflow.python import generic_utils
-from tensorflow.python import constraints
+#from tensorflow.python import constraints
 from tensorflow.python import regularizers
 from tensorflow.python import initializers
 from tensorflow.python import context
@@ -553,7 +553,7 @@ class Layer(checkpointable.CheckpointableBase):
     dtype = dtypes.as_dtype(dtype)
     initializer = initializers.get(initializer)
     regularizer = regularizers.get(regularizer)
-    constraint = constraints.get(constraint)
+#    constraint = constraints.get(constraint)
 
     if synchronization == tf_variables.VariableSynchronization.ON_READ:
       if trainable:
@@ -1962,7 +1962,7 @@ def make_variable(name,
       caching_device=caching_device,
       dtype=variable_dtype,
       validate_shape=validate_shape,
-      constraint=constraint,
+     # constraint=constraint,
       use_resource=use_resource,
       collections=collections,
       synchronization=synchronization,

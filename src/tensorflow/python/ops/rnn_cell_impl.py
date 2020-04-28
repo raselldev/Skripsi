@@ -37,7 +37,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python import initializers
 from tensorflow.python import context
 from tensorflow.python import tf_utils
-from tensorflow.python.layers import base as base_layer
+from tensorflow.python import base as base_layer
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import variable_scope as vs
