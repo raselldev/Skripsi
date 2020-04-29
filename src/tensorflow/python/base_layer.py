@@ -1,30 +1,14 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-# pylint: disable=protected-access
-"""Contains the base Layer class, from which all layers inherit."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import collections as collections_lib
-import enum  # pylint: disable=g-bad-import-order
+import enum
 import functools
-import inspect  # Necessary supplement to tf_inspect to deal with variadic args.
+import inspect
 
 import numpy as np
-from six.moves import zip  # pylint: disable=redefined-builtin
+from six.moves import zip  
 
 from tensorflow.python import function as eager_function
 from tensorflow.python import generic_utils
@@ -613,22 +597,6 @@ class Layer(checkpointable.CheckpointableBase):
       self._non_trainable_weights.append(variable)
     return variable
 
-  def _handle_weight_regularization(self, name, variable, regularizer):
-    """Create lambdas which compute regularization losses."""
-
-    def _loss_for_variable(v):
-      """Creates a regularization loss `Tensor` for variable `v`."""
-      with ops.colocate_with(v):
-        with ops.name_scope(name + '/Regularizer'):
-          regularization = regularizer(v)
-      return regularization
-
-    if isinstance(variable, tf_variables.PartitionedVariable):
-      for v in variable:
-        self.add_loss(functools.partial(_loss_for_variable, v))
-    else:
-      self.add_loss(functools.partial(_loss_for_variable, variable))
-
   def _handle_activity_regularization(self, inputs, outputs):
     # Apply activity regularization.
     # Note that it should be applied every time the layer creates a new
@@ -641,18 +609,6 @@ class Layer(checkpointable.CheckpointableBase):
         self.add_loss(activity_regularization, inputs=inputs)
 
   
-  def call(self, inputs, **kwargs):  # pylint: disable=unused-argument
-    """This is where the layer's logic lives.
-
-    Arguments:
-        inputs: Input tensor, or list/tuple of input tensors.
-        **kwargs: Additional keyword arguments.
-
-    Returns:
-        A tensor or list/tuple of tensors.
-    """
-    return inputs
-
   def __call__(self, inputs, *args, **kwargs):
     """Wraps `call`, applying pre- and post-processing steps.
 
@@ -1007,32 +963,6 @@ class Layer(checkpointable.CheckpointableBase):
         return outputs.shape
     raise NotImplementedError
 
-  def compute_mask(self, inputs, mask=None):  # pylint: disable=unused-argument
-    """Computes an output mask tensor.
-
-    Arguments:
-        inputs: Tensor or list of tensors.
-        mask: Tensor or list of tensors.
-
-    Returns:
-        None or a tensor (or list of tensors,
-            one per output tensor of the layer).
-    """
-    if not self.supports_masking:
-      if mask is not None:
-        if isinstance(mask, list):
-          if any(m is not None for m in mask):
-            raise TypeError('Layer ' + self.name + ' does not support masking, '
-                            'but was passed an input_mask: ' + str(mask))
-        else:
-          raise TypeError('Layer ' + self.name + ' does not support masking, '
-                          'but was passed an input_mask: ' + str(mask))
-      # masking not explicitly supported: return None as mask
-      return None
-    # if masking is explicitly supported, by default
-    # carry over the input mask
-    return mask
-
   def _add_inbound_node(self,
                         input_tensors,
                         output_tensors,
@@ -1174,101 +1104,6 @@ class Layer(checkpointable.CheckpointableBase):
       return getattr(inputs, '_keras_mask', None)
 
   @property
-  def output_mask(self):
-    """Retrieves the output mask tensor(s) of a layer.
-
-    Only applicable if the layer has exactly one inbound node,
-    i.e. if it is connected to one incoming layer.
-
-    Returns:
-        Output mask tensor (potentially None) or list of output
-        mask tensors.
-
-    Raises:
-        AttributeError: if the layer is connected to
-        more than one incoming layers.
-    """
-    output = self.output
-    if isinstance(output, list):
-      return [getattr(x, '_keras_mask', None) for x in output]
-    else:
-      return getattr(output, '_keras_mask', None)
-
-  def get_input_shape_at(self, node_index):
-    """Retrieves the input shape(s) of a layer at a given node.
-
-    Arguments:
-        node_index: Integer, index of the node
-            from which to retrieve the attribute.
-            E.g. `node_index=0` will correspond to the
-            first time the layer was called.
-
-    Returns:
-        A shape tuple
-        (or list of shape tuples if the layer has multiple inputs).
-
-    Raises:
-      RuntimeError: If called in Eager mode.
-    """
-    return self._get_node_attribute_at_index(node_index, 'input_shapes',
-                                             'input shape')
-
-  def get_output_shape_at(self, node_index):
-    """Retrieves the output shape(s) of a layer at a given node.
-
-    Arguments:
-        node_index: Integer, index of the node
-            from which to retrieve the attribute.
-            E.g. `node_index=0` will correspond to the
-            first time the layer was called.
-
-    Returns:
-        A shape tuple
-        (or list of shape tuples if the layer has multiple outputs).
-
-    Raises:
-      RuntimeError: If called in Eager mode.
-    """
-    return self._get_node_attribute_at_index(node_index, 'output_shapes',
-                                             'output shape')
-
-  def get_input_at(self, node_index):
-    """Retrieves the input tensor(s) of a layer at a given node.
-
-    Arguments:
-        node_index: Integer, index of the node
-            from which to retrieve the attribute.
-            E.g. `node_index=0` will correspond to the
-            first time the layer was called.
-
-    Returns:
-        A tensor (or list of tensors if the layer has multiple inputs).
-
-    Raises:
-      RuntimeError: If called in Eager mode.
-    """
-    return self._get_node_attribute_at_index(node_index, 'input_tensors',
-                                             'input')
-
-  def get_output_at(self, node_index):
-    """Retrieves the output tensor(s) of a layer at a given node.
-
-    Arguments:
-        node_index: Integer, index of the node
-            from which to retrieve the attribute.
-            E.g. `node_index=0` will correspond to the
-            first time the layer was called.
-
-    Returns:
-        A tensor (or list of tensors if the layer has multiple outputs).
-
-    Raises:
-      RuntimeError: If called in Eager mode.
-    """
-    return self._get_node_attribute_at_index(node_index, 'output_tensors',
-                                             'output')
-
-  @property
   def input(self):
     """Retrieves the input tensor(s) of a layer.
 
@@ -1309,66 +1144,6 @@ class Layer(checkpointable.CheckpointableBase):
     if not self._inbound_nodes:
       raise AttributeError('Layer ' + self.name + ' has no inbound nodes.')
     return self._get_node_attribute_at_index(0, 'output_tensors', 'output')
-
-  @property
-  def input_shape(self):
-    """Retrieves the input shape(s) of a layer.
-
-    Only applicable if the layer has exactly one input,
-    i.e. if it is connected to one incoming layer, or if all inputs
-    have the same shape.
-
-    Returns:
-        Input shape, as an integer shape tuple
-        (or list of shape tuples, one tuple per input tensor).
-
-    Raises:
-        AttributeError: if the layer has no defined input_shape.
-        RuntimeError: if called in Eager mode.
-    """
-    if not self._inbound_nodes:
-      raise AttributeError('The layer has never been called '
-                           'and thus has no defined input shape.')
-    all_input_shapes = set(
-        [str(node.input_shapes) for node in self._inbound_nodes])
-    if len(all_input_shapes) == 1:
-      input_shapes = self._inbound_nodes[0].input_shapes
-      if len(input_shapes) == 1:
-        return tuple(tensor_shape.TensorShape(input_shapes[0]).as_list())
-      else:
-        return [
-            tuple(tensor_shape.TensorShape(shape).as_list())
-            for shape in input_shapes
-        ]
-    else:
-      raise AttributeError('The layer "' + str(self.name) +
-                           ' has multiple inbound nodes, '
-                           'with different input shapes. Hence '
-                           'the notion of "input shape" is '
-                           'ill-defined for the layer. '
-                           'Use `get_input_shape_at(node_index)` '
-                           'instead.')
-
-  def count_params(self):
-    """Count the total number of scalars composing the weights.
-
-    Returns:
-        An integer count.
-
-    Raises:
-        ValueError: if the layer isn't yet built
-          (in which case its weights aren't yet defined).
-    """
-    if not self.built:
-      if self.__class__.__name__ == 'Sequential':
-        self.build()  # pylint: disable=no-value-for-parameter
-      else:
-        raise ValueError('You tried to call `count_params` on ' + self.name +
-                         ', but the layer isn\'t built. '
-                         'You can build it manually via: `' + self.name +
-                         '.build(batch_input_shape)`.')
-    weight_shapes = [w.shape.as_list() for w in self.weights]
-    return int(sum([np.prod(w) for w in weight_shapes]))
 
   @property
   def output_shape(self):
@@ -1557,46 +1332,6 @@ class Layer(checkpointable.CheckpointableBase):
     params = self.weights
     return backend.batch_get_value(params)
 
-  def get_config(self):
-    """Returns the config of the layer.
-
-    A layer config is a Python dictionary (serializable)
-    containing the configuration of a layer.
-    The same layer can be reinstantiated later
-    (without its trained weights) from this configuration.
-
-    The config of a layer does not include connectivity
-    information, nor the layer class name. These are handled
-    by `Network` (one layer of abstraction above).
-
-    Returns:
-        Python dictionary.
-    """
-    config = {'name': self.name, 'trainable': self.trainable}
-    if hasattr(self, '_batch_input_shape'):
-      config['batch_input_shape'] = self._batch_input_shape
-    if hasattr(self, 'dtype'):
-      config['dtype'] = self.dtype
-    return config
-
-  @classmethod
-  def from_config(cls, config):
-    """Creates a layer from its config.
-
-    This method is the reverse of `get_config`,
-    capable of instantiating the same layer from the config
-    dictionary. It does not handle layer connectivity
-    (handled by Network), nor weights (handled by `set_weights`).
-
-    Arguments:
-        config: A Python dictionary, typically the
-            output of get_config.
-
-    Returns:
-        A layer instance.
-    """
-    return cls(**config)
-
 
 @tf_export('keras.layers.InputSpec', 'layers.InputSpec')
 class InputSpec(object):
@@ -1636,127 +1371,6 @@ class InputSpec(object):
     self.min_ndim = min_ndim
     self.axes = axes or {}
 
-  def __repr__(self):
-    spec = [('dtype=' + str(self.dtype)) if self.dtype else '',
-            ('shape=' + str(self.shape)) if self.shape else '',
-            ('ndim=' + str(self.ndim)) if self.ndim else '',
-            ('max_ndim=' + str(self.max_ndim)) if self.max_ndim else '',
-            ('min_ndim=' + str(self.min_ndim)) if self.min_ndim else '',
-            ('axes=' + str(self.axes)) if self.axes else '']
-    return 'InputSpec(%s)' % ', '.join(x for x in spec if x)
-
-
-class Node(object):
-  """A `Node` describes the connectivity between two layers.
-
-  Each time a layer is connected to some new input,
-  a node is added to `layer._inbound_nodes`.
-  Each time the output of a layer is used by another layer,
-  a node is added to `layer._outbound_nodes`.
-
-  Arguments:
-      outbound_layer: the layer that takes
-          `input_tensors` and turns them into `output_tensors`
-          (the node gets created when the `call`
-          method of the layer was called).
-      inbound_layers: a list of layers, the same length as `input_tensors`,
-          the layers from where `input_tensors` originate.
-      node_indices: a list of integers, the same length as `inbound_layers`.
-          `node_indices[i]` is the origin node of `input_tensors[i]`
-          (necessary since each inbound layer might have several nodes,
-          e.g. if the layer is being shared with a different data stream).
-      tensor_indices: a list of integers,
-          the same length as `inbound_layers`.
-          `tensor_indices[i]` is the index of `input_tensors[i]` within the
-          output of the inbound layer
-          (necessary since each inbound layer might
-          have multiple tensor outputs, with each one being
-          independently manipulable).
-      input_tensors: list of input tensors.
-      output_tensors: list of output tensors.
-      arguments: dictionary of keyword arguments that were passed to the
-          `call` method of the layer at the call that created the node.
-
-  `node_indices` and `tensor_indices` are basically fine-grained coordinates
-  describing the origin of the `input_tensors`.
-
-  A node from layer A to layer B is added to:
-    - A._outbound_nodes
-    - B._inbound_nodes
-  """
-
-  def __init__(self,
-               outbound_layer,
-               inbound_layers,
-               node_indices,
-               tensor_indices,
-               input_tensors,
-               output_tensors,
-               arguments=None):
-    # Layer instance (NOT a list).
-    if isinstance(outbound_layer, list):
-      raise ValueError(
-          '`outbound_layer` should be a layer instance, not a list.')
-    # this is the layer that takes a list of input tensors
-    # and turns them into a list of output tensors.
-    # the current node will be added to
-    # the inbound_nodes of outbound_layer.
-    self.outbound_layer = outbound_layer
-
-    # The following 3 properties describe where
-    # the input tensors come from: which layers,
-    # and for each layer, which node and which
-    # tensor output of each node.
-
-    # List of layer instances.
-    self.inbound_layers = inbound_layers
-    # List of integers, 1:1 mapping with inbound_layers.
-    self.node_indices = node_indices
-    # List of integers, 1:1 mapping with inbound_layers.
-    self.tensor_indices = tensor_indices
-
-    # Following 2 properties:
-    # tensor inputs and outputs of outbound_layer.
-
-    # List of tensors. 1:1 mapping with inbound_layers.
-    self.input_tensors = input_tensors
-    # List of tensors, created by outbound_layer.call().
-    self.output_tensors = output_tensors
-
-    # Following 2 properties: input and output shapes.
-
-    # List of shape tuples, shapes of input_tensors.
-    self.input_shapes = [backend.int_shape(x) for x in input_tensors]
-    # List of shape tuples, shapes of output_tensors.
-    self.output_shapes = [backend.int_shape(x) for x in output_tensors]
-
-    # Optional keyword arguments to layer's `call`.
-    self.arguments = arguments
-
-    # Add nodes to all layers involved.
-    for layer in inbound_layers:
-      if layer is not None:
-        # For compatibility with external Keras, we use the deprecated
-        # accessor here.
-        layer.outbound_nodes.append(self)
-    # For compatibility with external Keras, we use the deprecated
-    # accessor here.
-    outbound_layer.inbound_nodes.append(self)
-
-  def get_config(self):
-    inbound_names = []
-    for layer in self.inbound_layers:
-      if layer:
-        inbound_names.append(layer.name)
-      else:
-        inbound_names.append(None)
-    return {
-        'outbound_layer': self.outbound_layer.name,
-        'inbound_layers': inbound_names,
-        'node_indices': self.node_indices,
-        'tensor_indices': self.tensor_indices
-    }
-
 
 class DeferredTensor(object):
   """Tensor-like object used to build graphs of layers in Eager mode.
@@ -1787,6 +1401,48 @@ class DeferredTensor(object):
     return "<DeferredTensor '%s' shape=%s dtype=%s>" % (self.name,
                                                         self.shape,
                                                         self.dtype.name)
+
+
+
+def have_all_keras_metadata(iterable_or_element):
+  if not isinstance(iterable_or_element, (list, tuple)):
+    iterable = [iterable_or_element]
+  else:
+    iterable = iterable_or_element
+  return all([hasattr(x, '_keras_history') for x in iterable])
+
+
+def collect_previous_mask(input_tensors):  
+  ';l '
+  """Retrieves the output mask(s) of the previous node.
+
+  Arguments:
+      input_tensors: A tensor or list of tensors.
+
+  Returns:
+      A mask tensor or list of mask tensors.
+  """
+  input_tensors = nest.flatten(input_tensors)
+  masks = []
+  for x in input_tensors:
+    if hasattr(x, '_keras_mask'):
+      mask = x._keras_mask  # pylint: disable=protected-access
+      masks.append(mask)
+    else:
+      masks.append(None)
+  if len(masks) == 1:
+    return masks[0]
+  return masks
+
+
+def get_default_graph_uid_map():
+  # TODO(fchollet): refactor this into backend.
+  graph = ops.get_default_graph()
+  name_uid_map = backend.PER_GRAPH_LAYER_NAME_UIDS.get(graph, None)
+  if name_uid_map is None:
+    name_uid_map = collections_lib.defaultdict(int)
+    backend.PER_GRAPH_LAYER_NAME_UIDS[graph] = name_uid_map
+  return name_uid_map
 
 
 def unique_layer_name(name, name_uid_map=None, avoid_names=None, namespace='',
@@ -1833,148 +1489,3 @@ def unique_layer_name(name, name_uid_map=None, avoid_names=None, namespace='',
       name_uid_map[name_key] += 1
       proposed_name = name + '_' + str(name_uid_map[name_key])
   return proposed_name
-
-
-def have_all_keras_metadata(iterable_or_element):
-  if not isinstance(iterable_or_element, (list, tuple)):
-    iterable = [iterable_or_element]
-  else:
-    iterable = iterable_or_element
-  return all([hasattr(x, '_keras_history') for x in iterable])
-
-
-def collect_previous_mask(input_tensors):
-  """Retrieves the output mask(s) of the previous node.
-
-  Arguments:
-      input_tensors: A tensor or list of tensors.
-
-  Returns:
-      A mask tensor or list of mask tensors.
-  """
-  input_tensors = nest.flatten(input_tensors)
-  masks = []
-  for x in input_tensors:
-    if hasattr(x, '_keras_mask'):
-      mask = x._keras_mask  # pylint: disable=protected-access
-      masks.append(mask)
-    else:
-      masks.append(None)
-  if len(masks) == 1:
-    return masks[0]
-  return masks
-
-
-def get_default_graph_uid_map():
-  # TODO(fchollet): refactor this into backend.
-  graph = ops.get_default_graph()
-  name_uid_map = backend.PER_GRAPH_LAYER_NAME_UIDS.get(graph, None)
-  if name_uid_map is None:
-    name_uid_map = collections_lib.defaultdict(int)
-    backend.PER_GRAPH_LAYER_NAME_UIDS[graph] = name_uid_map
-  return name_uid_map
-
-
-def make_variable(name,
-                  shape=None,
-                  dtype=dtypes.float32,
-                  initializer=None,
-                  partition_info=None,
-                  trainable=None,
-                  caching_device=None,
-                  validate_shape=True,
-                  constraint=None,
-                  use_resource=None,
-                  collections=None,
-                  synchronization=tf_variables.VariableSynchronization.AUTO,
-                  aggregation=tf_variables.VariableAggregation.NONE,
-                  partitioner=None):  # pylint: disable=unused-argument
-  """Temporary util to create a variable (relies on `variable_scope.variable`).
-
-  Some reuse-related technicalities prevent us from using
-  `variable_scope.get_variable()` directly, so we use a subcomponent
-  that has fewer constraints (`variable_scope.variable()`).
-
-  In the longer term, it seems like a similar "default variable creator" method
-  should exist in `CheckpointableBase` instead. When this happens, we can get
-  rid of this temporary solution.
-
-  TODO(fchollet): remove this method when no longer needed.
-  TODO(fchollet): handle `partitioner` argument.
-
-  Arguments:
-    name: Variable name.
-    shape: Variable shape.
-    dtype: The type of the variable. Defaults to `self.dtype` or `float32`.
-    initializer: Initializer instance (callable).
-    partition_info: Not handled at this time.
-    trainable: Whether the variable should be part of the layer's
-      "trainable_variables" (e.g. variables, biases)
-      or "non_trainable_variables" (e.g. BatchNorm mean, stddev).
-      Note, if the current variable scope is marked as non-trainable
-      then this parameter is ignored and any added variables are also
-      marked as non-trainable. `trainable` defaults to `True` unless
-      `synchronization` is set to `ON_READ`.
-    caching_device: Passed to `tf.Variable`.
-    validate_shape: Passed to `tf.Variable`.
-    constraint: Constraint instance (callable).
-    use_resource: Whether to use a `ResourceVariable`.
-    collections: List of graph collections keys. The new variable is added to
-      these collections. Defaults to `[GraphKeys.GLOBAL_VARIABLES]`.
-    synchronization: Indicates when a distributed a variable will be
-      aggregated. Accepted values are constants defined in the class
-      `tf.VariableSynchronization`. By default the synchronization is set to
-      `AUTO` and the current `DistributionStrategy` chooses
-      when to synchronize. If `synchronization` is set to `ON_READ`,
-      `trainable` must not be set to `True`.
-    aggregation: Indicates how a distributed variable will be aggregated.
-      Accepted values are constants defined in the class
-      `tf.VariableAggregation`.
-    partitioner: Not handled at this time.
-
-  Returns:
-    Variable instance.
-  """
-  initializing_from_value = False
-  if initializer is not None and not callable(initializer):
-    initializing_from_value = True
-
-  with ops.init_scope():
-    if initializing_from_value:
-      init_val = initializer
-      variable_dtype = None
-    else:
-      # Instantiate initializer if provided initializer is a type object.
-      if isinstance(initializer, type(init_ops.Initializer)):
-        initializer = initializer(dtype=dtype)
-      init_val = lambda: initializer(  # pylint: disable=g-long-lambda
-          shape, dtype=dtype, partition_info=partition_info)
-      variable_dtype = dtype.base_dtype
-  if use_resource is None:
-    use_resource = True
-
-  # TODO(apassos,rohanj) figure out how to remove collections from here so we
-  # can remove the V1.
-  v = tf_variables.VariableV1(
-      initial_value=init_val,
-      name=name,
-      trainable=trainable,
-      caching_device=caching_device,
-      dtype=variable_dtype,
-      validate_shape=validate_shape,
-     # constraint=constraint,
-      use_resource=use_resource,
-      collections=collections,
-      synchronization=synchronization,
-      aggregation=aggregation)
-  return v
-
-
-def default(method):
-  """Decorates a method to detect overrides in subclasses."""
-  method._is_default = True
-  return method
-
-
-def generate_placeholders_from_shape(shape):
-  return array_ops.placeholder(shape=shape, dtype=backend.floatx())
