@@ -18,6 +18,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import six
+
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.framework import ops
@@ -29,9 +31,25 @@ from tensorflow.python.base_layer import InputSpec
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python import regularizers
-from tensorflow.python import initializers
+#from tensorflow.python import initializers
 from tensorflow.python.base_layer import Layer
 from tensorflow.python.util.tf_export import tf_export
+
+
+def get(identifier):
+  if identifier is None:
+    return None
+  if isinstance(identifier, dict):
+    return deserialize(identifier)
+  elif isinstance(identifier, six.string_types):
+    config = {'class_name': str(identifier), 'config': {}}
+    return deserialize(config)
+  elif callable(identifier):
+    return identifier
+  else:
+    raise ValueError('Could not interpret initializer identifier: ' +
+                     str(identifier))
+
 
 @tf_export('keras.layers.BatchNormalization')
 class BatchNormalization(Layer):
@@ -68,10 +86,10 @@ class BatchNormalization(Layer):
     self.epsilon = epsilon
     self.center = center
     self.scale = scale
-    self.beta_initializer = initializers.get(beta_initializer)
-    self.gamma_initializer = initializers.get(gamma_initializer)
-    self.moving_mean_initializer = initializers.get(moving_mean_initializer)
-    self.moving_variance_initializer = initializers.get(
+    self.beta_initializer = get(beta_initializer)
+    self.gamma_initializer = get(gamma_initializer)
+    self.moving_mean_initializer = get(moving_mean_initializer)
+    self.moving_variance_initializer = get(
         moving_variance_initializer)
     self.beta_regularizer = regularizers.get(beta_regularizer)
     self.gamma_regularizer = regularizers.get(gamma_regularizer)

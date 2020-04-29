@@ -20,7 +20,7 @@ from __future__ import print_function
 
 import contextlib
 
-from tensorflow.python import pywrap_tensorflow
+from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
 
 
 class Tape(object):

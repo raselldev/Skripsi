@@ -2,31 +2,67 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
+import re
 import collections as collections_lib
 import enum
 import functools
 import inspect
 
 import numpy as np
-from six.moves import zip  
+from six.moves import zip 
+import six 
 
+from tensorflow.python.ops.init_ops import GlorotUniform as glorot_uniform
 from tensorflow.python import function as eager_function
-from tensorflow.python import generic_utils
+#from tensorflow.python import generic_utils
 #from tensorflow.python import constraints
 from tensorflow.python import regularizers
-from tensorflow.python import initializers
+#from tensorflow.python import initializers
 from tensorflow.python import context
 from tensorflow.python.util import nest
 from tensorflow.python.util import tf_inspect
 from tensorflow.python.util import function_utils
 from tensorflow.python import backend
 from tensorflow.python.framework import ops
-from tensorflow.python.generic_utils import to_snake_case
+#from tensorflow.python.generic_utils import to_snake_case
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import variables as tf_variables
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.training import base as checkpointable
 #from tensorflow import doc_controls
+
+
+def get(identifier):
+  if identifier is None:
+    return None
+  if isinstance(identifier, dict):
+    return deserialize(identifier)
+  elif isinstance(identifier, six.string_types):
+    config = {'class_name': str(identifier), 'config': {}}
+    return deserialize(config)
+  elif callable(identifier):
+    return identifier
+  else:
+    raise ValueError('Could not interpret initializer identifier: ' +
+                     str(identifier))
+
+
+def to_list(x):
+  if isinstance(x, list):
+    return x
+  return [x]
+
+
+
+def to_snake_case(name):
+  intermediate = re.sub('(.)([A-Z][a-z0-9]+)', r'\1_\2', name)
+  insecure = re.sub('([a-z])([A-Z])', r'\1_\2', intermediate).lower()
+  # If the class is private the name starts with "_" which is not secure
+  # for creating scopes. We prefix the name with "private" in this case.
+  if insecure[0] != '_':
+    return insecure
+  return 'private' + insecure
 
 
 class CallConvention(enum.Enum):
@@ -186,7 +222,7 @@ class Layer(checkpointable.CheckpointableBase):
   def _init_set_name(self, name, zero_based=True):
     if not name:
       self._name = unique_layer_name(
-          generic_utils.to_snake_case(self.__class__.__name__),
+          to_snake_case(self.__class__.__name__),
           zero_based=zero_based)
     else:
       self._name = name
@@ -294,7 +330,7 @@ class Layer(checkpointable.CheckpointableBase):
       else:
         return ops.convert_to_tensor(x)
 
-    updates = generic_utils.to_list(updates)
+    updates = to_list(updates)
     updates = [process_update(x) for x in updates]
     self._updates += updates
     if inputs is None:
@@ -403,7 +439,7 @@ class Layer(checkpointable.CheckpointableBase):
             'Adding losses inside a Layer\'s call() method is not currently '
             'supported when executing eagerly. Please file a feature request '
             'if you need this limitation lifted.')
-    losses = generic_utils.to_list(losses)
+    losses = to_list(losses)
 
     def _tag_unconditional(loss):
       if callable(loss):
@@ -535,7 +571,7 @@ class Layer(checkpointable.CheckpointableBase):
     if dtype is None:
       dtype = self.dtype or backend.floatx()
     dtype = dtypes.as_dtype(dtype)
-    initializer = initializers.get(initializer)
+    initializer = get(initializer)
     regularizer = regularizers.get(regularizer)
 #    constraint = constraints.get(constraint)
 
@@ -556,11 +592,11 @@ class Layer(checkpointable.CheckpointableBase):
     if initializer is None:
       # If dtype is DT_FLOAT, provide a uniform unit scaling initializer
       if dtype.is_floating:
-        initializer = initializers.glorot_uniform()
+        initializer = glorot_uniform()
       # If dtype is DT_INT/DT_UINT, provide a default value `zero`
       # If dtype is DT_BOOL, provide a default value `FALSE`
       elif dtype.is_integer or dtype.is_unsigned or dtype.is_bool:
-        initializer = initializers.zeros()
+        initializer = zeros()
       # NOTES:Do we need to support for handling DT_STRING and DT_COMPLEX here?
       else:
         raise ValueError('An initializer for variable %s of type %s is required'
@@ -650,7 +686,7 @@ class Layer(checkpointable.CheckpointableBase):
         self._call_fn_args = self._no_dependency(
             function_utils.fn_args(self.call))
       if ('mask' in self._call_fn_args and 'mask' not in kwargs and
-          not generic_utils.is_all_none(previous_mask)):
+          not is_all_none(previous_mask)):
         # The previous layer generated a mask, and mask was not explicitly pass
         # to __call__, hence we set previous_mask as the default value.
         kwargs['mask'] = previous_mask
@@ -767,10 +803,10 @@ class Layer(checkpointable.CheckpointableBase):
   def _set_learning_phase_metadata(self, inputs, outputs):
     # Update learning phase info. To work with subclassed models,
     # this should be done even if Keras metadata is absent.
-    output_tensors = generic_utils.to_list(outputs)
+    output_tensors = to_list(outputs)
     uses_lp = any(
         [getattr(x, '_uses_learning_phase', False)
-         for x in generic_utils.to_list(inputs)])
+         for x in to_list(inputs)])
     uses_lp = getattr(self, 'uses_learning_phase', False) or uses_lp
     for i in range(len(output_tensors)):
       try:
@@ -785,7 +821,7 @@ class Layer(checkpointable.CheckpointableBase):
     # In some cases the mask of the outputs has already been computed by
     # inner layers and does not need to be recomputed by this layer.
     mask_already_computed = all(
-        hasattr(x, '_keras_mask') for x in generic_utils.to_list(outputs))
+        hasattr(x, '_keras_mask') for x in to_list(outputs))
     if hasattr(self, 'compute_mask') and not mask_already_computed:
       output_mask = self.compute_mask(inputs, previous_mask)
     else:

@@ -241,10 +241,12 @@ class Layer(base_layer.Layer):
       outputs = super(Layer, self).__call__(inputs, *args, **kwargs)
 
     if not context.executing_eagerly():
+      # Update global default collections.
       _add_elements_to_collection(self.updates, ops.GraphKeys.UPDATE_OPS)
     return outputs
 
-def _add_elements_to_collection(elements, collection_list):                                         
+def _add_elements_to_collection(elements, collection_list):
+                                                     
   elements = nest.flatten(elements)
   collection_list = nest.flatten(collection_list)
   for name in collection_list:
