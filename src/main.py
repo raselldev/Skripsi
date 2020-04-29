@@ -14,7 +14,8 @@ class FilePaths:
 	fnCharList = '../model/charList.txt'
 	fnAccuracy = '../model/accuracy.txt'
 	fnTrain = '../data/'
-	fnInfer = '../data/test.png'
+	#fnInfer = '../data/2.jpeg'
+	fnInfer = input("Pilih Path : ")
 	fnCorpus = '../data/corpus.txt'
 
 
@@ -97,6 +98,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-train', help='train the NN', action='store_true')
 	parser.add_argument('-validate', help='validate the NN', action='store_true')
+	parser.add_argument('-i', help='input image', action='store_true')
 
 	args = parser.parse_args()
 

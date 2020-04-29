@@ -26,7 +26,7 @@ import warnings
 
 import numpy as np
 
-from tensorflow.core.protobuf import config_pb2
+#from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import pywrap_tensorflow as tf_session
 from tensorflow.python.framework import device
 from tensorflow.python.framework import error_interpolation

@@ -42,7 +42,7 @@ from tensorflow.python.ops import control_flow_util as util
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gen_control_flow_ops
 from tensorflow.python import context
-from tensorflow.core.protobuf import control_flow_pb2
+#from tensorflow.core.protobuf import control_flow_pb2
 from tensorflow.python.framework import ops
 from tensorflow.python.util import deprecation
 from tensorflow.python.util import tf_should_use
