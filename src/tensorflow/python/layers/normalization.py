@@ -58,8 +58,7 @@ class BatchNormalization(keras_layers.BatchNormalization, base.Layer):
         name=name,
         **kwargs)
 
-  def call(self, inputs, training=False):
-    return super(BatchNormalization, self).call(inputs, training=training)
+ 
 
 
 @tf_export('layers.batch_normalization')

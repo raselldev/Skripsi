@@ -76,15 +76,12 @@ def _ExitGrad(op, grad):
   graph = ops.get_default_graph()
   op_ctxt = op._get_control_flow_context()
   grad_ctxt = graph._get_control_flow_context()
-  if not grad_ctxt.back_prop:
-    return None
+  
 
   if op_ctxt.grad_state:
     raise TypeError("Second-order gradient for while loops not supported.")
 
-  if isinstance(grad, ops.Tensor):
-    grad_ctxt.AddName(grad.name)
-  else:
+ 
     if not isinstance(grad, (ops.IndexedSlices, sparse_tensor.SparseTensor)):
       raise TypeError("Type %s not supported" % type(grad))
     grad_ctxt.AddName(grad.values.name)

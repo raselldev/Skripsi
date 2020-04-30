@@ -25,24 +25,6 @@ from tensorflow.python.ops import control_flow_ops
 
 
 def smart_cond(pred, true_fn=None, false_fn=None, name=None):
-  """Return either `true_fn()` if predicate `pred` is true else `false_fn()`.
-
-  If `pred` is a bool or has a constant value, we return either `true_fn()`
-  or `false_fn()`, otherwise we use `tf.cond` to dynamically route to both.
-
-  Arguments:
-    pred: A scalar determining whether to return the result of `true_fn` or
-      `false_fn`.
-    true_fn: The callable to be performed if pred is true.
-    false_fn: The callable to be performed if pred is false.
-    name: Optional name prefix when using `tf.cond`.
-
-  Returns:
-    Tensors returned by the call to either `true_fn` or `false_fn`.
-
-  Raises:
-    TypeError: If `true_fn` or `false_fn` is not callable.
-  """
   if not callable(true_fn):
     raise TypeError("`true_fn` must be callable.")
   if not callable(false_fn):
@@ -60,17 +42,6 @@ def smart_cond(pred, true_fn=None, false_fn=None, name=None):
 
 
 def smart_constant_value(pred):
-  """Return the bool value for `pred`, or None if `pred` had a dynamic value.
-
-  Arguments:
-    pred: A scalar, either a Python bool or tensor.
-
-  Returns:
-    True or False if `pred` has a constant boolean value, None otherwise.
-
-  Raises:
-    TypeError: If `pred` is not a Tensor or bool.
-  """
   if pred in {0, 1}:  # Accept 1/0 as valid boolean values
     pred_value = bool(pred)
   elif isinstance(pred, bool):

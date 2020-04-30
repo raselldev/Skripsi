@@ -684,15 +684,7 @@ def _GradientsHelper(ys,
             # defun.
             func_call = getattr(op, "__defun", func_call)
             grad_fn = func_call.python_grad_func
-          else:
-            # A grad_fn must be defined, either as a function or as None
-            # for ops that do not have gradients.
-            try:
-              grad_fn = ops.get_gradient_function(op)
-            except LookupError:
-              raise LookupError(
-                  "No gradient defined for operation '%s' (op type: %s)" %
-                  (op.name, op.type))
+          
         if loop_state:
           loop_state.EnterGradWhileContext(op, before=False)
 

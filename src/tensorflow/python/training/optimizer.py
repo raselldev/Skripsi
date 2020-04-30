@@ -397,11 +397,7 @@ class Optimizer(
         grad_loss=grad_loss)
 
     vars_with_grad = [v for g, v in grads_and_vars if g is not None]
-    if not vars_with_grad:
-      raise ValueError(
-          "No gradients provided for any variable, check your graph for ops"
-          " that do not support gradients, between variables %s and loss %s." %
-          ([str(v) for _, v in grads_and_vars], loss))
+    
 
     return self.apply_gradients(grads_and_vars, global_step=global_step,
                                 name=name)
@@ -583,9 +579,6 @@ class Optimizer(
 
     converted_grads_and_vars = tuple(converted_grads_and_vars)
     var_list = [v for g, v, _ in converted_grads_and_vars if g is not None]
-    if not var_list:
-      raise ValueError("No gradients provided for any variable: %s." %
-                       ([str(v) for _, v, _ in converted_grads_and_vars],))
     with ops.init_scope():
       self._create_slots(var_list)
     update_ops = []

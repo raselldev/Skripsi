@@ -753,10 +753,7 @@ class Layer(checkpointable.CheckpointableBase):
         self._in_call = True
         outputs = self.call(inputs, *args, **kwargs)
         self._in_call = False
-        if outputs is None:
-          raise ValueError('A layer\'s `call` method should return a Tensor '
-                           'or a list of Tensors, not None (layer: ' +
-                           self.name + ').')
+        
       else:
         # Deferred mode behavior: use `compute_output_shape` to
         # infer the number of outputs of the layer and their shapes.

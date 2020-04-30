@@ -29,7 +29,7 @@ import weakref
 
 import numpy as np
 
-from tensorflow.python import context
+#from tensorflow.python import context
 from tensorflow.python.ops import tensor_array_grad
 
 
