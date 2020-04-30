@@ -285,10 +285,8 @@ class BatchNormalization(Layer):
         training, _fused_batch_norm_training, _fused_batch_norm_inference)
     return output
 
-  def call(self, inputs, training=None):
-    original_training_value = training  
+  def call(self, inputs, training=None):  
     if self.fused:
       outputs = self._fused_batch_norm(inputs, training=training)
-      if self.virtual_batch_size is not None:
-        outputs = undo_virtual_batching(outputs)      
+    
       return outputs
