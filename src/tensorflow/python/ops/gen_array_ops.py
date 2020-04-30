@@ -7,7 +7,7 @@ Original C++ source file: array_ops.cc
 import collections as _collections
 import six as _six
 
-from tensorflow.python import execute as _execute
+#from tensorflow.python import execute as _execute
 from tensorflow.python import context as _context
 from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry
@@ -15,6 +15,47 @@ from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
 from tensorflow.python.framework import dtypes as _dtypes
 from tensorflow.python.util.deprecation import deprecated_endpoints
 from tensorflow.python.util.tf_export import tf_export
+from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import tensor_shape
+
+def make_int(v, arg_name):
+  if isinstance(v, _six.string_types):
+    raise TypeError("Expected int for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  try:
+    return int(v)
+  except (ValueError, TypeError):
+    raise TypeError("Expected int for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+
+def record_gradient(unused_op_name, unused_inputs, unused_attrs, unused_results,
+                    unused_name):
+  
+  pass
+
+def make_type(v, arg_name):
+  try:
+    v = dtypes.as_dtype(v).base_dtype
+  except TypeError:
+    raise TypeError("Expected DataType for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  i = v.as_datatype_enum
+  return i
+
+
+
+def make_shape(v, arg_name):
+  try:
+    shape = tensor_shape.as_shape(v)
+  except TypeError as e:
+    raise TypeError("Error converting %s to a TensorShape: %s." % (arg_name, e))
+  except ValueError as e:
+    raise ValueError("Error converting %s to a TensorShape: %s." % (arg_name,
+                                                                    e))
+  if shape.ndims is None:
+    return None
+  else:
+    return shape.as_list()
 
 
 def batch_matrix_band_part(input, num_lower, num_upper, name=None):
@@ -37,7 +78,7 @@ def batch_matrix_band_part(input, num_lower, num_upper, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "BatchMatrixBandPart", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -65,14 +106,14 @@ def batch_matrix_band_part_eager_fallback(input, num_lower, num_upper, name=None
   This is for function batch_matrix_band_part
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   num_lower = _ops.convert_to_tensor(num_lower, _dtypes.int64)
   num_upper = _ops.convert_to_tensor(num_upper, _dtypes.int64)
   _inputs_flat = [input, num_lower, num_upper]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"BatchMatrixBandPart", 1, inputs=_inputs_flat,
+  _result = execute(b"BatchMatrixBandPart", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "BatchMatrixBandPart", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -95,7 +136,7 @@ def batch_matrix_diag(diagonal, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "BatchMatrixDiag", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -122,12 +163,12 @@ def batch_matrix_diag_eager_fallback(diagonal, name=None, ctx=None):
   This is for function batch_matrix_diag
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (diagonal,) = _execute.args_to_matching_eager([diagonal], _ctx)
+  _attr_T, (diagonal,) = args_to_matching_eager([diagonal], _ctx)
   _inputs_flat = [diagonal]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"BatchMatrixDiag", 1, inputs=_inputs_flat,
+  _result = execute(b"BatchMatrixDiag", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "BatchMatrixDiag", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -150,7 +191,7 @@ def batch_matrix_diag_part(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "BatchMatrixDiagPart", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -177,12 +218,12 @@ def batch_matrix_diag_part_eager_fallback(input, name=None, ctx=None):
   This is for function batch_matrix_diag_part
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"BatchMatrixDiagPart", 1, inputs=_inputs_flat,
+  _result = execute(b"BatchMatrixDiagPart", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "BatchMatrixDiagPart", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -206,7 +247,7 @@ def batch_matrix_set_diag(input, diagonal, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "BatchMatrixSetDiag", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -234,13 +275,13 @@ def batch_matrix_set_diag_eager_fallback(input, diagonal, name=None, ctx=None):
   This is for function batch_matrix_set_diag
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([input, diagonal], _ctx)
+  _attr_T, _inputs_T = args_to_matching_eager([input, diagonal], _ctx)
   (input, diagonal) = _inputs_T
   _inputs_flat = [input, diagonal]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"BatchMatrixSetDiag", 1, inputs=_inputs_flat,
+  _result = execute(b"BatchMatrixSetDiag", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "BatchMatrixSetDiag", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -276,7 +317,7 @@ def batch_to_space(input, crops, block_size, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    block_size = _execute.make_int(block_size, "block_size")
+    block_size = make_int(block_size, "block_size")
     _, _, _op = _op_def_lib._apply_op_helper(
         "BatchToSpace", input=input, crops=crops, block_size=block_size,
         name=name)
@@ -284,7 +325,7 @@ def batch_to_space(input, crops, block_size, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "block_size",
               _op.get_attr("block_size"), "Tidx", _op.get_attr("Tidx"))
-    _execute.record_gradient(
+    record_gradient(
       "BatchToSpace", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -312,14 +353,14 @@ def batch_to_space_eager_fallback(input, crops, block_size, name=None, ctx=None)
   This is for function batch_to_space
   """
   _ctx = ctx if ctx else _context.context()
-  block_size = _execute.make_int(block_size, "block_size")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tidx, (crops,) = _execute.args_to_matching_eager([crops], _ctx, _dtypes.int32)
+  block_size = make_int(block_size, "block_size")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tidx, (crops,) = args_to_matching_eager([crops], _ctx, _dtypes.int32)
   _inputs_flat = [input, crops]
   _attrs = ("T", _attr_T, "block_size", block_size, "Tidx", _attr_Tidx)
-  _result = _execute.execute(b"BatchToSpace", 1, inputs=_inputs_flat,
+  _result = execute(b"BatchToSpace", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "BatchToSpace", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -467,7 +508,7 @@ def batch_to_space_nd(input, block_shape, crops, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tblock_shape",
               _op.get_attr("Tblock_shape"), "Tcrops", _op.get_attr("Tcrops"))
-    _execute.record_gradient(
+    record_gradient(
       "BatchToSpaceND", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -495,15 +536,15 @@ def batch_to_space_nd_eager_fallback(input, block_shape, crops, name=None, ctx=N
   This is for function batch_to_space_nd
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tblock_shape, (block_shape,) = _execute.args_to_matching_eager([block_shape], _ctx, _dtypes.int32)
-  _attr_Tcrops, (crops,) = _execute.args_to_matching_eager([crops], _ctx, _dtypes.int32)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tblock_shape, (block_shape,) = args_to_matching_eager([block_shape], _ctx, _dtypes.int32)
+  _attr_Tcrops, (crops,) = args_to_matching_eager([crops], _ctx, _dtypes.int32)
   _inputs_flat = [input, block_shape, crops]
   _attrs = ("T", _attr_T, "Tblock_shape", _attr_Tblock_shape, "Tcrops",
   _attr_Tcrops)
-  _result = _execute.execute(b"BatchToSpaceND", 1, inputs=_inputs_flat,
+  _result = execute(b"BatchToSpaceND", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "BatchToSpaceND", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -536,13 +577,13 @@ def bitcast(input, type, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    type = _execute.make_type(type, "type")
+    type = make_type(type, "type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Bitcast", input=input, type=type, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "type", _op.get_attr("type"))
-    _execute.record_gradient(
+    record_gradient(
       "Bitcast", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -569,13 +610,13 @@ def bitcast_eager_fallback(input, type, name=None, ctx=None):
   This is for function bitcast
   """
   _ctx = ctx if ctx else _context.context()
-  type = _execute.make_type(type, "type")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  type = make_type(type, "type")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T, "type", type)
-  _result = _execute.execute(b"Bitcast", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Bitcast", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Bitcast", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -602,7 +643,7 @@ def broadcast_args(s0, s1, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "BroadcastArgs", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -629,13 +670,13 @@ def broadcast_args_eager_fallback(s0, s1, name=None, ctx=None):
   This is for function broadcast_args
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([s0, s1], _ctx, _dtypes.int32)
+  _attr_T, _inputs_T = args_to_matching_eager([s0, s1], _ctx, _dtypes.int32)
   (s0, s1) = _inputs_T
   _inputs_flat = [s0, s1]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"BroadcastArgs", 1, inputs=_inputs_flat,
+  _result = execute(b"BroadcastArgs", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "BroadcastArgs", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -669,7 +710,7 @@ def broadcast_gradient_args(s0, s1, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "BroadcastGradientArgs", _inputs_flat, _attrs, _result, name)
     _result = _BroadcastGradientArgsOutput._make(_result)
     return _result
@@ -697,13 +738,13 @@ def broadcast_gradient_args_eager_fallback(s0, s1, name=None, ctx=None):
   This is for function broadcast_gradient_args
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([s0, s1], _ctx, _dtypes.int32)
+  _attr_T, _inputs_T = args_to_matching_eager([s0, s1], _ctx, _dtypes.int32)
   (s0, s1) = _inputs_T
   _inputs_flat = [s0, s1]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"BroadcastGradientArgs", 2, inputs=_inputs_flat,
+  _result = execute(b"BroadcastGradientArgs", 2, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "BroadcastGradientArgs", _inputs_flat, _attrs, _result, name)
   _result = _BroadcastGradientArgsOutput._make(_result)
   return _result
@@ -747,7 +788,7 @@ def broadcast_to(input, shape, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tidx", _op.get_attr("Tidx"))
-    _execute.record_gradient(
+    record_gradient(
       "BroadcastTo", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -774,13 +815,13 @@ def broadcast_to_eager_fallback(input, shape, name=None, ctx=None):
   This is for function broadcast_to
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tidx, (shape,) = _execute.args_to_matching_eager([shape], _ctx, _dtypes.int32)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tidx, (shape,) = args_to_matching_eager([shape], _ctx, _dtypes.int32)
   _inputs_flat = [input, shape]
   _attrs = ("T", _attr_T, "Tidx", _attr_Tidx)
-  _result = _execute.execute(b"BroadcastTo", 1, inputs=_inputs_flat,
+  _result = execute(b"BroadcastTo", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "BroadcastTo", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -804,13 +845,13 @@ def check_numerics(tensor, message, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    message = _execute.make_str(message, "message")
+    message = make_str(message, "message")
     _, _, _op = _op_def_lib._apply_op_helper(
         "CheckNumerics", tensor=tensor, message=message, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "message", _op.get_attr("message"))
-    _execute.record_gradient(
+    record_gradient(
       "CheckNumerics", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -838,13 +879,13 @@ def check_numerics_eager_fallback(tensor, message, name=None, ctx=None):
   This is for function check_numerics
   """
   _ctx = ctx if ctx else _context.context()
-  message = _execute.make_str(message, "message")
-  _attr_T, (tensor,) = _execute.args_to_matching_eager([tensor], _ctx)
+  message = make_str(message, "message")
+  _attr_T, (tensor,) = args_to_matching_eager([tensor], _ctx)
   _inputs_flat = [tensor]
   _attrs = ("T", _attr_T, "message", message)
-  _result = _execute.execute(b"CheckNumerics", 1, inputs=_inputs_flat,
+  _result = execute(b"CheckNumerics", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "CheckNumerics", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -877,7 +918,7 @@ def concat(concat_dim, values, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("N", _op.get_attr("N"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Concat", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -909,13 +950,13 @@ def concat_eager_fallback(concat_dim, values, name=None, ctx=None):
         "Expected list for 'values' argument to "
         "'concat' Op, not %r." % values)
   _attr_N = len(values)
-  _attr_T, values = _execute.args_to_matching_eager(list(values), _ctx)
+  _attr_T, values = args_to_matching_eager(list(values), _ctx)
   concat_dim = _ops.convert_to_tensor(concat_dim, _dtypes.int32)
   _inputs_flat = [concat_dim] + list(values)
   _attrs = ("N", _attr_N, "T", _attr_T)
-  _result = _execute.execute(b"Concat", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Concat", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Concat", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -957,7 +998,7 @@ def concat_offset(concat_dim, shape, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("N", _op.get_attr("N"))
-    _execute.record_gradient(
+    record_gradient(
       "ConcatOffset", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -992,9 +1033,9 @@ def concat_offset_eager_fallback(concat_dim, shape, name=None, ctx=None):
   shape = _ops.convert_n_to_tensor(shape, _dtypes.int32)
   _inputs_flat = [concat_dim] + list(shape)
   _attrs = ("N", _attr_N)
-  _result = _execute.execute(b"ConcatOffset", _attr_N, inputs=_inputs_flat,
+  _result = execute(b"ConcatOffset", _attr_N, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ConcatOffset", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -1027,7 +1068,7 @@ def concat_v2(values, axis, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("N", _op.get_attr("N"), "T", _op.get_attr("T"), "Tidx",
               _op.get_attr("Tidx"))
-    _execute.record_gradient(
+    record_gradient(
       "ConcatV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1059,13 +1100,13 @@ def concat_v2_eager_fallback(values, axis, name=None, ctx=None):
         "Expected list for 'values' argument to "
         "'concat_v2' Op, not %r." % values)
   _attr_N = len(values)
-  _attr_T, values = _execute.args_to_matching_eager(list(values), _ctx)
-  _attr_Tidx, (axis,) = _execute.args_to_matching_eager([axis], _ctx, _dtypes.int32)
+  _attr_T, values = args_to_matching_eager(list(values), _ctx)
+  _attr_Tidx, (axis,) = args_to_matching_eager([axis], _ctx, _dtypes.int32)
   _inputs_flat = list(values) + [axis]
   _attrs = ("N", _attr_N, "T", _attr_T, "Tidx", _attr_Tidx)
-  _result = _execute.execute(b"ConcatV2", 1, inputs=_inputs_flat,
+  _result = execute(b"ConcatV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ConcatV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1093,7 +1134,7 @@ def conjugate_transpose(x, perm, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tperm", _op.get_attr("Tperm"))
-    _execute.record_gradient(
+    record_gradient(
       "ConjugateTranspose", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1120,13 +1161,13 @@ def conjugate_transpose_eager_fallback(x, perm, name=None, ctx=None):
   This is for function conjugate_transpose
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
-  _attr_Tperm, (perm,) = _execute.args_to_matching_eager([perm], _ctx, _dtypes.int32)
+  _attr_T, (x,) = args_to_matching_eager([x], _ctx)
+  _attr_Tperm, (perm,) = args_to_matching_eager([perm], _ctx, _dtypes.int32)
   _inputs_flat = [x, perm]
   _attrs = ("T", _attr_T, "Tperm", _attr_Tperm)
-  _result = _execute.execute(b"ConjugateTranspose", 1, inputs=_inputs_flat,
+  _result = execute(b"ConjugateTranspose", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ConjugateTranspose", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1145,14 +1186,14 @@ def const(value, dtype, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    value = _execute.make_tensor(value, "value")
-    dtype = _execute.make_type(dtype, "dtype")
+    value = make_tensor(value, "value")
+    dtype = make_type(dtype, "dtype")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Const", value=value, dtype=dtype, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("value", _op.get_attr("value"), "dtype", _op.get_attr("dtype"))
-    _execute.record_gradient(
+    record_gradient(
       "Const", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1179,13 +1220,13 @@ def const_eager_fallback(value, dtype, name=None, ctx=None):
   This is for function const
   """
   _ctx = ctx if ctx else _context.context()
-  value = _execute.make_tensor(value, "value")
-  dtype = _execute.make_type(dtype, "dtype")
+  value = make_tensor(value, "value")
+  dtype = make_type(dtype, "dtype")
   _inputs_flat = []
   _attrs = ("value", value, "dtype", dtype)
-  _result = _execute.execute(b"Const", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Const", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Const", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1212,7 +1253,7 @@ def debug_gradient_identity(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "DebugGradientIdentity", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1239,12 +1280,12 @@ def debug_gradient_identity_eager_fallback(input, name=None, ctx=None):
   This is for function debug_gradient_identity
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"DebugGradientIdentity", 1, inputs=_inputs_flat,
+  _result = execute(b"DebugGradientIdentity", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "DebugGradientIdentity", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1271,7 +1312,7 @@ def debug_gradient_ref_identity(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "DebugGradientRefIdentity", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1299,7 +1340,7 @@ def deep_copy(x, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "DeepCopy", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1326,12 +1367,12 @@ def deep_copy_eager_fallback(x, name=None, ctx=None):
   This is for function deep_copy
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
+  _attr_T, (x,) = args_to_matching_eager([x], _ctx)
   _inputs_flat = [x]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"DeepCopy", 1, inputs=_inputs_flat,
+  _result = execute(b"DeepCopy", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "DeepCopy", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1442,10 +1483,10 @@ def depth_to_space(input, block_size, data_format="NHWC", name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    block_size = _execute.make_int(block_size, "block_size")
+    block_size = make_int(block_size, "block_size")
     if data_format is None:
       data_format = "NHWC"
-    data_format = _execute.make_str(data_format, "data_format")
+    data_format = make_str(data_format, "data_format")
     _, _, _op = _op_def_lib._apply_op_helper(
         "DepthToSpace", input=input, block_size=block_size,
         data_format=data_format, name=name)
@@ -1454,7 +1495,7 @@ def depth_to_space(input, block_size, data_format="NHWC", name=None):
     _attrs = ("T", _op.get_attr("T"), "block_size",
               _op.get_attr("block_size"), "data_format",
               _op.get_attr("data_format"))
-    _execute.record_gradient(
+    record_gradient(
       "DepthToSpace", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1483,17 +1524,17 @@ def depth_to_space_eager_fallback(input, block_size, data_format="NHWC", name=No
   This is for function depth_to_space
   """
   _ctx = ctx if ctx else _context.context()
-  block_size = _execute.make_int(block_size, "block_size")
+  block_size = make_int(block_size, "block_size")
   if data_format is None:
     data_format = "NHWC"
-  data_format = _execute.make_str(data_format, "data_format")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  data_format = make_str(data_format, "data_format")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T, "block_size", block_size, "data_format",
   data_format)
-  _result = _execute.execute(b"DepthToSpace", 1, inputs=_inputs_flat,
+  _result = execute(b"DepthToSpace", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "DepthToSpace", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1594,14 +1635,14 @@ def dequantize(input, min_range, max_range, mode="MIN_COMBINED", name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if mode is None:
       mode = "MIN_COMBINED"
-    mode = _execute.make_str(mode, "mode")
+    mode = make_str(mode, "mode")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Dequantize", input=input, min_range=min_range, max_range=max_range,
         mode=mode, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "mode", _op.get_attr("mode"))
-    _execute.record_gradient(
+    record_gradient(
       "Dequantize", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1631,15 +1672,15 @@ def dequantize_eager_fallback(input, min_range, max_range, mode="MIN_COMBINED", 
   _ctx = ctx if ctx else _context.context()
   if mode is None:
     mode = "MIN_COMBINED"
-  mode = _execute.make_str(mode, "mode")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  mode = make_str(mode, "mode")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   min_range = _ops.convert_to_tensor(min_range, _dtypes.float32)
   max_range = _ops.convert_to_tensor(max_range, _dtypes.float32)
   _inputs_flat = [input, min_range, max_range]
   _attrs = ("T", _attr_T, "mode", mode)
-  _result = _execute.execute(b"Dequantize", 1, inputs=_inputs_flat,
+  _result = execute(b"Dequantize", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Dequantize", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1683,7 +1724,7 @@ def diag(diagonal, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Diag", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1710,12 +1751,12 @@ def diag_eager_fallback(diagonal, name=None, ctx=None):
   This is for function diag
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (diagonal,) = _execute.args_to_matching_eager([diagonal], _ctx)
+  _attr_T, (diagonal,) = args_to_matching_eager([diagonal], _ctx)
   _inputs_flat = [diagonal]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Diag", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Diag", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Diag", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1760,7 +1801,7 @@ def diag_part(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "DiagPart", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1787,12 +1828,12 @@ def diag_part_eager_fallback(input, name=None, ctx=None):
   This is for function diag_part
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"DiagPart", 1, inputs=_inputs_flat,
+  _result = execute(b"DiagPart", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "DiagPart", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1838,7 +1879,7 @@ def edit_distance(hypothesis_indices, hypothesis_values, hypothesis_shape, truth
   if _ctx is None or not _ctx._eager_context.is_eager:
     if normalize is None:
       normalize = True
-    normalize = _execute.make_bool(normalize, "normalize")
+    normalize = make_bool(normalize, "normalize")
     _, _, _op = _op_def_lib._apply_op_helper(
         "EditDistance", hypothesis_indices=hypothesis_indices,
         hypothesis_values=hypothesis_values,
@@ -1848,7 +1889,7 @@ def edit_distance(hypothesis_indices, hypothesis_values, hypothesis_shape, truth
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("normalize", _op.get_attr("normalize"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "EditDistance", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1881,8 +1922,8 @@ def edit_distance_eager_fallback(hypothesis_indices, hypothesis_values, hypothes
   _ctx = ctx if ctx else _context.context()
   if normalize is None:
     normalize = True
-  normalize = _execute.make_bool(normalize, "normalize")
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([hypothesis_values, truth_values], _ctx)
+  normalize = make_bool(normalize, "normalize")
+  _attr_T, _inputs_T = args_to_matching_eager([hypothesis_values, truth_values], _ctx)
   (hypothesis_values, truth_values) = _inputs_T
   hypothesis_indices = _ops.convert_to_tensor(hypothesis_indices, _dtypes.int64)
   hypothesis_shape = _ops.convert_to_tensor(hypothesis_shape, _dtypes.int64)
@@ -1890,9 +1931,9 @@ def edit_distance_eager_fallback(hypothesis_indices, hypothesis_values, hypothes
   truth_shape = _ops.convert_to_tensor(truth_shape, _dtypes.int64)
   _inputs_flat = [hypothesis_indices, hypothesis_values, hypothesis_shape, truth_indices, truth_values, truth_shape]
   _attrs = ("normalize", normalize, "T", _attr_T)
-  _result = _execute.execute(b"EditDistance", 1, inputs=_inputs_flat,
+  _result = execute(b"EditDistance", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "EditDistance", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1916,16 +1957,16 @@ This operation creates a tensor of `shape` and `dtype`.
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if init is None:
       init = False
-    init = _execute.make_bool(init, "init")
+    init = make_bool(init, "init")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Empty", shape=shape, dtype=dtype, init=init, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "init", _op.get_attr("init"))
-    _execute.record_gradient(
+    record_gradient(
       "Empty", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1952,16 +1993,16 @@ def empty_eager_fallback(shape, dtype, init=False, name=None, ctx=None):
   This is for function empty
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   if init is None:
     init = False
-  init = _execute.make_bool(init, "init")
+  init = make_bool(init, "init")
   shape = _ops.convert_to_tensor(shape, _dtypes.int32)
   _inputs_flat = [shape]
   _attrs = ("dtype", dtype, "init", init)
-  _result = _execute.execute(b"Empty", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Empty", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Empty", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1984,13 +2025,13 @@ def ensure_shape(input, shape, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    shape = _execute.make_shape(shape, "shape")
+    shape = make_shape(shape, "shape")
     _, _, _op = _op_def_lib._apply_op_helper(
         "EnsureShape", input=input, shape=shape, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("shape", _op.get_attr("shape"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "EnsureShape", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2017,13 +2058,13 @@ def ensure_shape_eager_fallback(input, shape, name=None, ctx=None):
   This is for function ensure_shape
   """
   _ctx = ctx if ctx else _context.context()
-  shape = _execute.make_shape(shape, "shape")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  shape = make_shape(shape, "shape")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("shape", shape, "T", _attr_T)
-  _result = _execute.execute(b"EnsureShape", 1, inputs=_inputs_flat,
+  _result = execute(b"EnsureShape", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "EnsureShape", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2081,7 +2122,7 @@ def expand_dims(input, axis, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tdim", _op.get_attr("Tdim"))
-    _execute.record_gradient(
+    record_gradient(
       "ExpandDims", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2108,13 +2149,13 @@ def expand_dims_eager_fallback(input, axis, name=None, ctx=None):
   This is for function expand_dims
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tdim, (axis,) = _execute.args_to_matching_eager([axis], _ctx, _dtypes.int32)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tdim, (axis,) = args_to_matching_eager([axis], _ctx, _dtypes.int32)
   _inputs_flat = [input, axis]
   _attrs = ("T", _attr_T, "Tdim", _attr_Tdim)
-  _result = _execute.execute(b"ExpandDims", 1, inputs=_inputs_flat,
+  _result = execute(b"ExpandDims", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ExpandDims", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2161,18 +2202,18 @@ def extract_image_patches(images, ksizes, strides, rates, padding, name=None):
       raise TypeError(
           "Expected list for 'ksizes' argument to "
           "'extract_image_patches' Op, not %r." % ksizes)
-    ksizes = [_execute.make_int(_i, "ksizes") for _i in ksizes]
+    ksizes = [make_int(_i, "ksizes") for _i in ksizes]
     if not isinstance(strides, (list, tuple)):
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'extract_image_patches' Op, not %r." % strides)
-    strides = [_execute.make_int(_i, "strides") for _i in strides]
+    strides = [make_int(_i, "strides") for _i in strides]
     if not isinstance(rates, (list, tuple)):
       raise TypeError(
           "Expected list for 'rates' argument to "
           "'extract_image_patches' Op, not %r." % rates)
-    rates = [_execute.make_int(_i, "rates") for _i in rates]
-    padding = _execute.make_str(padding, "padding")
+    rates = [make_int(_i, "rates") for _i in rates]
+    padding = make_str(padding, "padding")
     _, _, _op = _op_def_lib._apply_op_helper(
         "ExtractImagePatches", images=images, ksizes=ksizes, strides=strides,
         rates=rates, padding=padding, name=name)
@@ -2181,7 +2222,7 @@ def extract_image_patches(images, ksizes, strides, rates, padding, name=None):
     _attrs = ("ksizes", _op.get_attr("ksizes"), "strides",
               _op.get_attr("strides"), "rates", _op.get_attr("rates"), "T",
               _op.get_attr("T"), "padding", _op.get_attr("padding"))
-    _execute.record_gradient(
+    record_gradient(
       "ExtractImagePatches", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2215,25 +2256,25 @@ def extract_image_patches_eager_fallback(images, ksizes, strides, rates, padding
     raise TypeError(
         "Expected list for 'ksizes' argument to "
         "'extract_image_patches' Op, not %r." % ksizes)
-  ksizes = [_execute.make_int(_i, "ksizes") for _i in ksizes]
+  ksizes = [make_int(_i, "ksizes") for _i in ksizes]
   if not isinstance(strides, (list, tuple)):
     raise TypeError(
         "Expected list for 'strides' argument to "
         "'extract_image_patches' Op, not %r." % strides)
-  strides = [_execute.make_int(_i, "strides") for _i in strides]
+  strides = [make_int(_i, "strides") for _i in strides]
   if not isinstance(rates, (list, tuple)):
     raise TypeError(
         "Expected list for 'rates' argument to "
         "'extract_image_patches' Op, not %r." % rates)
-  rates = [_execute.make_int(_i, "rates") for _i in rates]
-  padding = _execute.make_str(padding, "padding")
-  _attr_T, (images,) = _execute.args_to_matching_eager([images], _ctx)
+  rates = [make_int(_i, "rates") for _i in rates]
+  padding = make_str(padding, "padding")
+  _attr_T, (images,) = args_to_matching_eager([images], _ctx)
   _inputs_flat = [images]
   _attrs = ("ksizes", ksizes, "strides", strides, "rates", rates, "T",
   _attr_T, "padding", padding)
-  _result = _execute.execute(b"ExtractImagePatches", 1, inputs=_inputs_flat,
+  _result = execute(b"ExtractImagePatches", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ExtractImagePatches", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2272,13 +2313,13 @@ dimension. 3D extension of `extract_image_patches`.
       raise TypeError(
           "Expected list for 'ksizes' argument to "
           "'extract_volume_patches' Op, not %r." % ksizes)
-    ksizes = [_execute.make_int(_i, "ksizes") for _i in ksizes]
+    ksizes = [make_int(_i, "ksizes") for _i in ksizes]
     if not isinstance(strides, (list, tuple)):
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'extract_volume_patches' Op, not %r." % strides)
-    strides = [_execute.make_int(_i, "strides") for _i in strides]
-    padding = _execute.make_str(padding, "padding")
+    strides = [make_int(_i, "strides") for _i in strides]
+    padding = make_str(padding, "padding")
     _, _, _op = _op_def_lib._apply_op_helper(
         "ExtractVolumePatches", input=input, ksizes=ksizes, strides=strides,
         padding=padding, name=name)
@@ -2287,7 +2328,7 @@ dimension. 3D extension of `extract_image_patches`.
     _attrs = ("ksizes", _op.get_attr("ksizes"), "strides",
               _op.get_attr("strides"), "T", _op.get_attr("T"), "padding",
               _op.get_attr("padding"))
-    _execute.record_gradient(
+    record_gradient(
       "ExtractVolumePatches", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2320,20 +2361,20 @@ def extract_volume_patches_eager_fallback(input, ksizes, strides, padding, name=
     raise TypeError(
         "Expected list for 'ksizes' argument to "
         "'extract_volume_patches' Op, not %r." % ksizes)
-  ksizes = [_execute.make_int(_i, "ksizes") for _i in ksizes]
+  ksizes = [make_int(_i, "ksizes") for _i in ksizes]
   if not isinstance(strides, (list, tuple)):
     raise TypeError(
         "Expected list for 'strides' argument to "
         "'extract_volume_patches' Op, not %r." % strides)
-  strides = [_execute.make_int(_i, "strides") for _i in strides]
-  padding = _execute.make_str(padding, "padding")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  strides = [make_int(_i, "strides") for _i in strides]
+  padding = make_str(padding, "padding")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("ksizes", ksizes, "strides", strides, "T", _attr_T, "padding",
   padding)
-  _result = _execute.execute(b"ExtractVolumePatches", 1, inputs=_inputs_flat,
+  _result = execute(b"ExtractVolumePatches", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ExtractVolumePatches", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2367,16 +2408,16 @@ def fake_quant_with_min_max_args(inputs, min=-6, max=6, num_bits=8, narrow_range
   if _ctx is None or not _ctx._eager_context.is_eager:
     if min is None:
       min = -6
-    min = _execute.make_float(min, "min")
+    min = make_float(min, "min")
     if max is None:
       max = 6
-    max = _execute.make_float(max, "max")
+    max = make_float(max, "max")
     if num_bits is None:
       num_bits = 8
-    num_bits = _execute.make_int(num_bits, "num_bits")
+    num_bits = make_int(num_bits, "num_bits")
     if narrow_range is None:
       narrow_range = False
-    narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+    narrow_range = make_bool(narrow_range, "narrow_range")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FakeQuantWithMinMaxArgs", inputs=inputs, min=min, max=max,
         num_bits=num_bits, narrow_range=narrow_range, name=name)
@@ -2385,7 +2426,7 @@ def fake_quant_with_min_max_args(inputs, min=-6, max=6, num_bits=8, narrow_range
     _attrs = ("min", _op.get_attr("min"), "max", _op.get_attr("max"),
               "num_bits", _op.get_attr("num_bits"), "narrow_range",
               _op.get_attr("narrow_range"))
-    _execute.record_gradient(
+    record_gradient(
       "FakeQuantWithMinMaxArgs", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2417,24 +2458,24 @@ def fake_quant_with_min_max_args_eager_fallback(inputs, min=-6, max=6, num_bits=
   _ctx = ctx if ctx else _context.context()
   if min is None:
     min = -6
-  min = _execute.make_float(min, "min")
+  min = make_float(min, "min")
   if max is None:
     max = 6
-  max = _execute.make_float(max, "max")
+  max = make_float(max, "max")
   if num_bits is None:
     num_bits = 8
-  num_bits = _execute.make_int(num_bits, "num_bits")
+  num_bits = make_int(num_bits, "num_bits")
   if narrow_range is None:
     narrow_range = False
-  narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+  narrow_range = make_bool(narrow_range, "narrow_range")
   inputs = _ops.convert_to_tensor(inputs, _dtypes.float32)
   _inputs_flat = [inputs]
   _attrs = ("min", min, "max", max, "num_bits", num_bits, "narrow_range",
   narrow_range)
-  _result = _execute.execute(b"FakeQuantWithMinMaxArgs", 1,
+  _result = execute(b"FakeQuantWithMinMaxArgs", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "FakeQuantWithMinMaxArgs", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2463,16 +2504,16 @@ def fake_quant_with_min_max_args_gradient(gradients, inputs, min=-6, max=6, num_
   if _ctx is None or not _ctx._eager_context.is_eager:
     if min is None:
       min = -6
-    min = _execute.make_float(min, "min")
+    min = make_float(min, "min")
     if max is None:
       max = 6
-    max = _execute.make_float(max, "max")
+    max = make_float(max, "max")
     if num_bits is None:
       num_bits = 8
-    num_bits = _execute.make_int(num_bits, "num_bits")
+    num_bits = make_int(num_bits, "num_bits")
     if narrow_range is None:
       narrow_range = False
-    narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+    narrow_range = make_bool(narrow_range, "narrow_range")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FakeQuantWithMinMaxArgsGradient", gradients=gradients, inputs=inputs,
         min=min, max=max, num_bits=num_bits, narrow_range=narrow_range,
@@ -2482,7 +2523,7 @@ def fake_quant_with_min_max_args_gradient(gradients, inputs, min=-6, max=6, num_
     _attrs = ("min", _op.get_attr("min"), "max", _op.get_attr("max"),
               "num_bits", _op.get_attr("num_bits"), "narrow_range",
               _op.get_attr("narrow_range"))
-    _execute.record_gradient(
+    record_gradient(
       "FakeQuantWithMinMaxArgsGradient", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2514,25 +2555,25 @@ def fake_quant_with_min_max_args_gradient_eager_fallback(gradients, inputs, min=
   _ctx = ctx if ctx else _context.context()
   if min is None:
     min = -6
-  min = _execute.make_float(min, "min")
+  min = make_float(min, "min")
   if max is None:
     max = 6
-  max = _execute.make_float(max, "max")
+  max = make_float(max, "max")
   if num_bits is None:
     num_bits = 8
-  num_bits = _execute.make_int(num_bits, "num_bits")
+  num_bits = make_int(num_bits, "num_bits")
   if narrow_range is None:
     narrow_range = False
-  narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+  narrow_range = make_bool(narrow_range, "narrow_range")
   gradients = _ops.convert_to_tensor(gradients, _dtypes.float32)
   inputs = _ops.convert_to_tensor(inputs, _dtypes.float32)
   _inputs_flat = [gradients, inputs]
   _attrs = ("min", min, "max", max, "num_bits", num_bits, "narrow_range",
   narrow_range)
-  _result = _execute.execute(b"FakeQuantWithMinMaxArgsGradient", 1,
+  _result = execute(b"FakeQuantWithMinMaxArgsGradient", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "FakeQuantWithMinMaxArgsGradient", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2569,10 +2610,10 @@ def fake_quant_with_min_max_vars(inputs, min, max, num_bits=8, narrow_range=Fals
   if _ctx is None or not _ctx._eager_context.is_eager:
     if num_bits is None:
       num_bits = 8
-    num_bits = _execute.make_int(num_bits, "num_bits")
+    num_bits = make_int(num_bits, "num_bits")
     if narrow_range is None:
       narrow_range = False
-    narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+    narrow_range = make_bool(narrow_range, "narrow_range")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FakeQuantWithMinMaxVars", inputs=inputs, min=min, max=max,
         num_bits=num_bits, narrow_range=narrow_range, name=name)
@@ -2580,7 +2621,7 @@ def fake_quant_with_min_max_vars(inputs, min, max, num_bits=8, narrow_range=Fals
     _inputs_flat = _op.inputs
     _attrs = ("num_bits", _op.get_attr("num_bits"), "narrow_range",
               _op.get_attr("narrow_range"))
-    _execute.record_gradient(
+    record_gradient(
       "FakeQuantWithMinMaxVars", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2611,19 +2652,19 @@ def fake_quant_with_min_max_vars_eager_fallback(inputs, min, max, num_bits=8, na
   _ctx = ctx if ctx else _context.context()
   if num_bits is None:
     num_bits = 8
-  num_bits = _execute.make_int(num_bits, "num_bits")
+  num_bits = make_int(num_bits, "num_bits")
   if narrow_range is None:
     narrow_range = False
-  narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+  narrow_range = make_bool(narrow_range, "narrow_range")
   inputs = _ops.convert_to_tensor(inputs, _dtypes.float32)
   min = _ops.convert_to_tensor(min, _dtypes.float32)
   max = _ops.convert_to_tensor(max, _dtypes.float32)
   _inputs_flat = [inputs, min, max]
   _attrs = ("num_bits", num_bits, "narrow_range", narrow_range)
-  _result = _execute.execute(b"FakeQuantWithMinMaxVars", 1,
+  _result = execute(b"FakeQuantWithMinMaxVars", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "FakeQuantWithMinMaxVars", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2667,10 +2708,10 @@ def fake_quant_with_min_max_vars_gradient(gradients, inputs, min, max, num_bits=
   if _ctx is None or not _ctx._eager_context.is_eager:
     if num_bits is None:
       num_bits = 8
-    num_bits = _execute.make_int(num_bits, "num_bits")
+    num_bits = make_int(num_bits, "num_bits")
     if narrow_range is None:
       narrow_range = False
-    narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+    narrow_range = make_bool(narrow_range, "narrow_range")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FakeQuantWithMinMaxVarsGradient", gradients=gradients, inputs=inputs,
         min=min, max=max, num_bits=num_bits, narrow_range=narrow_range,
@@ -2679,7 +2720,7 @@ def fake_quant_with_min_max_vars_gradient(gradients, inputs, min, max, num_bits=
     _inputs_flat = _op.inputs
     _attrs = ("num_bits", _op.get_attr("num_bits"), "narrow_range",
               _op.get_attr("narrow_range"))
-    _execute.record_gradient(
+    record_gradient(
       "FakeQuantWithMinMaxVarsGradient", _inputs_flat, _attrs, _result, name)
     _result = _FakeQuantWithMinMaxVarsGradientOutput._make(_result)
     return _result
@@ -2712,20 +2753,20 @@ def fake_quant_with_min_max_vars_gradient_eager_fallback(gradients, inputs, min,
   _ctx = ctx if ctx else _context.context()
   if num_bits is None:
     num_bits = 8
-  num_bits = _execute.make_int(num_bits, "num_bits")
+  num_bits = make_int(num_bits, "num_bits")
   if narrow_range is None:
     narrow_range = False
-  narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+  narrow_range = make_bool(narrow_range, "narrow_range")
   gradients = _ops.convert_to_tensor(gradients, _dtypes.float32)
   inputs = _ops.convert_to_tensor(inputs, _dtypes.float32)
   min = _ops.convert_to_tensor(min, _dtypes.float32)
   max = _ops.convert_to_tensor(max, _dtypes.float32)
   _inputs_flat = [gradients, inputs, min, max]
   _attrs = ("num_bits", num_bits, "narrow_range", narrow_range)
-  _result = _execute.execute(b"FakeQuantWithMinMaxVarsGradient", 3,
+  _result = execute(b"FakeQuantWithMinMaxVarsGradient", 3,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "FakeQuantWithMinMaxVarsGradient", _inputs_flat, _attrs, _result, name)
   _result = _FakeQuantWithMinMaxVarsGradientOutput._make(_result)
   return _result
@@ -2763,10 +2804,10 @@ def fake_quant_with_min_max_vars_per_channel(inputs, min, max, num_bits=8, narro
   if _ctx is None or not _ctx._eager_context.is_eager:
     if num_bits is None:
       num_bits = 8
-    num_bits = _execute.make_int(num_bits, "num_bits")
+    num_bits = make_int(num_bits, "num_bits")
     if narrow_range is None:
       narrow_range = False
-    narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+    narrow_range = make_bool(narrow_range, "narrow_range")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FakeQuantWithMinMaxVarsPerChannel", inputs=inputs, min=min, max=max,
         num_bits=num_bits, narrow_range=narrow_range, name=name)
@@ -2774,7 +2815,7 @@ def fake_quant_with_min_max_vars_per_channel(inputs, min, max, num_bits=8, narro
     _inputs_flat = _op.inputs
     _attrs = ("num_bits", _op.get_attr("num_bits"), "narrow_range",
               _op.get_attr("narrow_range"))
-    _execute.record_gradient(
+    record_gradient(
       "FakeQuantWithMinMaxVarsPerChannel", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2806,19 +2847,19 @@ def fake_quant_with_min_max_vars_per_channel_eager_fallback(inputs, min, max, nu
   _ctx = ctx if ctx else _context.context()
   if num_bits is None:
     num_bits = 8
-  num_bits = _execute.make_int(num_bits, "num_bits")
+  num_bits = make_int(num_bits, "num_bits")
   if narrow_range is None:
     narrow_range = False
-  narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+  narrow_range = make_bool(narrow_range, "narrow_range")
   inputs = _ops.convert_to_tensor(inputs, _dtypes.float32)
   min = _ops.convert_to_tensor(min, _dtypes.float32)
   max = _ops.convert_to_tensor(max, _dtypes.float32)
   _inputs_flat = [inputs, min, max]
   _attrs = ("num_bits", num_bits, "narrow_range", narrow_range)
-  _result = _execute.execute(b"FakeQuantWithMinMaxVarsPerChannel", 1,
+  _result = execute(b"FakeQuantWithMinMaxVarsPerChannel", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "FakeQuantWithMinMaxVarsPerChannel", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2864,10 +2905,10 @@ def fake_quant_with_min_max_vars_per_channel_gradient(gradients, inputs, min, ma
   if _ctx is None or not _ctx._eager_context.is_eager:
     if num_bits is None:
       num_bits = 8
-    num_bits = _execute.make_int(num_bits, "num_bits")
+    num_bits = make_int(num_bits, "num_bits")
     if narrow_range is None:
       narrow_range = False
-    narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+    narrow_range = make_bool(narrow_range, "narrow_range")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FakeQuantWithMinMaxVarsPerChannelGradient", gradients=gradients,
         inputs=inputs, min=min, max=max, num_bits=num_bits,
@@ -2876,7 +2917,7 @@ def fake_quant_with_min_max_vars_per_channel_gradient(gradients, inputs, min, ma
     _inputs_flat = _op.inputs
     _attrs = ("num_bits", _op.get_attr("num_bits"), "narrow_range",
               _op.get_attr("narrow_range"))
-    _execute.record_gradient(
+    record_gradient(
       "FakeQuantWithMinMaxVarsPerChannelGradient", _inputs_flat, _attrs, _result, name)
     _result = _FakeQuantWithMinMaxVarsPerChannelGradientOutput._make(_result)
     return _result
@@ -2909,20 +2950,20 @@ def fake_quant_with_min_max_vars_per_channel_gradient_eager_fallback(gradients, 
   _ctx = ctx if ctx else _context.context()
   if num_bits is None:
     num_bits = 8
-  num_bits = _execute.make_int(num_bits, "num_bits")
+  num_bits = make_int(num_bits, "num_bits")
   if narrow_range is None:
     narrow_range = False
-  narrow_range = _execute.make_bool(narrow_range, "narrow_range")
+  narrow_range = make_bool(narrow_range, "narrow_range")
   gradients = _ops.convert_to_tensor(gradients, _dtypes.float32)
   inputs = _ops.convert_to_tensor(inputs, _dtypes.float32)
   min = _ops.convert_to_tensor(min, _dtypes.float32)
   max = _ops.convert_to_tensor(max, _dtypes.float32)
   _inputs_flat = [gradients, inputs, min, max]
   _attrs = ("num_bits", num_bits, "narrow_range", narrow_range)
-  _result = _execute.execute(b"FakeQuantWithMinMaxVarsPerChannelGradient", 3,
+  _result = execute(b"FakeQuantWithMinMaxVarsPerChannelGradient", 3,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "FakeQuantWithMinMaxVarsPerChannelGradient", _inputs_flat, _attrs, _result, name)
   _result = _FakeQuantWithMinMaxVarsPerChannelGradientOutput._make(_result)
   return _result
@@ -2973,7 +3014,7 @@ def fill(dims, value, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "index_type",
               _op.get_attr("index_type"))
-    _execute.record_gradient(
+    record_gradient(
       "Fill", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3000,13 +3041,13 @@ def fill_eager_fallback(dims, value, name=None, ctx=None):
   This is for function fill
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
-  _attr_index_type, (dims,) = _execute.args_to_matching_eager([dims], _ctx, _dtypes.int32)
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
+  _attr_index_type, (dims,) = args_to_matching_eager([dims], _ctx, _dtypes.int32)
   _inputs_flat = [dims, value]
   _attrs = ("T", _attr_T, "index_type", _attr_index_type)
-  _result = _execute.execute(b"Fill", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Fill", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Fill", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3054,7 +3095,7 @@ def gather(params, indices, validate_indices=True, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if validate_indices is None:
       validate_indices = True
-    validate_indices = _execute.make_bool(validate_indices, "validate_indices")
+    validate_indices = make_bool(validate_indices, "validate_indices")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Gather", params=params, indices=indices,
         validate_indices=validate_indices, name=name)
@@ -3062,7 +3103,7 @@ def gather(params, indices, validate_indices=True, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("validate_indices", _op.get_attr("validate_indices"), "Tparams",
               _op.get_attr("Tparams"), "Tindices", _op.get_attr("Tindices"))
-    _execute.record_gradient(
+    record_gradient(
       "Gather", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3093,15 +3134,15 @@ def gather_eager_fallback(params, indices, validate_indices=True, name=None, ctx
   _ctx = ctx if ctx else _context.context()
   if validate_indices is None:
     validate_indices = True
-  validate_indices = _execute.make_bool(validate_indices, "validate_indices")
-  _attr_Tparams, (params,) = _execute.args_to_matching_eager([params], _ctx)
-  _attr_Tindices, (indices,) = _execute.args_to_matching_eager([indices], _ctx)
+  validate_indices = make_bool(validate_indices, "validate_indices")
+  _attr_Tparams, (params,) = args_to_matching_eager([params], _ctx)
+  _attr_Tindices, (indices,) = args_to_matching_eager([indices], _ctx)
   _inputs_flat = [params, indices]
   _attrs = ("validate_indices", validate_indices, "Tparams", _attr_Tparams,
   "Tindices", _attr_Tindices)
-  _result = _execute.execute(b"Gather", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Gather", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Gather", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3234,7 +3275,7 @@ def gather_nd(params, indices, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("Tparams", _op.get_attr("Tparams"), "Tindices",
               _op.get_attr("Tindices"))
-    _execute.record_gradient(
+    record_gradient(
       "GatherNd", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3261,13 +3302,13 @@ def gather_nd_eager_fallback(params, indices, name=None, ctx=None):
   This is for function gather_nd
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_Tparams, (params,) = _execute.args_to_matching_eager([params], _ctx)
-  _attr_Tindices, (indices,) = _execute.args_to_matching_eager([indices], _ctx)
+  _attr_Tparams, (params,) = args_to_matching_eager([params], _ctx)
+  _attr_Tindices, (indices,) = args_to_matching_eager([indices], _ctx)
   _inputs_flat = [params, indices]
   _attrs = ("Tparams", _attr_Tparams, "Tindices", _attr_Tindices)
-  _result = _execute.execute(b"GatherNd", 1, inputs=_inputs_flat,
+  _result = execute(b"GatherNd", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "GatherNd", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3326,7 +3367,7 @@ def gather_v2(params, indices, axis, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("Tparams", _op.get_attr("Tparams"), "Tindices",
               _op.get_attr("Tindices"), "Taxis", _op.get_attr("Taxis"))
-    _execute.record_gradient(
+    record_gradient(
       "GatherV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3353,15 +3394,15 @@ def gather_v2_eager_fallback(params, indices, axis, name=None, ctx=None):
   This is for function gather_v2
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_Tparams, (params,) = _execute.args_to_matching_eager([params], _ctx)
-  _attr_Tindices, (indices,) = _execute.args_to_matching_eager([indices], _ctx)
-  _attr_Taxis, (axis,) = _execute.args_to_matching_eager([axis], _ctx)
+  _attr_Tparams, (params,) = args_to_matching_eager([params], _ctx)
+  _attr_Tindices, (indices,) = args_to_matching_eager([indices], _ctx)
+  _attr_Taxis, (axis,) = args_to_matching_eager([axis], _ctx)
   _inputs_flat = [params, indices, axis]
   _attrs = ("Tparams", _attr_Tparams, "Tindices", _attr_Tindices, "Taxis",
   _attr_Taxis)
-  _result = _execute.execute(b"GatherV2", 1, inputs=_inputs_flat,
+  _result = execute(b"GatherV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "GatherV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3392,7 +3433,7 @@ def guarantee_const(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "GuaranteeConst", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3419,12 +3460,12 @@ def guarantee_const_eager_fallback(input, name=None, ctx=None):
   This is for function guarantee_const
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"GuaranteeConst", 1, inputs=_inputs_flat,
+  _result = execute(b"GuaranteeConst", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "GuaranteeConst", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3447,7 +3488,7 @@ def identity(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Identity", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3474,12 +3515,12 @@ def identity_eager_fallback(input, name=None, ctx=None):
   This is for function identity
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Identity", 1, inputs=_inputs_flat,
+  _result = execute(b"Identity", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Identity", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3519,7 +3560,7 @@ def identity_n(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "IdentityN", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -3545,12 +3586,12 @@ def identity_n_eager_fallback(input, name=None, ctx=None):
   This is for function identity_n
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, input = _execute.convert_to_mixed_eager_tensors(input, _ctx)
+  _attr_T, input = convert_to_mixed_eager_tensors(input, _ctx)
   _inputs_flat = list(input)
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"IdentityN", len(input), inputs=_inputs_flat,
+  _result = execute(b"IdentityN", len(input), inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "IdentityN", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -3573,9 +3614,9 @@ def immutable_const(dtype, shape, memory_region_name, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
-    shape = _execute.make_shape(shape, "shape")
-    memory_region_name = _execute.make_str(memory_region_name, "memory_region_name")
+    dtype = make_type(dtype, "dtype")
+    shape = make_shape(shape, "shape")
+    memory_region_name = make_str(memory_region_name, "memory_region_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "ImmutableConst", dtype=dtype, shape=shape,
         memory_region_name=memory_region_name, name=name)
@@ -3583,7 +3624,7 @@ def immutable_const(dtype, shape, memory_region_name, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "shape", _op.get_attr("shape"),
               "memory_region_name", _op.get_attr("memory_region_name"))
-    _execute.record_gradient(
+    record_gradient(
       "ImmutableConst", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3612,15 +3653,15 @@ def immutable_const_eager_fallback(dtype, shape, memory_region_name, name=None, 
   This is for function immutable_const
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
-  shape = _execute.make_shape(shape, "shape")
-  memory_region_name = _execute.make_str(memory_region_name, "memory_region_name")
+  dtype = make_type(dtype, "dtype")
+  shape = make_shape(shape, "shape")
+  memory_region_name = make_str(memory_region_name, "memory_region_name")
   _inputs_flat = []
   _attrs = ("dtype", dtype, "shape", shape, "memory_region_name",
   memory_region_name)
-  _result = _execute.execute(b"ImmutableConst", 1, inputs=_inputs_flat,
+  _result = execute(b"ImmutableConst", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ImmutableConst", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3649,7 +3690,7 @@ def inplace_add(x, i, v, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "InplaceAdd", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3676,14 +3717,14 @@ def inplace_add_eager_fallback(x, i, v, name=None, ctx=None):
   This is for function inplace_add
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([x, v], _ctx)
+  _attr_T, _inputs_T = args_to_matching_eager([x, v], _ctx)
   (x, v) = _inputs_T
   i = _ops.convert_to_tensor(i, _dtypes.int32)
   _inputs_flat = [x, i, v]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"InplaceAdd", 1, inputs=_inputs_flat,
+  _result = execute(b"InplaceAdd", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "InplaceAdd", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3712,7 +3753,7 @@ def inplace_sub(x, i, v, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "InplaceSub", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3739,14 +3780,14 @@ def inplace_sub_eager_fallback(x, i, v, name=None, ctx=None):
   This is for function inplace_sub
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([x, v], _ctx)
+  _attr_T, _inputs_T = args_to_matching_eager([x, v], _ctx)
   (x, v) = _inputs_T
   i = _ops.convert_to_tensor(i, _dtypes.int32)
   _inputs_flat = [x, i, v]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"InplaceSub", 1, inputs=_inputs_flat,
+  _result = execute(b"InplaceSub", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "InplaceSub", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3775,7 +3816,7 @@ def inplace_update(x, i, v, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "InplaceUpdate", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3802,14 +3843,14 @@ def inplace_update_eager_fallback(x, i, v, name=None, ctx=None):
   This is for function inplace_update
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([x, v], _ctx)
+  _attr_T, _inputs_T = args_to_matching_eager([x, v], _ctx)
   (x, v) = _inputs_T
   i = _ops.convert_to_tensor(i, _dtypes.int32)
   _inputs_flat = [x, i, v]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"InplaceUpdate", 1, inputs=_inputs_flat,
+  _result = execute(b"InplaceUpdate", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "InplaceUpdate", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3850,7 +3891,7 @@ def invert_permutation(x, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "InvertPermutation", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3877,12 +3918,12 @@ def invert_permutation_eager_fallback(x, name=None, ctx=None):
   This is for function invert_permutation
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx, _dtypes.int32)
+  _attr_T, (x,) = args_to_matching_eager([x], _ctx, _dtypes.int32)
   _inputs_flat = [x]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"InvertPermutation", 1, inputs=_inputs_flat,
+  _result = execute(b"InvertPermutation", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "InvertPermutation", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3934,13 +3975,13 @@ def list_diff(x, y, out_idx=_dtypes.int32, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if out_idx is None:
       out_idx = _dtypes.int32
-    out_idx = _execute.make_type(out_idx, "out_idx")
+    out_idx = make_type(out_idx, "out_idx")
     _, _, _op = _op_def_lib._apply_op_helper(
         "ListDiff", x=x, y=y, out_idx=out_idx, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "out_idx", _op.get_attr("out_idx"))
-    _execute.record_gradient(
+    record_gradient(
       "ListDiff", _inputs_flat, _attrs, _result, name)
     _result = _ListDiffOutput._make(_result)
     return _result
@@ -3970,14 +4011,14 @@ def list_diff_eager_fallback(x, y, out_idx=_dtypes.int32, name=None, ctx=None):
   _ctx = ctx if ctx else _context.context()
   if out_idx is None:
     out_idx = _dtypes.int32
-  out_idx = _execute.make_type(out_idx, "out_idx")
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([x, y], _ctx)
+  out_idx = make_type(out_idx, "out_idx")
+  _attr_T, _inputs_T = args_to_matching_eager([x, y], _ctx)
   (x, y) = _inputs_T
   _inputs_flat = [x, y]
   _attrs = ("T", _attr_T, "out_idx", out_idx)
-  _result = _execute.execute(b"ListDiff", 2, inputs=_inputs_flat,
+  _result = execute(b"ListDiff", 2, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ListDiff", _inputs_flat, _attrs, _result, name)
   _result = _ListDiffOutput._make(_result)
   return _result
@@ -4019,14 +4060,14 @@ def lower_bound(sorted_inputs, values, out_type=_dtypes.int32, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if out_type is None:
       out_type = _dtypes.int32
-    out_type = _execute.make_type(out_type, "out_type")
+    out_type = make_type(out_type, "out_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "LowerBound", sorted_inputs=sorted_inputs, values=values,
         out_type=out_type, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "out_type", _op.get_attr("out_type"))
-    _execute.record_gradient(
+    record_gradient(
       "LowerBound", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4056,14 +4097,14 @@ def lower_bound_eager_fallback(sorted_inputs, values, out_type=_dtypes.int32, na
   _ctx = ctx if ctx else _context.context()
   if out_type is None:
     out_type = _dtypes.int32
-  out_type = _execute.make_type(out_type, "out_type")
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([sorted_inputs, values], _ctx)
+  out_type = make_type(out_type, "out_type")
+  _attr_T, _inputs_T = args_to_matching_eager([sorted_inputs, values], _ctx)
   (sorted_inputs, values) = _inputs_T
   _inputs_flat = [sorted_inputs, values]
   _attrs = ("T", _attr_T, "out_type", out_type)
-  _result = _execute.execute(b"LowerBound", 1, inputs=_inputs_flat,
+  _result = execute(b"LowerBound", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "LowerBound", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4135,7 +4176,7 @@ def matrix_band_part(input, num_lower, num_upper, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tindex", _op.get_attr("Tindex"))
-    _execute.record_gradient(
+    record_gradient(
       "MatrixBandPart", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4163,14 +4204,14 @@ def matrix_band_part_eager_fallback(input, num_lower, num_upper, name=None, ctx=
   This is for function matrix_band_part
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tindex, _inputs_Tindex = _execute.args_to_matching_eager([num_lower, num_upper], _ctx, _dtypes.int64)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tindex, _inputs_Tindex = args_to_matching_eager([num_lower, num_upper], _ctx, _dtypes.int64)
   (num_lower, num_upper) = _inputs_Tindex
   _inputs_flat = [input, num_lower, num_upper]
   _attrs = ("T", _attr_T, "Tindex", _attr_Tindex)
-  _result = _execute.execute(b"MatrixBandPart", 1, inputs=_inputs_flat,
+  _result = execute(b"MatrixBandPart", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MatrixBandPart", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4222,7 +4263,7 @@ def matrix_diag(diagonal, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "MatrixDiag", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4249,12 +4290,12 @@ def matrix_diag_eager_fallback(diagonal, name=None, ctx=None):
   This is for function matrix_diag
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (diagonal,) = _execute.args_to_matching_eager([diagonal], _ctx)
+  _attr_T, (diagonal,) = args_to_matching_eager([diagonal], _ctx)
   _inputs_flat = [diagonal]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"MatrixDiag", 1, inputs=_inputs_flat,
+  _result = execute(b"MatrixDiag", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MatrixDiag", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4308,7 +4349,7 @@ def matrix_diag_part(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "MatrixDiagPart", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4335,12 +4376,12 @@ def matrix_diag_part_eager_fallback(input, name=None, ctx=None):
   This is for function matrix_diag_part
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"MatrixDiagPart", 1, inputs=_inputs_flat,
+  _result = execute(b"MatrixDiagPart", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MatrixDiagPart", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4380,7 +4421,7 @@ def matrix_set_diag(input, diagonal, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "MatrixSetDiag", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4408,13 +4449,13 @@ def matrix_set_diag_eager_fallback(input, diagonal, name=None, ctx=None):
   This is for function matrix_set_diag
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([input, diagonal], _ctx)
+  _attr_T, _inputs_T = args_to_matching_eager([input, diagonal], _ctx)
   (input, diagonal) = _inputs_T
   _inputs_flat = [input, diagonal]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"MatrixSetDiag", 1, inputs=_inputs_flat,
+  _result = execute(b"MatrixSetDiag", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MatrixSetDiag", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4467,14 +4508,14 @@ def mirror_pad(input, paddings, mode, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    mode = _execute.make_str(mode, "mode")
+    mode = make_str(mode, "mode")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MirrorPad", input=input, paddings=paddings, mode=mode, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tpaddings", _op.get_attr("Tpaddings"),
               "mode", _op.get_attr("mode"))
-    _execute.record_gradient(
+    record_gradient(
       "MirrorPad", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4501,14 +4542,14 @@ def mirror_pad_eager_fallback(input, paddings, mode, name=None, ctx=None):
   This is for function mirror_pad
   """
   _ctx = ctx if ctx else _context.context()
-  mode = _execute.make_str(mode, "mode")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tpaddings, (paddings,) = _execute.args_to_matching_eager([paddings], _ctx, _dtypes.int32)
+  mode = make_str(mode, "mode")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tpaddings, (paddings,) = args_to_matching_eager([paddings], _ctx, _dtypes.int32)
   _inputs_flat = [input, paddings]
   _attrs = ("T", _attr_T, "Tpaddings", _attr_Tpaddings, "mode", mode)
-  _result = _execute.execute(b"MirrorPad", 1, inputs=_inputs_flat,
+  _result = execute(b"MirrorPad", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MirrorPad", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4550,14 +4591,14 @@ def mirror_pad_grad(input, paddings, mode, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    mode = _execute.make_str(mode, "mode")
+    mode = make_str(mode, "mode")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MirrorPadGrad", input=input, paddings=paddings, mode=mode, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tpaddings", _op.get_attr("Tpaddings"),
               "mode", _op.get_attr("mode"))
-    _execute.record_gradient(
+    record_gradient(
       "MirrorPadGrad", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4585,14 +4626,14 @@ def mirror_pad_grad_eager_fallback(input, paddings, mode, name=None, ctx=None):
   This is for function mirror_pad_grad
   """
   _ctx = ctx if ctx else _context.context()
-  mode = _execute.make_str(mode, "mode")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tpaddings, (paddings,) = _execute.args_to_matching_eager([paddings], _ctx, _dtypes.int32)
+  mode = make_str(mode, "mode")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tpaddings, (paddings,) = args_to_matching_eager([paddings], _ctx, _dtypes.int32)
   _inputs_flat = [input, paddings]
   _attrs = ("T", _attr_T, "Tpaddings", _attr_Tpaddings, "mode", mode)
-  _result = _execute.execute(b"MirrorPadGrad", 1, inputs=_inputs_flat,
+  _result = execute(b"MirrorPadGrad", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MirrorPadGrad", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4710,7 +4751,7 @@ def one_hot(indices, depth, on_value, off_value, axis=-1, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if axis is None:
       axis = -1
-    axis = _execute.make_int(axis, "axis")
+    axis = make_int(axis, "axis")
     _, _, _op = _op_def_lib._apply_op_helper(
         "OneHot", indices=indices, depth=depth, on_value=on_value,
         off_value=off_value, axis=axis, name=name)
@@ -4718,7 +4759,7 @@ def one_hot(indices, depth, on_value, off_value, axis=-1, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("axis", _op.get_attr("axis"), "T", _op.get_attr("T"), "TI",
               _op.get_attr("TI"))
-    _execute.record_gradient(
+    record_gradient(
       "OneHot", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4748,16 +4789,16 @@ def one_hot_eager_fallback(indices, depth, on_value, off_value, axis=-1, name=No
   _ctx = ctx if ctx else _context.context()
   if axis is None:
     axis = -1
-  axis = _execute.make_int(axis, "axis")
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([on_value, off_value], _ctx)
+  axis = make_int(axis, "axis")
+  _attr_T, _inputs_T = args_to_matching_eager([on_value, off_value], _ctx)
   (on_value, off_value) = _inputs_T
-  _attr_TI, (indices,) = _execute.args_to_matching_eager([indices], _ctx, _dtypes.int64)
+  _attr_TI, (indices,) = args_to_matching_eager([indices], _ctx, _dtypes.int64)
   depth = _ops.convert_to_tensor(depth, _dtypes.int32)
   _inputs_flat = [indices, depth, on_value, off_value]
   _attrs = ("axis", axis, "T", _attr_T, "TI", _attr_TI)
-  _result = _execute.execute(b"OneHot", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"OneHot", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "OneHot", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4781,7 +4822,7 @@ def ones_like(x, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "OnesLike", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4808,12 +4849,12 @@ def ones_like_eager_fallback(x, name=None, ctx=None):
   This is for function ones_like
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
+  _attr_T, (x,) = args_to_matching_eager([x], _ctx)
   _inputs_flat = [x]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"OnesLike", 1, inputs=_inputs_flat,
+  _result = execute(b"OnesLike", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "OnesLike", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4862,14 +4903,14 @@ def pack(values, axis=0, name=None):
     _attr_N = len(values)
     if axis is None:
       axis = 0
-    axis = _execute.make_int(axis, "axis")
+    axis = make_int(axis, "axis")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Pack", values=values, axis=axis, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("N", _op.get_attr("N"), "T", _op.get_attr("T"), "axis",
               _op.get_attr("axis"))
-    _execute.record_gradient(
+    record_gradient(
       "Pack", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4903,13 +4944,13 @@ def pack_eager_fallback(values, axis=0, name=None, ctx=None):
   _attr_N = len(values)
   if axis is None:
     axis = 0
-  axis = _execute.make_int(axis, "axis")
-  _attr_T, values = _execute.args_to_matching_eager(list(values), _ctx)
+  axis = make_int(axis, "axis")
+  _attr_T, values = args_to_matching_eager(list(values), _ctx)
   _inputs_flat = list(values)
   _attrs = ("N", _attr_N, "T", _attr_T, "axis", axis)
-  _result = _execute.execute(b"Pack", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Pack", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Pack", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4956,7 +4997,7 @@ def pad(input, paddings, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tpaddings", _op.get_attr("Tpaddings"))
-    _execute.record_gradient(
+    record_gradient(
       "Pad", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4983,13 +5024,13 @@ def pad_eager_fallback(input, paddings, name=None, ctx=None):
   This is for function pad
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tpaddings, (paddings,) = _execute.args_to_matching_eager([paddings], _ctx, _dtypes.int32)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tpaddings, (paddings,) = args_to_matching_eager([paddings], _ctx, _dtypes.int32)
   _inputs_flat = [input, paddings]
   _attrs = ("T", _attr_T, "Tpaddings", _attr_Tpaddings)
-  _result = _execute.execute(b"Pad", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Pad", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Pad", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5040,7 +5081,7 @@ def pad_v2(input, paddings, constant_values, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tpaddings", _op.get_attr("Tpaddings"))
-    _execute.record_gradient(
+    record_gradient(
       "PadV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5067,14 +5108,14 @@ def pad_v2_eager_fallback(input, paddings, constant_values, name=None, ctx=None)
   This is for function pad_v2
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([input, constant_values], _ctx)
+  _attr_T, _inputs_T = args_to_matching_eager([input, constant_values], _ctx)
   (input, constant_values) = _inputs_T
-  _attr_Tpaddings, (paddings,) = _execute.args_to_matching_eager([paddings], _ctx, _dtypes.int32)
+  _attr_Tpaddings, (paddings,) = args_to_matching_eager([paddings], _ctx, _dtypes.int32)
   _inputs_flat = [input, paddings, constant_values]
   _attrs = ("T", _attr_T, "Tpaddings", _attr_Tpaddings)
-  _result = _execute.execute(b"PadV2", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"PadV2", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "PadV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5119,14 +5160,14 @@ def parallel_concat(values, shape, name=None):
           "Expected list for 'values' argument to "
           "'parallel_concat' Op, not %r." % values)
     _attr_N = len(values)
-    shape = _execute.make_shape(shape, "shape")
+    shape = make_shape(shape, "shape")
     _, _, _op = _op_def_lib._apply_op_helper(
         "ParallelConcat", values=values, shape=shape, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("N", _op.get_attr("N"), "T", _op.get_attr("T"), "shape",
               _op.get_attr("shape"))
-    _execute.record_gradient(
+    record_gradient(
       "ParallelConcat", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5159,13 +5200,13 @@ def parallel_concat_eager_fallback(values, shape, name=None, ctx=None):
         "Expected list for 'values' argument to "
         "'parallel_concat' Op, not %r." % values)
   _attr_N = len(values)
-  shape = _execute.make_shape(shape, "shape")
-  _attr_T, values = _execute.args_to_matching_eager(list(values), _ctx)
+  shape = make_shape(shape, "shape")
+  _attr_T, values = args_to_matching_eager(list(values), _ctx)
   _inputs_flat = list(values)
   _attrs = ("N", _attr_N, "T", _attr_T, "shape", shape)
-  _result = _execute.execute(b"ParallelConcat", 1, inputs=_inputs_flat,
+  _result = execute(b"ParallelConcat", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ParallelConcat", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5190,16 +5231,16 @@ def placeholder(dtype, shape=None, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if shape is None:
       shape = None
-    shape = _execute.make_shape(shape, "shape")
+    shape = make_shape(shape, "shape")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Placeholder", dtype=dtype, shape=shape, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "shape", _op.get_attr("shape"))
-    _execute.record_gradient(
+    record_gradient(
       "Placeholder", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5226,15 +5267,15 @@ def placeholder_eager_fallback(dtype, shape=None, name=None, ctx=None):
   This is for function placeholder
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   if shape is None:
     shape = None
-  shape = _execute.make_shape(shape, "shape")
+  shape = make_shape(shape, "shape")
   _inputs_flat = []
   _attrs = ("dtype", dtype, "shape", shape)
-  _result = _execute.execute(b"Placeholder", 1, inputs=_inputs_flat,
+  _result = execute(b"Placeholder", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Placeholder", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5259,14 +5300,14 @@ def placeholder_v2(dtype, shape, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
-    shape = _execute.make_shape(shape, "shape")
+    dtype = make_type(dtype, "dtype")
+    shape = make_shape(shape, "shape")
     _, _, _op = _op_def_lib._apply_op_helper(
         "PlaceholderV2", dtype=dtype, shape=shape, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "shape", _op.get_attr("shape"))
-    _execute.record_gradient(
+    record_gradient(
       "PlaceholderV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5294,13 +5335,13 @@ def placeholder_v2_eager_fallback(dtype, shape, name=None, ctx=None):
   This is for function placeholder_v2
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
-  shape = _execute.make_shape(shape, "shape")
+  dtype = make_type(dtype, "dtype")
+  shape = make_shape(shape, "shape")
   _inputs_flat = []
   _attrs = ("dtype", dtype, "shape", shape)
-  _result = _execute.execute(b"PlaceholderV2", 1, inputs=_inputs_flat,
+  _result = execute(b"PlaceholderV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "PlaceholderV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5321,13 +5362,13 @@ def placeholder_with_default(input, shape, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    shape = _execute.make_shape(shape, "shape")
+    shape = make_shape(shape, "shape")
     _, _, _op = _op_def_lib._apply_op_helper(
         "PlaceholderWithDefault", input=input, shape=shape, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "shape", _op.get_attr("shape"))
-    _execute.record_gradient(
+    record_gradient(
       "PlaceholderWithDefault", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5355,14 +5396,14 @@ def placeholder_with_default_eager_fallback(input, shape, name=None, ctx=None):
   This is for function placeholder_with_default
   """
   _ctx = ctx if ctx else _context.context()
-  shape = _execute.make_shape(shape, "shape")
-  _attr_dtype, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  shape = make_shape(shape, "shape")
+  _attr_dtype, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("dtype", _attr_dtype, "shape", shape)
-  _result = _execute.execute(b"PlaceholderWithDefault", 1,
+  _result = execute(b"PlaceholderWithDefault", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "PlaceholderWithDefault", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5393,13 +5434,13 @@ def prevent_gradient(input, message="", name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if message is None:
       message = ""
-    message = _execute.make_str(message, "message")
+    message = make_str(message, "message")
     _, _, _op = _op_def_lib._apply_op_helper(
         "PreventGradient", input=input, message=message, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "message", _op.get_attr("message"))
-    _execute.record_gradient(
+    record_gradient(
       "PreventGradient", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5429,13 +5470,13 @@ def prevent_gradient_eager_fallback(input, message="", name=None, ctx=None):
   _ctx = ctx if ctx else _context.context()
   if message is None:
     message = ""
-  message = _execute.make_str(message, "message")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  message = make_str(message, "message")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T, "message", message)
-  _result = _execute.execute(b"PreventGradient", 1, inputs=_inputs_flat,
+  _result = execute(b"PreventGradient", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "PreventGradient", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5460,19 +5501,19 @@ def quantize_and_dequantize(input, signed_input=True, num_bits=8, range_given=Fa
   if _ctx is None or not _ctx._eager_context.is_eager:
     if signed_input is None:
       signed_input = True
-    signed_input = _execute.make_bool(signed_input, "signed_input")
+    signed_input = make_bool(signed_input, "signed_input")
     if num_bits is None:
       num_bits = 8
-    num_bits = _execute.make_int(num_bits, "num_bits")
+    num_bits = make_int(num_bits, "num_bits")
     if range_given is None:
       range_given = False
-    range_given = _execute.make_bool(range_given, "range_given")
+    range_given = make_bool(range_given, "range_given")
     if input_min is None:
       input_min = 0
-    input_min = _execute.make_float(input_min, "input_min")
+    input_min = make_float(input_min, "input_min")
     if input_max is None:
       input_max = 0
-    input_max = _execute.make_float(input_max, "input_max")
+    input_max = make_float(input_max, "input_max")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QuantizeAndDequantize", input=input, signed_input=signed_input,
         num_bits=num_bits, range_given=range_given, input_min=input_min,
@@ -5484,7 +5525,7 @@ def quantize_and_dequantize(input, signed_input=True, num_bits=8, range_given=Fa
               _op.get_attr("range_given"), "input_min",
               _op.get_attr("input_min"), "input_max",
               _op.get_attr("input_max"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "QuantizeAndDequantize", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5517,26 +5558,26 @@ def quantize_and_dequantize_eager_fallback(input, signed_input=True, num_bits=8,
   _ctx = ctx if ctx else _context.context()
   if signed_input is None:
     signed_input = True
-  signed_input = _execute.make_bool(signed_input, "signed_input")
+  signed_input = make_bool(signed_input, "signed_input")
   if num_bits is None:
     num_bits = 8
-  num_bits = _execute.make_int(num_bits, "num_bits")
+  num_bits = make_int(num_bits, "num_bits")
   if range_given is None:
     range_given = False
-  range_given = _execute.make_bool(range_given, "range_given")
+  range_given = make_bool(range_given, "range_given")
   if input_min is None:
     input_min = 0
-  input_min = _execute.make_float(input_min, "input_min")
+  input_min = make_float(input_min, "input_min")
   if input_max is None:
     input_max = 0
-  input_max = _execute.make_float(input_max, "input_max")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  input_max = make_float(input_max, "input_max")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("signed_input", signed_input, "num_bits", num_bits, "range_given",
   range_given, "input_min", input_min, "input_max", input_max, "T", _attr_T)
-  _result = _execute.execute(b"QuantizeAndDequantize", 1, inputs=_inputs_flat,
+  _result = execute(b"QuantizeAndDequantize", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QuantizeAndDequantize", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5622,13 +5663,13 @@ def quantize_and_dequantize_v2(input, input_min, input_max, signed_input=True, n
   if _ctx is None or not _ctx._eager_context.is_eager:
     if signed_input is None:
       signed_input = True
-    signed_input = _execute.make_bool(signed_input, "signed_input")
+    signed_input = make_bool(signed_input, "signed_input")
     if num_bits is None:
       num_bits = 8
-    num_bits = _execute.make_int(num_bits, "num_bits")
+    num_bits = make_int(num_bits, "num_bits")
     if range_given is None:
       range_given = False
-    range_given = _execute.make_bool(range_given, "range_given")
+    range_given = make_bool(range_given, "range_given")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QuantizeAndDequantizeV2", input=input, input_min=input_min,
         input_max=input_max, signed_input=signed_input, num_bits=num_bits,
@@ -5638,7 +5679,7 @@ def quantize_and_dequantize_v2(input, input_min, input_max, signed_input=True, n
     _attrs = ("signed_input", _op.get_attr("signed_input"), "num_bits",
               _op.get_attr("num_bits"), "range_given",
               _op.get_attr("range_given"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "QuantizeAndDequantizeV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5670,22 +5711,22 @@ def quantize_and_dequantize_v2_eager_fallback(input, input_min, input_max, signe
   _ctx = ctx if ctx else _context.context()
   if signed_input is None:
     signed_input = True
-  signed_input = _execute.make_bool(signed_input, "signed_input")
+  signed_input = make_bool(signed_input, "signed_input")
   if num_bits is None:
     num_bits = 8
-  num_bits = _execute.make_int(num_bits, "num_bits")
+  num_bits = make_int(num_bits, "num_bits")
   if range_given is None:
     range_given = False
-  range_given = _execute.make_bool(range_given, "range_given")
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([input, input_min, input_max], _ctx)
+  range_given = make_bool(range_given, "range_given")
+  _attr_T, _inputs_T = args_to_matching_eager([input, input_min, input_max], _ctx)
   (input, input_min, input_max) = _inputs_T
   _inputs_flat = [input, input_min, input_max]
   _attrs = ("signed_input", signed_input, "num_bits", num_bits, "range_given",
   range_given, "T", _attr_T)
-  _result = _execute.execute(b"QuantizeAndDequantizeV2", 1,
+  _result = execute(b"QuantizeAndDequantizeV2", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QuantizeAndDequantizeV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5713,10 +5754,10 @@ def quantize_and_dequantize_v3(input, input_min, input_max, num_bits, signed_inp
   if _ctx is None or not _ctx._eager_context.is_eager:
     if signed_input is None:
       signed_input = True
-    signed_input = _execute.make_bool(signed_input, "signed_input")
+    signed_input = make_bool(signed_input, "signed_input")
     if range_given is None:
       range_given = True
-    range_given = _execute.make_bool(range_given, "range_given")
+    range_given = make_bool(range_given, "range_given")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QuantizeAndDequantizeV3", input=input, input_min=input_min,
         input_max=input_max, num_bits=num_bits, signed_input=signed_input,
@@ -5725,7 +5766,7 @@ def quantize_and_dequantize_v3(input, input_min, input_max, num_bits, signed_inp
     _inputs_flat = _op.inputs
     _attrs = ("signed_input", _op.get_attr("signed_input"), "range_given",
               _op.get_attr("range_given"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "QuantizeAndDequantizeV3", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5757,20 +5798,20 @@ def quantize_and_dequantize_v3_eager_fallback(input, input_min, input_max, num_b
   _ctx = ctx if ctx else _context.context()
   if signed_input is None:
     signed_input = True
-  signed_input = _execute.make_bool(signed_input, "signed_input")
+  signed_input = make_bool(signed_input, "signed_input")
   if range_given is None:
     range_given = True
-  range_given = _execute.make_bool(range_given, "range_given")
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([input, input_min, input_max], _ctx)
+  range_given = make_bool(range_given, "range_given")
+  _attr_T, _inputs_T = args_to_matching_eager([input, input_min, input_max], _ctx)
   (input, input_min, input_max) = _inputs_T
   num_bits = _ops.convert_to_tensor(num_bits, _dtypes.int32)
   _inputs_flat = [input, input_min, input_max, num_bits]
   _attrs = ("signed_input", signed_input, "range_given", range_given, "T",
   _attr_T)
-  _result = _execute.execute(b"QuantizeAndDequantizeV3", 1,
+  _result = execute(b"QuantizeAndDequantizeV3", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QuantizeAndDequantizeV3", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5903,13 +5944,13 @@ def quantize_v2(input, min_range, max_range, T, mode="MIN_COMBINED", round_mode=
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    T = _execute.make_type(T, "T")
+    T = make_type(T, "T")
     if mode is None:
       mode = "MIN_COMBINED"
-    mode = _execute.make_str(mode, "mode")
+    mode = make_str(mode, "mode")
     if round_mode is None:
       round_mode = "HALF_AWAY_FROM_ZERO"
-    round_mode = _execute.make_str(round_mode, "round_mode")
+    round_mode = make_str(round_mode, "round_mode")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QuantizeV2", input=input, min_range=min_range, max_range=max_range,
         T=T, mode=mode, round_mode=round_mode, name=name)
@@ -5917,7 +5958,7 @@ def quantize_v2(input, min_range, max_range, T, mode="MIN_COMBINED", round_mode=
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "mode", _op.get_attr("mode"),
               "round_mode", _op.get_attr("round_mode"))
-    _execute.record_gradient(
+    record_gradient(
       "QuantizeV2", _inputs_flat, _attrs, _result, name)
     _result = _QuantizeV2Output._make(_result)
     return _result
@@ -5947,21 +5988,21 @@ def quantize_v2_eager_fallback(input, min_range, max_range, T, mode="MIN_COMBINE
   This is for function quantize_v2
   """
   _ctx = ctx if ctx else _context.context()
-  T = _execute.make_type(T, "T")
+  T = make_type(T, "T")
   if mode is None:
     mode = "MIN_COMBINED"
-  mode = _execute.make_str(mode, "mode")
+  mode = make_str(mode, "mode")
   if round_mode is None:
     round_mode = "HALF_AWAY_FROM_ZERO"
-  round_mode = _execute.make_str(round_mode, "round_mode")
+  round_mode = make_str(round_mode, "round_mode")
   input = _ops.convert_to_tensor(input, _dtypes.float32)
   min_range = _ops.convert_to_tensor(min_range, _dtypes.float32)
   max_range = _ops.convert_to_tensor(max_range, _dtypes.float32)
   _inputs_flat = [input, min_range, max_range]
   _attrs = ("T", T, "mode", mode, "round_mode", round_mode)
-  _result = _execute.execute(b"QuantizeV2", 3, inputs=_inputs_flat,
+  _result = execute(b"QuantizeV2", 3, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QuantizeV2", _inputs_flat, _attrs, _result, name)
   _result = _QuantizeV2Output._make(_result)
   return _result
@@ -6028,7 +6069,7 @@ def quantized_concat(concat_dim, values, input_mins, input_maxes, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("N", _op.get_attr("N"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "QuantizedConcat", _inputs_flat, _attrs, _result, name)
     _result = _QuantizedConcatOutput._make(_result)
     return _result
@@ -6080,15 +6121,15 @@ def quantized_concat_eager_fallback(concat_dim, values, input_mins, input_maxes,
         "List argument 'input_maxes' to 'quantized_concat' Op with length %d "
         "must match length %d of argument 'values'." %
         (len(input_maxes), _attr_N))
-  _attr_T, values = _execute.args_to_matching_eager(list(values), _ctx)
+  _attr_T, values = args_to_matching_eager(list(values), _ctx)
   concat_dim = _ops.convert_to_tensor(concat_dim, _dtypes.int32)
   input_mins = _ops.convert_n_to_tensor(input_mins, _dtypes.float32)
   input_maxes = _ops.convert_n_to_tensor(input_maxes, _dtypes.float32)
   _inputs_flat = [concat_dim] + list(values) + list(input_mins) + list(input_maxes)
   _attrs = ("N", _attr_N, "T", _attr_T)
-  _result = _execute.execute(b"QuantizedConcat", 3, inputs=_inputs_flat,
+  _result = execute(b"QuantizedConcat", 3, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QuantizedConcat", _inputs_flat, _attrs, _result, name)
   _result = _QuantizedConcatOutput._make(_result)
   return _result
@@ -6134,19 +6175,19 @@ def quantized_instance_norm(x, x_min, x_max, output_range_given=False, given_y_m
   if _ctx is None or not _ctx._eager_context.is_eager:
     if output_range_given is None:
       output_range_given = False
-    output_range_given = _execute.make_bool(output_range_given, "output_range_given")
+    output_range_given = make_bool(output_range_given, "output_range_given")
     if given_y_min is None:
       given_y_min = 0
-    given_y_min = _execute.make_float(given_y_min, "given_y_min")
+    given_y_min = make_float(given_y_min, "given_y_min")
     if given_y_max is None:
       given_y_max = 0
-    given_y_max = _execute.make_float(given_y_max, "given_y_max")
+    given_y_max = make_float(given_y_max, "given_y_max")
     if variance_epsilon is None:
       variance_epsilon = 1e-05
-    variance_epsilon = _execute.make_float(variance_epsilon, "variance_epsilon")
+    variance_epsilon = make_float(variance_epsilon, "variance_epsilon")
     if min_separation is None:
       min_separation = 0.001
-    min_separation = _execute.make_float(min_separation, "min_separation")
+    min_separation = make_float(min_separation, "min_separation")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QuantizedInstanceNorm", x=x, x_min=x_min, x_max=x_max,
         output_range_given=output_range_given, given_y_min=given_y_min,
@@ -6160,7 +6201,7 @@ def quantized_instance_norm(x, x_min, x_max, output_range_given=False, given_y_m
               _op.get_attr("given_y_max"), "variance_epsilon",
               _op.get_attr("variance_epsilon"), "min_separation",
               _op.get_attr("min_separation"))
-    _execute.record_gradient(
+    record_gradient(
       "QuantizedInstanceNorm", _inputs_flat, _attrs, _result, name)
     _result = _QuantizedInstanceNormOutput._make(_result)
     return _result
@@ -6196,29 +6237,29 @@ def quantized_instance_norm_eager_fallback(x, x_min, x_max, output_range_given=F
   _ctx = ctx if ctx else _context.context()
   if output_range_given is None:
     output_range_given = False
-  output_range_given = _execute.make_bool(output_range_given, "output_range_given")
+  output_range_given = make_bool(output_range_given, "output_range_given")
   if given_y_min is None:
     given_y_min = 0
-  given_y_min = _execute.make_float(given_y_min, "given_y_min")
+  given_y_min = make_float(given_y_min, "given_y_min")
   if given_y_max is None:
     given_y_max = 0
-  given_y_max = _execute.make_float(given_y_max, "given_y_max")
+  given_y_max = make_float(given_y_max, "given_y_max")
   if variance_epsilon is None:
     variance_epsilon = 1e-05
-  variance_epsilon = _execute.make_float(variance_epsilon, "variance_epsilon")
+  variance_epsilon = make_float(variance_epsilon, "variance_epsilon")
   if min_separation is None:
     min_separation = 0.001
-  min_separation = _execute.make_float(min_separation, "min_separation")
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
+  min_separation = make_float(min_separation, "min_separation")
+  _attr_T, (x,) = args_to_matching_eager([x], _ctx)
   x_min = _ops.convert_to_tensor(x_min, _dtypes.float32)
   x_max = _ops.convert_to_tensor(x_max, _dtypes.float32)
   _inputs_flat = [x, x_min, x_max]
   _attrs = ("T", _attr_T, "output_range_given", output_range_given,
   "given_y_min", given_y_min, "given_y_max", given_y_max, "variance_epsilon",
   variance_epsilon, "min_separation", min_separation)
-  _result = _execute.execute(b"QuantizedInstanceNorm", 3, inputs=_inputs_flat,
+  _result = execute(b"QuantizedInstanceNorm", 3, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QuantizedInstanceNorm", _inputs_flat, _attrs, _result, name)
   _result = _QuantizedInstanceNormOutput._make(_result)
   return _result
@@ -6257,7 +6298,7 @@ def quantized_reshape(tensor, shape, input_min, input_max, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tshape", _op.get_attr("Tshape"))
-    _execute.record_gradient(
+    record_gradient(
       "QuantizedReshape", _inputs_flat, _attrs, _result, name)
     _result = _QuantizedReshapeOutput._make(_result)
     return _result
@@ -6286,15 +6327,15 @@ def quantized_reshape_eager_fallback(tensor, shape, input_min, input_max, name=N
   This is for function quantized_reshape
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (tensor,) = _execute.args_to_matching_eager([tensor], _ctx)
-  _attr_Tshape, (shape,) = _execute.args_to_matching_eager([shape], _ctx, _dtypes.int32)
+  _attr_T, (tensor,) = args_to_matching_eager([tensor], _ctx)
+  _attr_Tshape, (shape,) = args_to_matching_eager([shape], _ctx, _dtypes.int32)
   input_min = _ops.convert_to_tensor(input_min, _dtypes.float32)
   input_max = _ops.convert_to_tensor(input_max, _dtypes.float32)
   _inputs_flat = [tensor, shape, input_min, input_max]
   _attrs = ("T", _attr_T, "Tshape", _attr_Tshape)
-  _result = _execute.execute(b"QuantizedReshape", 3, inputs=_inputs_flat,
+  _result = execute(b"QuantizedReshape", 3, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QuantizedReshape", _inputs_flat, _attrs, _result, name)
   _result = _QuantizedReshapeOutput._make(_result)
   return _result
@@ -6331,7 +6372,7 @@ def rank(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Rank", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6358,12 +6399,12 @@ def rank_eager_fallback(input, name=None, ctx=None):
   This is for function rank
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Rank", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Rank", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Rank", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6386,7 +6427,7 @@ def ref_identity(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "RefIdentity", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6475,7 +6516,7 @@ def reshape(tensor, shape, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tshape", _op.get_attr("Tshape"))
-    _execute.record_gradient(
+    record_gradient(
       "Reshape", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6502,13 +6543,13 @@ def reshape_eager_fallback(tensor, shape, name=None, ctx=None):
   This is for function reshape
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (tensor,) = _execute.args_to_matching_eager([tensor], _ctx)
-  _attr_Tshape, (shape,) = _execute.args_to_matching_eager([shape], _ctx, _dtypes.int32)
+  _attr_T, (tensor,) = args_to_matching_eager([tensor], _ctx)
+  _attr_Tshape, (shape,) = args_to_matching_eager([shape], _ctx, _dtypes.int32)
   _inputs_flat = [tensor, shape]
   _attrs = ("T", _attr_T, "Tshape", _attr_Tshape)
-  _result = _execute.execute(b"Reshape", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Reshape", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Reshape", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6544,19 +6585,19 @@ def resource_strided_slice_assign(ref, begin, end, strides, value, begin_mask=0,
   if _ctx is None or not _ctx._eager_context.is_eager:
     if begin_mask is None:
       begin_mask = 0
-    begin_mask = _execute.make_int(begin_mask, "begin_mask")
+    begin_mask = make_int(begin_mask, "begin_mask")
     if end_mask is None:
       end_mask = 0
-    end_mask = _execute.make_int(end_mask, "end_mask")
+    end_mask = make_int(end_mask, "end_mask")
     if ellipsis_mask is None:
       ellipsis_mask = 0
-    ellipsis_mask = _execute.make_int(ellipsis_mask, "ellipsis_mask")
+    ellipsis_mask = make_int(ellipsis_mask, "ellipsis_mask")
     if new_axis_mask is None:
       new_axis_mask = 0
-    new_axis_mask = _execute.make_int(new_axis_mask, "new_axis_mask")
+    new_axis_mask = make_int(new_axis_mask, "new_axis_mask")
     if shrink_axis_mask is None:
       shrink_axis_mask = 0
-    shrink_axis_mask = _execute.make_int(shrink_axis_mask, "shrink_axis_mask")
+    shrink_axis_mask = make_int(shrink_axis_mask, "shrink_axis_mask")
     _, _, _op = _op_def_lib._apply_op_helper(
         "ResourceStridedSliceAssign", ref=ref, begin=begin, end=end,
         strides=strides, value=value, begin_mask=begin_mask,
@@ -6597,28 +6638,28 @@ def resource_strided_slice_assign_eager_fallback(ref, begin, end, strides, value
   _ctx = ctx if ctx else _context.context()
   if begin_mask is None:
     begin_mask = 0
-  begin_mask = _execute.make_int(begin_mask, "begin_mask")
+  begin_mask = make_int(begin_mask, "begin_mask")
   if end_mask is None:
     end_mask = 0
-  end_mask = _execute.make_int(end_mask, "end_mask")
+  end_mask = make_int(end_mask, "end_mask")
   if ellipsis_mask is None:
     ellipsis_mask = 0
-  ellipsis_mask = _execute.make_int(ellipsis_mask, "ellipsis_mask")
+  ellipsis_mask = make_int(ellipsis_mask, "ellipsis_mask")
   if new_axis_mask is None:
     new_axis_mask = 0
-  new_axis_mask = _execute.make_int(new_axis_mask, "new_axis_mask")
+  new_axis_mask = make_int(new_axis_mask, "new_axis_mask")
   if shrink_axis_mask is None:
     shrink_axis_mask = 0
-  shrink_axis_mask = _execute.make_int(shrink_axis_mask, "shrink_axis_mask")
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
-  _attr_Index, _inputs_Index = _execute.args_to_matching_eager([begin, end, strides], _ctx)
+  shrink_axis_mask = make_int(shrink_axis_mask, "shrink_axis_mask")
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
+  _attr_Index, _inputs_Index = args_to_matching_eager([begin, end, strides], _ctx)
   (begin, end, strides) = _inputs_Index
   ref = _ops.convert_to_tensor(ref, _dtypes.resource)
   _inputs_flat = [ref, begin, end, strides, value]
   _attrs = ("T", _attr_T, "Index", _attr_Index, "begin_mask", begin_mask,
   "end_mask", end_mask, "ellipsis_mask", ellipsis_mask, "new_axis_mask",
   new_axis_mask, "shrink_axis_mask", shrink_axis_mask)
-  _result = _execute.execute(b"ResourceStridedSliceAssign", 0,
+  _result = execute(b"ResourceStridedSliceAssign", 0,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
   _result = None
@@ -6689,7 +6730,7 @@ def reverse(tensor, dims, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Reverse", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6716,13 +6757,13 @@ def reverse_eager_fallback(tensor, dims, name=None, ctx=None):
   This is for function reverse
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (tensor,) = _execute.args_to_matching_eager([tensor], _ctx)
+  _attr_T, (tensor,) = args_to_matching_eager([tensor], _ctx)
   dims = _ops.convert_to_tensor(dims, _dtypes.bool)
   _inputs_flat = [tensor, dims]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Reverse", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Reverse", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Reverse", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6801,10 +6842,10 @@ def reverse_sequence(input, seq_lengths, seq_dim, batch_dim=0, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    seq_dim = _execute.make_int(seq_dim, "seq_dim")
+    seq_dim = make_int(seq_dim, "seq_dim")
     if batch_dim is None:
       batch_dim = 0
-    batch_dim = _execute.make_int(batch_dim, "batch_dim")
+    batch_dim = make_int(batch_dim, "batch_dim")
     _, _, _op = _op_def_lib._apply_op_helper(
         "ReverseSequence", input=input, seq_lengths=seq_lengths,
         seq_dim=seq_dim, batch_dim=batch_dim, name=name)
@@ -6813,7 +6854,7 @@ def reverse_sequence(input, seq_lengths, seq_dim, batch_dim=0, name=None):
     _attrs = ("seq_dim", _op.get_attr("seq_dim"), "batch_dim",
               _op.get_attr("batch_dim"), "T", _op.get_attr("T"), "Tlen",
               _op.get_attr("Tlen"))
-    _execute.record_gradient(
+    record_gradient(
       "ReverseSequence", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6842,18 +6883,18 @@ def reverse_sequence_eager_fallback(input, seq_lengths, seq_dim, batch_dim=0, na
   This is for function reverse_sequence
   """
   _ctx = ctx if ctx else _context.context()
-  seq_dim = _execute.make_int(seq_dim, "seq_dim")
+  seq_dim = make_int(seq_dim, "seq_dim")
   if batch_dim is None:
     batch_dim = 0
-  batch_dim = _execute.make_int(batch_dim, "batch_dim")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tlen, (seq_lengths,) = _execute.args_to_matching_eager([seq_lengths], _ctx, _dtypes.int64)
+  batch_dim = make_int(batch_dim, "batch_dim")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tlen, (seq_lengths,) = args_to_matching_eager([seq_lengths], _ctx, _dtypes.int64)
   _inputs_flat = [input, seq_lengths]
   _attrs = ("seq_dim", seq_dim, "batch_dim", batch_dim, "T", _attr_T, "Tlen",
   _attr_Tlen)
-  _result = _execute.execute(b"ReverseSequence", 1, inputs=_inputs_flat,
+  _result = execute(b"ReverseSequence", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ReverseSequence", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6929,7 +6970,7 @@ def reverse_v2(tensor, axis, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("Tidx", _op.get_attr("Tidx"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "ReverseV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6956,13 +6997,13 @@ def reverse_v2_eager_fallback(tensor, axis, name=None, ctx=None):
   This is for function reverse_v2
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_Tidx, (axis,) = _execute.args_to_matching_eager([axis], _ctx, _dtypes.int32)
-  _attr_T, (tensor,) = _execute.args_to_matching_eager([tensor], _ctx)
+  _attr_Tidx, (axis,) = args_to_matching_eager([axis], _ctx, _dtypes.int32)
+  _attr_T, (tensor,) = args_to_matching_eager([tensor], _ctx)
   _inputs_flat = [tensor, axis]
   _attrs = ("Tidx", _attr_Tidx, "T", _attr_T)
-  _result = _execute.execute(b"ReverseV2", 1, inputs=_inputs_flat,
+  _result = execute(b"ReverseV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ReverseV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7070,7 +7111,7 @@ def scatter_nd(indices, updates, shape, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tindices", _op.get_attr("Tindices"))
-    _execute.record_gradient(
+    record_gradient(
       "ScatterNd", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7097,14 +7138,14 @@ def scatter_nd_eager_fallback(indices, updates, shape, name=None, ctx=None):
   This is for function scatter_nd
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (updates,) = _execute.args_to_matching_eager([updates], _ctx)
-  _attr_Tindices, _inputs_Tindices = _execute.args_to_matching_eager([indices, shape], _ctx)
+  _attr_T, (updates,) = args_to_matching_eager([updates], _ctx)
+  _attr_Tindices, _inputs_Tindices = args_to_matching_eager([indices, shape], _ctx)
   (indices, shape) = _inputs_Tindices
   _inputs_flat = [indices, updates, shape]
   _attrs = ("T", _attr_T, "Tindices", _attr_Tindices)
-  _result = _execute.execute(b"ScatterNd", 1, inputs=_inputs_flat,
+  _result = execute(b"ScatterNd", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ScatterNd", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7169,7 +7210,7 @@ def scatter_nd_non_aliasing_add(input, indices, updates, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tindices", _op.get_attr("Tindices"))
-    _execute.record_gradient(
+    record_gradient(
       "ScatterNdNonAliasingAdd", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7197,15 +7238,15 @@ def scatter_nd_non_aliasing_add_eager_fallback(input, indices, updates, name=Non
   This is for function scatter_nd_non_aliasing_add
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([input, updates], _ctx)
+  _attr_T, _inputs_T = args_to_matching_eager([input, updates], _ctx)
   (input, updates) = _inputs_T
-  _attr_Tindices, (indices,) = _execute.args_to_matching_eager([indices], _ctx)
+  _attr_Tindices, (indices,) = args_to_matching_eager([indices], _ctx)
   _inputs_flat = [input, indices, updates]
   _attrs = ("T", _attr_T, "Tindices", _attr_Tindices)
-  _result = _execute.execute(b"ScatterNdNonAliasingAdd", 1,
+  _result = execute(b"ScatterNdNonAliasingAdd", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ScatterNdNonAliasingAdd", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7235,13 +7276,13 @@ def shape(input, out_type=_dtypes.int32, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if out_type is None:
       out_type = _dtypes.int32
-    out_type = _execute.make_type(out_type, "out_type")
+    out_type = make_type(out_type, "out_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Shape", input=input, out_type=out_type, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "out_type", _op.get_attr("out_type"))
-    _execute.record_gradient(
+    record_gradient(
       "Shape", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7270,13 +7311,13 @@ def shape_eager_fallback(input, out_type=_dtypes.int32, name=None, ctx=None):
   _ctx = ctx if ctx else _context.context()
   if out_type is None:
     out_type = _dtypes.int32
-  out_type = _execute.make_type(out_type, "out_type")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  out_type = make_type(out_type, "out_type")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T, "out_type", out_type)
-  _result = _execute.execute(b"Shape", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Shape", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Shape", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7304,14 +7345,14 @@ def shape_n(input, out_type=_dtypes.int32, name=None):
     _attr_N = len(input)
     if out_type is None:
       out_type = _dtypes.int32
-    out_type = _execute.make_type(out_type, "out_type")
+    out_type = make_type(out_type, "out_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "ShapeN", input=input, out_type=out_type, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("N", _op.get_attr("N"), "T", _op.get_attr("T"), "out_type",
               _op.get_attr("out_type"))
-    _execute.record_gradient(
+    record_gradient(
       "ShapeN", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -7344,13 +7385,13 @@ def shape_n_eager_fallback(input, out_type=_dtypes.int32, name=None, ctx=None):
   _attr_N = len(input)
   if out_type is None:
     out_type = _dtypes.int32
-  out_type = _execute.make_type(out_type, "out_type")
-  _attr_T, input = _execute.args_to_matching_eager(list(input), _ctx)
+  out_type = make_type(out_type, "out_type")
+  _attr_T, input = args_to_matching_eager(list(input), _ctx)
   _inputs_flat = list(input)
   _attrs = ("N", _attr_N, "T", _attr_T, "out_type", out_type)
-  _result = _execute.execute(b"ShapeN", _attr_N, inputs=_inputs_flat,
+  _result = execute(b"ShapeN", _attr_N, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ShapeN", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -7380,13 +7421,13 @@ def size(input, out_type=_dtypes.int32, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if out_type is None:
       out_type = _dtypes.int32
-    out_type = _execute.make_type(out_type, "out_type")
+    out_type = make_type(out_type, "out_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Size", input=input, out_type=out_type, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "out_type", _op.get_attr("out_type"))
-    _execute.record_gradient(
+    record_gradient(
       "Size", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7415,13 +7456,13 @@ def size_eager_fallback(input, out_type=_dtypes.int32, name=None, ctx=None):
   _ctx = ctx if ctx else _context.context()
   if out_type is None:
     out_type = _dtypes.int32
-  out_type = _execute.make_type(out_type, "out_type")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  out_type = make_type(out_type, "out_type")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T, "out_type", out_type)
-  _result = _execute.execute(b"Size", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Size", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Size", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7459,7 +7500,7 @@ def _slice(input, begin, size, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Index", _op.get_attr("Index"))
-    _execute.record_gradient(
+    record_gradient(
       "Slice", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7486,14 +7527,14 @@ def _slice_eager_fallback(input, begin, size, name=None, ctx=None):
   This is for function _slice
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Index, _inputs_Index = _execute.args_to_matching_eager([begin, size], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Index, _inputs_Index = args_to_matching_eager([begin, size], _ctx)
   (begin, size) = _inputs_Index
   _inputs_flat = [input, begin, size]
   _attrs = ("T", _attr_T, "Index", _attr_Index)
-  _result = _execute.execute(b"Slice", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Slice", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Slice", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7516,7 +7557,7 @@ def snapshot(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Snapshot", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7543,12 +7584,12 @@ def snapshot_eager_fallback(input, name=None, ctx=None):
   This is for function snapshot
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Snapshot", 1, inputs=_inputs_flat,
+  _result = execute(b"Snapshot", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Snapshot", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7661,7 +7702,7 @@ def space_to_batch(input, paddings, block_size, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    block_size = _execute.make_int(block_size, "block_size")
+    block_size = make_int(block_size, "block_size")
     _, _, _op = _op_def_lib._apply_op_helper(
         "SpaceToBatch", input=input, paddings=paddings, block_size=block_size,
         name=name)
@@ -7669,7 +7710,7 @@ def space_to_batch(input, paddings, block_size, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tpaddings", _op.get_attr("Tpaddings"),
               "block_size", _op.get_attr("block_size"))
-    _execute.record_gradient(
+    record_gradient(
       "SpaceToBatch", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7697,15 +7738,15 @@ def space_to_batch_eager_fallback(input, paddings, block_size, name=None, ctx=No
   This is for function space_to_batch
   """
   _ctx = ctx if ctx else _context.context()
-  block_size = _execute.make_int(block_size, "block_size")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tpaddings, (paddings,) = _execute.args_to_matching_eager([paddings], _ctx, _dtypes.int32)
+  block_size = make_int(block_size, "block_size")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tpaddings, (paddings,) = args_to_matching_eager([paddings], _ctx, _dtypes.int32)
   _inputs_flat = [input, paddings]
   _attrs = ("T", _attr_T, "Tpaddings", _attr_Tpaddings, "block_size",
   block_size)
-  _result = _execute.execute(b"SpaceToBatch", 1, inputs=_inputs_flat,
+  _result = execute(b"SpaceToBatch", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "SpaceToBatch", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7855,7 +7896,7 @@ def space_to_batch_nd(input, block_shape, paddings, name=None):
     _attrs = ("T", _op.get_attr("T"), "Tblock_shape",
               _op.get_attr("Tblock_shape"), "Tpaddings",
               _op.get_attr("Tpaddings"))
-    _execute.record_gradient(
+    record_gradient(
       "SpaceToBatchND", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7883,15 +7924,15 @@ def space_to_batch_nd_eager_fallback(input, block_shape, paddings, name=None, ct
   This is for function space_to_batch_nd
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tblock_shape, (block_shape,) = _execute.args_to_matching_eager([block_shape], _ctx, _dtypes.int32)
-  _attr_Tpaddings, (paddings,) = _execute.args_to_matching_eager([paddings], _ctx, _dtypes.int32)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tblock_shape, (block_shape,) = args_to_matching_eager([block_shape], _ctx, _dtypes.int32)
+  _attr_Tpaddings, (paddings,) = args_to_matching_eager([paddings], _ctx, _dtypes.int32)
   _inputs_flat = [input, block_shape, paddings]
   _attrs = ("T", _attr_T, "Tblock_shape", _attr_Tblock_shape, "Tpaddings",
   _attr_Tpaddings)
-  _result = _execute.execute(b"SpaceToBatchND", 1, inputs=_inputs_flat,
+  _result = execute(b"SpaceToBatchND", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "SpaceToBatchND", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7995,10 +8036,10 @@ def space_to_depth(input, block_size, data_format="NHWC", name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    block_size = _execute.make_int(block_size, "block_size")
+    block_size = make_int(block_size, "block_size")
     if data_format is None:
       data_format = "NHWC"
-    data_format = _execute.make_str(data_format, "data_format")
+    data_format = make_str(data_format, "data_format")
     _, _, _op = _op_def_lib._apply_op_helper(
         "SpaceToDepth", input=input, block_size=block_size,
         data_format=data_format, name=name)
@@ -8007,7 +8048,7 @@ def space_to_depth(input, block_size, data_format="NHWC", name=None):
     _attrs = ("T", _op.get_attr("T"), "block_size",
               _op.get_attr("block_size"), "data_format",
               _op.get_attr("data_format"))
-    _execute.record_gradient(
+    record_gradient(
       "SpaceToDepth", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -8036,17 +8077,17 @@ def space_to_depth_eager_fallback(input, block_size, data_format="NHWC", name=No
   This is for function space_to_depth
   """
   _ctx = ctx if ctx else _context.context()
-  block_size = _execute.make_int(block_size, "block_size")
+  block_size = make_int(block_size, "block_size")
   if data_format is None:
     data_format = "NHWC"
-  data_format = _execute.make_str(data_format, "data_format")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  data_format = make_str(data_format, "data_format")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T, "block_size", block_size, "data_format",
   data_format)
-  _result = _execute.execute(b"SpaceToDepth", 1, inputs=_inputs_flat,
+  _result = execute(b"SpaceToDepth", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "SpaceToDepth", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -8070,13 +8111,13 @@ def split(axis, value, num_split, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    num_split = _execute.make_int(num_split, "num_split")
+    num_split = make_int(num_split, "num_split")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Split", split_dim=axis, value=value, num_split=num_split, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("num_split", _op.get_attr("num_split"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Split", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -8102,14 +8143,14 @@ def split_eager_fallback(axis, value, num_split, name=None, ctx=None):
   This is for function split
   """
   _ctx = ctx if ctx else _context.context()
-  num_split = _execute.make_int(num_split, "num_split")
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
+  num_split = make_int(num_split, "num_split")
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
   axis = _ops.convert_to_tensor(axis, _dtypes.int32)
   _inputs_flat = [axis, value]
   _attrs = ("num_split", num_split, "T", _attr_T)
-  _result = _execute.execute(b"Split", num_split, inputs=_inputs_flat,
+  _result = execute(b"Split", num_split, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Split", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -8134,7 +8175,7 @@ def split_v(value, size_splits, axis, num_split, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    num_split = _execute.make_int(num_split, "num_split")
+    num_split = make_int(num_split, "num_split")
     _, _, _op = _op_def_lib._apply_op_helper(
         "SplitV", value=value, size_splits=size_splits, split_dim=axis,
         num_split=num_split, name=name)
@@ -8142,7 +8183,7 @@ def split_v(value, size_splits, axis, num_split, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("num_split", _op.get_attr("num_split"), "T", _op.get_attr("T"),
               "Tlen", _op.get_attr("Tlen"))
-    _execute.record_gradient(
+    record_gradient(
       "SplitV", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -8169,15 +8210,15 @@ def split_v_eager_fallback(value, size_splits, axis, num_split, name=None, ctx=N
   This is for function split_v
   """
   _ctx = ctx if ctx else _context.context()
-  num_split = _execute.make_int(num_split, "num_split")
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
-  _attr_Tlen, (size_splits,) = _execute.args_to_matching_eager([size_splits], _ctx, _dtypes.int64)
+  num_split = make_int(num_split, "num_split")
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
+  _attr_Tlen, (size_splits,) = args_to_matching_eager([size_splits], _ctx, _dtypes.int64)
   axis = _ops.convert_to_tensor(axis, _dtypes.int32)
   _inputs_flat = [value, size_splits, axis]
   _attrs = ("num_split", num_split, "T", _attr_T, "Tlen", _attr_Tlen)
-  _result = _execute.execute(b"SplitV", num_split, inputs=_inputs_flat,
+  _result = execute(b"SplitV", num_split, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "SplitV", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -8223,14 +8264,14 @@ def squeeze(input, axis=[], name=None):
       raise TypeError(
           "Expected list for 'axis' argument to "
           "'squeeze' Op, not %r." % axis)
-    axis = [_execute.make_int(_i, "axis") for _i in axis]
+    axis = [make_int(_i, "axis") for _i in axis]
     _, _, _op = _op_def_lib._apply_op_helper(
         "Squeeze", input=input, squeeze_dims=axis, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "squeeze_dims",
               _op.get_attr("squeeze_dims"))
-    _execute.record_gradient(
+    record_gradient(
       "Squeeze", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -8263,13 +8304,13 @@ def squeeze_eager_fallback(input, axis=[], name=None, ctx=None):
     raise TypeError(
         "Expected list for 'axis' argument to "
         "'squeeze' Op, not %r." % axis)
-  axis = [_execute.make_int(_i, "axis") for _i in axis]
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  axis = [make_int(_i, "axis") for _i in axis]
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T, "squeeze_dims", axis)
-  _result = _execute.execute(b"Squeeze", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Squeeze", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Squeeze", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -8313,7 +8354,7 @@ def stop_gradient(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "StopGradient", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -8340,12 +8381,12 @@ def stop_gradient_eager_fallback(input, name=None, ctx=None):
   This is for function stop_gradient
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   _inputs_flat = [input]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"StopGradient", 1, inputs=_inputs_flat,
+  _result = execute(b"StopGradient", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "StopGradient", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -8494,19 +8535,19 @@ def strided_slice(input, begin, end, strides, begin_mask=0, end_mask=0, ellipsis
   if _ctx is None or not _ctx._eager_context.is_eager:
     if begin_mask is None:
       begin_mask = 0
-    begin_mask = _execute.make_int(begin_mask, "begin_mask")
+    begin_mask = make_int(begin_mask, "begin_mask")
     if end_mask is None:
       end_mask = 0
-    end_mask = _execute.make_int(end_mask, "end_mask")
+    end_mask = make_int(end_mask, "end_mask")
     if ellipsis_mask is None:
       ellipsis_mask = 0
-    ellipsis_mask = _execute.make_int(ellipsis_mask, "ellipsis_mask")
+    ellipsis_mask = make_int(ellipsis_mask, "ellipsis_mask")
     if new_axis_mask is None:
       new_axis_mask = 0
-    new_axis_mask = _execute.make_int(new_axis_mask, "new_axis_mask")
+    new_axis_mask = make_int(new_axis_mask, "new_axis_mask")
     if shrink_axis_mask is None:
       shrink_axis_mask = 0
-    shrink_axis_mask = _execute.make_int(shrink_axis_mask, "shrink_axis_mask")
+    shrink_axis_mask = make_int(shrink_axis_mask, "shrink_axis_mask")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StridedSlice", input=input, begin=begin, end=end, strides=strides,
         begin_mask=begin_mask, end_mask=end_mask, ellipsis_mask=ellipsis_mask,
@@ -8520,7 +8561,7 @@ def strided_slice(input, begin, end, strides, begin_mask=0, end_mask=0, ellipsis
               _op.get_attr("ellipsis_mask"), "new_axis_mask",
               _op.get_attr("new_axis_mask"), "shrink_axis_mask",
               _op.get_attr("shrink_axis_mask"))
-    _execute.record_gradient(
+    record_gradient(
       "StridedSlice", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -8555,29 +8596,29 @@ def strided_slice_eager_fallback(input, begin, end, strides, begin_mask=0, end_m
   _ctx = ctx if ctx else _context.context()
   if begin_mask is None:
     begin_mask = 0
-  begin_mask = _execute.make_int(begin_mask, "begin_mask")
+  begin_mask = make_int(begin_mask, "begin_mask")
   if end_mask is None:
     end_mask = 0
-  end_mask = _execute.make_int(end_mask, "end_mask")
+  end_mask = make_int(end_mask, "end_mask")
   if ellipsis_mask is None:
     ellipsis_mask = 0
-  ellipsis_mask = _execute.make_int(ellipsis_mask, "ellipsis_mask")
+  ellipsis_mask = make_int(ellipsis_mask, "ellipsis_mask")
   if new_axis_mask is None:
     new_axis_mask = 0
-  new_axis_mask = _execute.make_int(new_axis_mask, "new_axis_mask")
+  new_axis_mask = make_int(new_axis_mask, "new_axis_mask")
   if shrink_axis_mask is None:
     shrink_axis_mask = 0
-  shrink_axis_mask = _execute.make_int(shrink_axis_mask, "shrink_axis_mask")
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Index, _inputs_Index = _execute.args_to_matching_eager([begin, end, strides], _ctx)
+  shrink_axis_mask = make_int(shrink_axis_mask, "shrink_axis_mask")
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Index, _inputs_Index = args_to_matching_eager([begin, end, strides], _ctx)
   (begin, end, strides) = _inputs_Index
   _inputs_flat = [input, begin, end, strides]
   _attrs = ("T", _attr_T, "Index", _attr_Index, "begin_mask", begin_mask,
   "end_mask", end_mask, "ellipsis_mask", ellipsis_mask, "new_axis_mask",
   new_axis_mask, "shrink_axis_mask", shrink_axis_mask)
-  _result = _execute.execute(b"StridedSlice", 1, inputs=_inputs_flat,
+  _result = execute(b"StridedSlice", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "StridedSlice", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -8613,19 +8654,19 @@ def strided_slice_assign(ref, begin, end, strides, value, begin_mask=0, end_mask
   if _ctx is None or not _ctx._eager_context.is_eager:
     if begin_mask is None:
       begin_mask = 0
-    begin_mask = _execute.make_int(begin_mask, "begin_mask")
+    begin_mask = make_int(begin_mask, "begin_mask")
     if end_mask is None:
       end_mask = 0
-    end_mask = _execute.make_int(end_mask, "end_mask")
+    end_mask = make_int(end_mask, "end_mask")
     if ellipsis_mask is None:
       ellipsis_mask = 0
-    ellipsis_mask = _execute.make_int(ellipsis_mask, "ellipsis_mask")
+    ellipsis_mask = make_int(ellipsis_mask, "ellipsis_mask")
     if new_axis_mask is None:
       new_axis_mask = 0
-    new_axis_mask = _execute.make_int(new_axis_mask, "new_axis_mask")
+    new_axis_mask = make_int(new_axis_mask, "new_axis_mask")
     if shrink_axis_mask is None:
       shrink_axis_mask = 0
-    shrink_axis_mask = _execute.make_int(shrink_axis_mask, "shrink_axis_mask")
+    shrink_axis_mask = make_int(shrink_axis_mask, "shrink_axis_mask")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StridedSliceAssign", ref=ref, begin=begin, end=end, strides=strides,
         value=value, begin_mask=begin_mask, end_mask=end_mask,
@@ -8639,7 +8680,7 @@ def strided_slice_assign(ref, begin, end, strides, value, begin_mask=0, end_mask
               _op.get_attr("ellipsis_mask"), "new_axis_mask",
               _op.get_attr("new_axis_mask"), "shrink_axis_mask",
               _op.get_attr("shrink_axis_mask"))
-    _execute.record_gradient(
+    record_gradient(
       "StridedSliceAssign", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -8682,19 +8723,19 @@ def strided_slice_grad(shape, begin, end, strides, dy, begin_mask=0, end_mask=0,
   if _ctx is None or not _ctx._eager_context.is_eager:
     if begin_mask is None:
       begin_mask = 0
-    begin_mask = _execute.make_int(begin_mask, "begin_mask")
+    begin_mask = make_int(begin_mask, "begin_mask")
     if end_mask is None:
       end_mask = 0
-    end_mask = _execute.make_int(end_mask, "end_mask")
+    end_mask = make_int(end_mask, "end_mask")
     if ellipsis_mask is None:
       ellipsis_mask = 0
-    ellipsis_mask = _execute.make_int(ellipsis_mask, "ellipsis_mask")
+    ellipsis_mask = make_int(ellipsis_mask, "ellipsis_mask")
     if new_axis_mask is None:
       new_axis_mask = 0
-    new_axis_mask = _execute.make_int(new_axis_mask, "new_axis_mask")
+    new_axis_mask = make_int(new_axis_mask, "new_axis_mask")
     if shrink_axis_mask is None:
       shrink_axis_mask = 0
-    shrink_axis_mask = _execute.make_int(shrink_axis_mask, "shrink_axis_mask")
+    shrink_axis_mask = make_int(shrink_axis_mask, "shrink_axis_mask")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StridedSliceGrad", shape=shape, begin=begin, end=end,
         strides=strides, dy=dy, begin_mask=begin_mask, end_mask=end_mask,
@@ -8708,7 +8749,7 @@ def strided_slice_grad(shape, begin, end, strides, dy, begin_mask=0, end_mask=0,
               _op.get_attr("ellipsis_mask"), "new_axis_mask",
               _op.get_attr("new_axis_mask"), "shrink_axis_mask",
               _op.get_attr("shrink_axis_mask"))
-    _execute.record_gradient(
+    record_gradient(
       "StridedSliceGrad", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -8743,29 +8784,29 @@ def strided_slice_grad_eager_fallback(shape, begin, end, strides, dy, begin_mask
   _ctx = ctx if ctx else _context.context()
   if begin_mask is None:
     begin_mask = 0
-  begin_mask = _execute.make_int(begin_mask, "begin_mask")
+  begin_mask = make_int(begin_mask, "begin_mask")
   if end_mask is None:
     end_mask = 0
-  end_mask = _execute.make_int(end_mask, "end_mask")
+  end_mask = make_int(end_mask, "end_mask")
   if ellipsis_mask is None:
     ellipsis_mask = 0
-  ellipsis_mask = _execute.make_int(ellipsis_mask, "ellipsis_mask")
+  ellipsis_mask = make_int(ellipsis_mask, "ellipsis_mask")
   if new_axis_mask is None:
     new_axis_mask = 0
-  new_axis_mask = _execute.make_int(new_axis_mask, "new_axis_mask")
+  new_axis_mask = make_int(new_axis_mask, "new_axis_mask")
   if shrink_axis_mask is None:
     shrink_axis_mask = 0
-  shrink_axis_mask = _execute.make_int(shrink_axis_mask, "shrink_axis_mask")
-  _attr_T, (dy,) = _execute.args_to_matching_eager([dy], _ctx)
-  _attr_Index, _inputs_Index = _execute.args_to_matching_eager([shape, begin, end, strides], _ctx)
+  shrink_axis_mask = make_int(shrink_axis_mask, "shrink_axis_mask")
+  _attr_T, (dy,) = args_to_matching_eager([dy], _ctx)
+  _attr_Index, _inputs_Index = args_to_matching_eager([shape, begin, end, strides], _ctx)
   (shape, begin, end, strides) = _inputs_Index
   _inputs_flat = [shape, begin, end, strides, dy]
   _attrs = ("T", _attr_T, "Index", _attr_Index, "begin_mask", begin_mask,
   "end_mask", end_mask, "ellipsis_mask", ellipsis_mask, "new_axis_mask",
   new_axis_mask, "shrink_axis_mask", shrink_axis_mask)
-  _result = _execute.execute(b"StridedSliceGrad", 1, inputs=_inputs_flat,
+  _result = execute(b"StridedSliceGrad", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "StridedSliceGrad", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -8799,7 +8840,7 @@ def tile(input, multiples, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tmultiples",
               _op.get_attr("Tmultiples"))
-    _execute.record_gradient(
+    record_gradient(
       "Tile", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -8826,13 +8867,13 @@ def tile_eager_fallback(input, multiples, name=None, ctx=None):
   This is for function tile
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
-  _attr_Tmultiples, (multiples,) = _execute.args_to_matching_eager([multiples], _ctx, _dtypes.int32)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
+  _attr_Tmultiples, (multiples,) = args_to_matching_eager([multiples], _ctx, _dtypes.int32)
   _inputs_flat = [input, multiples]
   _attrs = ("T", _attr_T, "Tmultiples", _attr_Tmultiples)
-  _result = _execute.execute(b"Tile", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Tile", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Tile", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -8860,7 +8901,7 @@ def tile_grad(input, multiples, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TileGrad", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -8887,13 +8928,13 @@ def tile_grad_eager_fallback(input, multiples, name=None, ctx=None):
   This is for function tile_grad
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (input,) = _execute.args_to_matching_eager([input], _ctx)
+  _attr_T, (input,) = args_to_matching_eager([input], _ctx)
   multiples = _ops.convert_to_tensor(multiples, _dtypes.int32)
   _inputs_flat = [input, multiples]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"TileGrad", 1, inputs=_inputs_flat,
+  _result = execute(b"TileGrad", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TileGrad", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -8920,7 +8961,7 @@ def transpose(x, perm, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Tperm", _op.get_attr("Tperm"))
-    _execute.record_gradient(
+    record_gradient(
       "Transpose", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -8947,13 +8988,13 @@ def transpose_eager_fallback(x, perm, name=None, ctx=None):
   This is for function transpose
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
-  _attr_Tperm, (perm,) = _execute.args_to_matching_eager([perm], _ctx, _dtypes.int32)
+  _attr_T, (x,) = args_to_matching_eager([x], _ctx)
+  _attr_Tperm, (perm,) = args_to_matching_eager([perm], _ctx, _dtypes.int32)
   _inputs_flat = [x, perm]
   _attrs = ("T", _attr_T, "Tperm", _attr_Tperm)
-  _result = _execute.execute(b"Transpose", 1, inputs=_inputs_flat,
+  _result = execute(b"Transpose", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Transpose", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -8998,13 +9039,13 @@ def unique(x, out_idx=_dtypes.int32, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if out_idx is None:
       out_idx = _dtypes.int32
-    out_idx = _execute.make_type(out_idx, "out_idx")
+    out_idx = make_type(out_idx, "out_idx")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Unique", x=x, out_idx=out_idx, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "out_idx", _op.get_attr("out_idx"))
-    _execute.record_gradient(
+    record_gradient(
       "Unique", _inputs_flat, _attrs, _result, name)
     _result = _UniqueOutput._make(_result)
     return _result
@@ -9034,13 +9075,13 @@ def unique_eager_fallback(x, out_idx=_dtypes.int32, name=None, ctx=None):
   _ctx = ctx if ctx else _context.context()
   if out_idx is None:
     out_idx = _dtypes.int32
-  out_idx = _execute.make_type(out_idx, "out_idx")
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
+  out_idx = make_type(out_idx, "out_idx")
+  _attr_T, (x,) = args_to_matching_eager([x], _ctx)
   _inputs_flat = [x]
   _attrs = ("T", _attr_T, "out_idx", out_idx)
-  _result = _execute.execute(b"Unique", 2, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Unique", 2, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Unique", _inputs_flat, _attrs, _result, name)
   _result = _UniqueOutput._make(_result)
   return _result
@@ -9116,14 +9157,14 @@ def unique_v2(x, axis, out_idx=_dtypes.int32, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if out_idx is None:
       out_idx = _dtypes.int32
-    out_idx = _execute.make_type(out_idx, "out_idx")
+    out_idx = make_type(out_idx, "out_idx")
     _, _, _op = _op_def_lib._apply_op_helper(
         "UniqueV2", x=x, axis=axis, out_idx=out_idx, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Taxis", _op.get_attr("Taxis"),
               "out_idx", _op.get_attr("out_idx"))
-    _execute.record_gradient(
+    record_gradient(
       "UniqueV2", _inputs_flat, _attrs, _result, name)
     _result = _UniqueV2Output._make(_result)
     return _result
@@ -9153,14 +9194,14 @@ def unique_v2_eager_fallback(x, axis, out_idx=_dtypes.int32, name=None, ctx=None
   _ctx = ctx if ctx else _context.context()
   if out_idx is None:
     out_idx = _dtypes.int32
-  out_idx = _execute.make_type(out_idx, "out_idx")
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
-  _attr_Taxis, (axis,) = _execute.args_to_matching_eager([axis], _ctx, _dtypes.int64)
+  out_idx = make_type(out_idx, "out_idx")
+  _attr_T, (x,) = args_to_matching_eager([x], _ctx)
+  _attr_Taxis, (axis,) = args_to_matching_eager([axis], _ctx, _dtypes.int64)
   _inputs_flat = [x, axis]
   _attrs = ("T", _attr_T, "Taxis", _attr_Taxis, "out_idx", out_idx)
-  _result = _execute.execute(b"UniqueV2", 2, inputs=_inputs_flat,
+  _result = execute(b"UniqueV2", 2, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "UniqueV2", _inputs_flat, _attrs, _result, name)
   _result = _UniqueV2Output._make(_result)
   return _result
@@ -9208,13 +9249,13 @@ def unique_with_counts(x, out_idx=_dtypes.int32, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if out_idx is None:
       out_idx = _dtypes.int32
-    out_idx = _execute.make_type(out_idx, "out_idx")
+    out_idx = make_type(out_idx, "out_idx")
     _, _, _op = _op_def_lib._apply_op_helper(
         "UniqueWithCounts", x=x, out_idx=out_idx, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "out_idx", _op.get_attr("out_idx"))
-    _execute.record_gradient(
+    record_gradient(
       "UniqueWithCounts", _inputs_flat, _attrs, _result, name)
     _result = _UniqueWithCountsOutput._make(_result)
     return _result
@@ -9245,13 +9286,13 @@ def unique_with_counts_eager_fallback(x, out_idx=_dtypes.int32, name=None, ctx=N
   _ctx = ctx if ctx else _context.context()
   if out_idx is None:
     out_idx = _dtypes.int32
-  out_idx = _execute.make_type(out_idx, "out_idx")
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
+  out_idx = make_type(out_idx, "out_idx")
+  _attr_T, (x,) = args_to_matching_eager([x], _ctx)
   _inputs_flat = [x]
   _attrs = ("T", _attr_T, "out_idx", out_idx)
-  _result = _execute.execute(b"UniqueWithCounts", 3, inputs=_inputs_flat,
+  _result = execute(b"UniqueWithCounts", 3, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "UniqueWithCounts", _inputs_flat, _attrs, _result, name)
   _result = _UniqueWithCountsOutput._make(_result)
   return _result
@@ -9332,14 +9373,14 @@ def unique_with_counts_v2(x, axis, out_idx=_dtypes.int32, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if out_idx is None:
       out_idx = _dtypes.int32
-    out_idx = _execute.make_type(out_idx, "out_idx")
+    out_idx = make_type(out_idx, "out_idx")
     _, _, _op = _op_def_lib._apply_op_helper(
         "UniqueWithCountsV2", x=x, axis=axis, out_idx=out_idx, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "Taxis", _op.get_attr("Taxis"),
               "out_idx", _op.get_attr("out_idx"))
-    _execute.record_gradient(
+    record_gradient(
       "UniqueWithCountsV2", _inputs_flat, _attrs, _result, name)
     _result = _UniqueWithCountsV2Output._make(_result)
     return _result
@@ -9370,14 +9411,14 @@ def unique_with_counts_v2_eager_fallback(x, axis, out_idx=_dtypes.int32, name=No
   _ctx = ctx if ctx else _context.context()
   if out_idx is None:
     out_idx = _dtypes.int32
-  out_idx = _execute.make_type(out_idx, "out_idx")
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
-  _attr_Taxis, (axis,) = _execute.args_to_matching_eager([axis], _ctx, _dtypes.int64)
+  out_idx = make_type(out_idx, "out_idx")
+  _attr_T, (x,) = args_to_matching_eager([x], _ctx)
+  _attr_Taxis, (axis,) = args_to_matching_eager([axis], _ctx, _dtypes.int64)
   _inputs_flat = [x, axis]
   _attrs = ("T", _attr_T, "Taxis", _attr_Taxis, "out_idx", out_idx)
-  _result = _execute.execute(b"UniqueWithCountsV2", 3, inputs=_inputs_flat,
+  _result = execute(b"UniqueWithCountsV2", 3, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "UniqueWithCountsV2", _inputs_flat, _attrs, _result, name)
   _result = _UniqueWithCountsV2Output._make(_result)
   return _result
@@ -9413,17 +9454,17 @@ def unpack(value, num, axis=0, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    num = _execute.make_int(num, "num")
+    num = make_int(num, "num")
     if axis is None:
       axis = 0
-    axis = _execute.make_int(axis, "axis")
+    axis = make_int(axis, "axis")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Unpack", value=value, num=num, axis=axis, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("num", _op.get_attr("num"), "T", _op.get_attr("T"), "axis",
               _op.get_attr("axis"))
-    _execute.record_gradient(
+    record_gradient(
       "Unpack", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -9449,16 +9490,16 @@ def unpack_eager_fallback(value, num, axis=0, name=None, ctx=None):
   This is for function unpack
   """
   _ctx = ctx if ctx else _context.context()
-  num = _execute.make_int(num, "num")
+  num = make_int(num, "num")
   if axis is None:
     axis = 0
-  axis = _execute.make_int(axis, "axis")
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
+  axis = make_int(axis, "axis")
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
   _inputs_flat = [value]
   _attrs = ("num", num, "T", _attr_T, "axis", axis)
-  _result = _execute.execute(b"Unpack", num, inputs=_inputs_flat,
+  _result = execute(b"Unpack", num, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Unpack", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -9492,7 +9533,7 @@ def unravel_index(indices, dims, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("Tidx", _op.get_attr("Tidx"))
-    _execute.record_gradient(
+    record_gradient(
       "UnravelIndex", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -9519,13 +9560,13 @@ def unravel_index_eager_fallback(indices, dims, name=None, ctx=None):
   This is for function unravel_index
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_Tidx, _inputs_Tidx = _execute.args_to_matching_eager([indices, dims], _ctx, _dtypes.int32)
+  _attr_Tidx, _inputs_Tidx = args_to_matching_eager([indices, dims], _ctx, _dtypes.int32)
   (indices, dims) = _inputs_Tidx
   _inputs_flat = [indices, dims]
   _attrs = ("Tidx", _attr_Tidx)
-  _result = _execute.execute(b"UnravelIndex", 1, inputs=_inputs_flat,
+  _result = execute(b"UnravelIndex", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "UnravelIndex", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -9567,14 +9608,14 @@ def upper_bound(sorted_inputs, values, out_type=_dtypes.int32, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if out_type is None:
       out_type = _dtypes.int32
-    out_type = _execute.make_type(out_type, "out_type")
+    out_type = make_type(out_type, "out_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "UpperBound", sorted_inputs=sorted_inputs, values=values,
         out_type=out_type, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "out_type", _op.get_attr("out_type"))
-    _execute.record_gradient(
+    record_gradient(
       "UpperBound", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -9604,14 +9645,14 @@ def upper_bound_eager_fallback(sorted_inputs, values, out_type=_dtypes.int32, na
   _ctx = ctx if ctx else _context.context()
   if out_type is None:
     out_type = _dtypes.int32
-  out_type = _execute.make_type(out_type, "out_type")
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([sorted_inputs, values], _ctx)
+  out_type = make_type(out_type, "out_type")
+  _attr_T, _inputs_T = args_to_matching_eager([sorted_inputs, values], _ctx)
   (sorted_inputs, values) = _inputs_T
   _inputs_flat = [sorted_inputs, values]
   _attrs = ("T", _attr_T, "out_type", out_type)
-  _result = _execute.execute(b"UpperBound", 1, inputs=_inputs_flat,
+  _result = execute(b"UpperBound", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "UpperBound", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -9694,7 +9735,7 @@ def where(condition, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Where", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -9721,12 +9762,12 @@ def where_eager_fallback(condition, name=None, ctx=None):
   This is for function where
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (condition,) = _execute.args_to_matching_eager([condition], _ctx, _dtypes.bool)
+  _attr_T, (condition,) = args_to_matching_eager([condition], _ctx, _dtypes.bool)
   _inputs_flat = [condition]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Where", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Where", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Where", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -9749,7 +9790,7 @@ def zeros_like(x, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "ZerosLike", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -9776,12 +9817,12 @@ def zeros_like_eager_fallback(x, name=None, ctx=None):
   This is for function zeros_like
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
+  _attr_T, (x,) = args_to_matching_eager([x], _ctx)
   _inputs_flat = [x]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"ZerosLike", 1, inputs=_inputs_flat,
+  _result = execute(b"ZerosLike", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ZerosLike", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result

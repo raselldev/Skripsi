@@ -7,7 +7,7 @@ Original C++ source file: ctc_ops.cc
 import collections as _collections
 import six as _six
 
-from tensorflow.python import execute as _execute
+#from tensorflow.python import execute as _execute
 from tensorflow.python import context as _context
 from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry
@@ -19,6 +19,18 @@ _ctc_beam_search_decoder_outputs = ["decoded_indices", "decoded_values",
 _CTCBeamSearchDecoderOutput = _collections.namedtuple(
     "CTCBeamSearchDecoder", _ctc_beam_search_decoder_outputs)
 
+
+def record_gradient(unused_op_name, unused_inputs, unused_attrs, unused_results,
+                    unused_name):
+  
+  pass
+
+
+def make_bool(v, arg_name):
+  if not isinstance(v, bool):
+    raise TypeError("Expected bool for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return v
 
 def ctc_beam_search_decoder(inputs, sequence_length, beam_width, top_paths, merge_repeated=True, name=None):
   r"""Performs beam search decoding on the logits given in input.
@@ -52,11 +64,11 @@ def ctc_beam_search_decoder(inputs, sequence_length, beam_width, top_paths, merg
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    beam_width = _execute.make_int(beam_width, "beam_width")
-    top_paths = _execute.make_int(top_paths, "top_paths")
+    beam_width = make_int(beam_width, "beam_width")
+    top_paths = make_int(top_paths, "top_paths")
     if merge_repeated is None:
       merge_repeated = True
-    merge_repeated = _execute.make_bool(merge_repeated, "merge_repeated")
+    merge_repeated = make_bool(merge_repeated, "merge_repeated")
     _, _, _op = _op_def_lib._apply_op_helper(
         "CTCBeamSearchDecoder", inputs=inputs,
         sequence_length=sequence_length, beam_width=beam_width,
@@ -66,7 +78,7 @@ def ctc_beam_search_decoder(inputs, sequence_length, beam_width, top_paths, merg
     _attrs = ("beam_width", _op.get_attr("beam_width"), "top_paths",
               _op.get_attr("top_paths"), "merge_repeated",
               _op.get_attr("merge_repeated"))
-    _execute.record_gradient(
+    record_gradient(
       "CTCBeamSearchDecoder", _inputs_flat, _attrs, _result, name)
     _result = [_result[:top_paths]] + _result[top_paths:]
     _result = _result[:1] + [_result[1:1 + top_paths]] + _result[1 + top_paths:]
@@ -100,20 +112,20 @@ def ctc_beam_search_decoder_eager_fallback(inputs, sequence_length, beam_width, 
   This is for function ctc_beam_search_decoder
   """
   _ctx = ctx if ctx else _context.context()
-  beam_width = _execute.make_int(beam_width, "beam_width")
-  top_paths = _execute.make_int(top_paths, "top_paths")
+  beam_width = make_int(beam_width, "beam_width")
+  top_paths = make_int(top_paths, "top_paths")
   if merge_repeated is None:
     merge_repeated = True
-  merge_repeated = _execute.make_bool(merge_repeated, "merge_repeated")
+  merge_repeated = make_bool(merge_repeated, "merge_repeated")
   inputs = _ops.convert_to_tensor(inputs, _dtypes.float32)
   sequence_length = _ops.convert_to_tensor(sequence_length, _dtypes.int32)
   _inputs_flat = [inputs, sequence_length]
   _attrs = ("beam_width", beam_width, "top_paths", top_paths,
   "merge_repeated", merge_repeated)
-  _result = _execute.execute(b"CTCBeamSearchDecoder", top_paths + top_paths +
+  _result = execute(b"CTCBeamSearchDecoder", top_paths + top_paths +
                              top_paths + 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "CTCBeamSearchDecoder", _inputs_flat, _attrs, _result, name)
   _result = [_result[:top_paths]] + _result[top_paths:]
   _result = _result[:1] + [_result[1:1 + top_paths]] + _result[1 + top_paths:]
@@ -162,14 +174,14 @@ def ctc_greedy_decoder(inputs, sequence_length, merge_repeated=False, name=None)
   if _ctx is None or not _ctx._eager_context.is_eager:
     if merge_repeated is None:
       merge_repeated = False
-    merge_repeated = _execute.make_bool(merge_repeated, "merge_repeated")
+    merge_repeated = make_bool(merge_repeated, "merge_repeated")
     _, _, _op = _op_def_lib._apply_op_helper(
         "CTCGreedyDecoder", inputs=inputs, sequence_length=sequence_length,
         merge_repeated=merge_repeated, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("merge_repeated", _op.get_attr("merge_repeated"))
-    _execute.record_gradient(
+    record_gradient(
       "CTCGreedyDecoder", _inputs_flat, _attrs, _result, name)
     _result = _CTCGreedyDecoderOutput._make(_result)
     return _result
@@ -201,14 +213,14 @@ def ctc_greedy_decoder_eager_fallback(inputs, sequence_length, merge_repeated=Fa
   _ctx = ctx if ctx else _context.context()
   if merge_repeated is None:
     merge_repeated = False
-  merge_repeated = _execute.make_bool(merge_repeated, "merge_repeated")
+  merge_repeated = make_bool(merge_repeated, "merge_repeated")
   inputs = _ops.convert_to_tensor(inputs, _dtypes.float32)
   sequence_length = _ops.convert_to_tensor(sequence_length, _dtypes.int32)
   _inputs_flat = [inputs, sequence_length]
   _attrs = ("merge_repeated", merge_repeated)
-  _result = _execute.execute(b"CTCGreedyDecoder", 4, inputs=_inputs_flat,
+  _result = execute(b"CTCGreedyDecoder", 4, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "CTCGreedyDecoder", _inputs_flat, _attrs, _result, name)
   _result = _CTCGreedyDecoderOutput._make(_result)
   return _result
@@ -259,13 +271,13 @@ def ctc_loss(inputs, labels_indices, labels_values, sequence_length, preprocess_
   if _ctx is None or not _ctx._eager_context.is_eager:
     if preprocess_collapse_repeated is None:
       preprocess_collapse_repeated = False
-    preprocess_collapse_repeated = _execute.make_bool(preprocess_collapse_repeated, "preprocess_collapse_repeated")
+    preprocess_collapse_repeated = make_bool(preprocess_collapse_repeated, "preprocess_collapse_repeated")
     if ctc_merge_repeated is None:
       ctc_merge_repeated = True
-    ctc_merge_repeated = _execute.make_bool(ctc_merge_repeated, "ctc_merge_repeated")
+    ctc_merge_repeated = make_bool(ctc_merge_repeated, "ctc_merge_repeated")
     if ignore_longer_outputs_than_inputs is None:
       ignore_longer_outputs_than_inputs = False
-    ignore_longer_outputs_than_inputs = _execute.make_bool(ignore_longer_outputs_than_inputs, "ignore_longer_outputs_than_inputs")
+    ignore_longer_outputs_than_inputs = make_bool(ignore_longer_outputs_than_inputs, "ignore_longer_outputs_than_inputs")
     _, _, _op = _op_def_lib._apply_op_helper(
         "CTCLoss", inputs=inputs, labels_indices=labels_indices,
         labels_values=labels_values, sequence_length=sequence_length,
@@ -280,7 +292,7 @@ def ctc_loss(inputs, labels_indices, labels_values, sequence_length, preprocess_
               "ctc_merge_repeated", _op.get_attr("ctc_merge_repeated"),
               "ignore_longer_outputs_than_inputs",
               _op.get_attr("ignore_longer_outputs_than_inputs"))
-    _execute.record_gradient(
+    record_gradient(
       "CTCLoss", _inputs_flat, _attrs, _result, name)
     _result = _CTCLossOutput._make(_result)
     return _result
@@ -318,13 +330,13 @@ def ctc_loss_eager_fallback(inputs, labels_indices, labels_values, sequence_leng
   _ctx = ctx if ctx else _context.context()
   if preprocess_collapse_repeated is None:
     preprocess_collapse_repeated = False
-  preprocess_collapse_repeated = _execute.make_bool(preprocess_collapse_repeated, "preprocess_collapse_repeated")
+  preprocess_collapse_repeated = make_bool(preprocess_collapse_repeated, "preprocess_collapse_repeated")
   if ctc_merge_repeated is None:
     ctc_merge_repeated = True
-  ctc_merge_repeated = _execute.make_bool(ctc_merge_repeated, "ctc_merge_repeated")
+  ctc_merge_repeated = make_bool(ctc_merge_repeated, "ctc_merge_repeated")
   if ignore_longer_outputs_than_inputs is None:
     ignore_longer_outputs_than_inputs = False
-  ignore_longer_outputs_than_inputs = _execute.make_bool(ignore_longer_outputs_than_inputs, "ignore_longer_outputs_than_inputs")
+  ignore_longer_outputs_than_inputs = make_bool(ignore_longer_outputs_than_inputs, "ignore_longer_outputs_than_inputs")
   inputs = _ops.convert_to_tensor(inputs, _dtypes.float32)
   labels_indices = _ops.convert_to_tensor(labels_indices, _dtypes.int64)
   labels_values = _ops.convert_to_tensor(labels_values, _dtypes.int32)
@@ -333,9 +345,9 @@ def ctc_loss_eager_fallback(inputs, labels_indices, labels_values, sequence_leng
   _attrs = ("preprocess_collapse_repeated", preprocess_collapse_repeated,
   "ctc_merge_repeated", ctc_merge_repeated,
   "ignore_longer_outputs_than_inputs", ignore_longer_outputs_than_inputs)
-  _result = _execute.execute(b"CTCLoss", 2, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"CTCLoss", 2, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "CTCLoss", _inputs_flat, _attrs, _result, name)
   _result = _CTCLossOutput._make(_result)
   return _result

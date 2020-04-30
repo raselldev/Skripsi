@@ -12,7 +12,31 @@ from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
 from tensorflow.python.framework import dtypes as _dtypes
 from tensorflow.python import context as _context
-from tensorflow.python import execute as _execute
+#from tensorflow.python import execute as _execute
+
+def record_gradient(unused_op_name, unused_inputs, unused_attrs, unused_results,
+                    unused_name):
+  
+  pass
+
+def make_int(v, arg_name):
+  if isinstance(v, _six.string_types):
+    raise TypeError("Expected int for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  try:
+    return int(v)
+  except (ValueError, TypeError):
+    raise TypeError("Expected int for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+
+def make_type(v, arg_name):
+  try:
+    v = _dtypes.as_dtype(v).base_dtype
+  except TypeError:
+    raise TypeError("Expected DataType for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  i = v.as_datatype_enum
+  return i
 
 
 def multinomial(logits, num_samples, seed=0, seed2=0, output_dtype=_dtypes.int64, name=None):
@@ -39,13 +63,13 @@ def multinomial(logits, num_samples, seed=0, seed2=0, output_dtype=_dtypes.int64
   if _ctx is None or not _ctx._eager_context.is_eager:
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     if output_dtype is None:
       output_dtype = _dtypes.int64
-    output_dtype = _execute.make_type(output_dtype, "output_dtype")
+    output_dtype = make_type(output_dtype, "output_dtype")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Multinomial", logits=logits, num_samples=num_samples, seed=seed,
         seed2=seed2, output_dtype=output_dtype, name=name)
@@ -54,7 +78,7 @@ def multinomial(logits, num_samples, seed=0, seed2=0, output_dtype=_dtypes.int64
     _attrs = ("seed", _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "T", _op.get_attr("T"), "output_dtype",
               _op.get_attr("output_dtype"))
-    _execute.record_gradient(
+    record_gradient(
       "Multinomial", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -85,21 +109,21 @@ def multinomial_eager_fallback(logits, num_samples, seed=0, seed2=0, output_dtyp
   _ctx = ctx if ctx else _context.context()
   if seed is None:
     seed = 0
-  seed = _execute.make_int(seed, "seed")
+  seed = make_int(seed, "seed")
   if seed2 is None:
     seed2 = 0
-  seed2 = _execute.make_int(seed2, "seed2")
+  seed2 = make_int(seed2, "seed2")
   if output_dtype is None:
     output_dtype = _dtypes.int64
-  output_dtype = _execute.make_type(output_dtype, "output_dtype")
-  _attr_T, (logits,) = _execute.args_to_matching_eager([logits], _ctx)
+  output_dtype = make_type(output_dtype, "output_dtype")
+  _attr_T, (logits,) = args_to_matching_eager([logits], _ctx)
   num_samples = _ops.convert_to_tensor(num_samples, _dtypes.int32)
   _inputs_flat = [logits, num_samples]
   _attrs = ("seed", seed, "seed2", seed2, "T", _attr_T, "output_dtype",
   output_dtype)
-  _result = _execute.execute(b"Multinomial", 1, inputs=_inputs_flat,
+  _result = execute(b"Multinomial", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Multinomial", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -138,10 +162,10 @@ def parameterized_truncated_normal(shape, means, stdevs, minvals, maxvals, seed=
   if _ctx is None or not _ctx._eager_context.is_eager:
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     _, _, _op = _op_def_lib._apply_op_helper(
         "ParameterizedTruncatedNormal", shape=shape, means=means,
         stdevs=stdevs, minvals=minvals, maxvals=maxvals, seed=seed,
@@ -150,7 +174,7 @@ def parameterized_truncated_normal(shape, means, stdevs, minvals, maxvals, seed=
     _inputs_flat = _op.inputs
     _attrs = ("seed", _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "dtype", _op.get_attr("dtype"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "ParameterizedTruncatedNormal", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -181,19 +205,19 @@ def parameterized_truncated_normal_eager_fallback(shape, means, stdevs, minvals,
   _ctx = ctx if ctx else _context.context()
   if seed is None:
     seed = 0
-  seed = _execute.make_int(seed, "seed")
+  seed = make_int(seed, "seed")
   if seed2 is None:
     seed2 = 0
-  seed2 = _execute.make_int(seed2, "seed2")
-  _attr_dtype, _inputs_dtype = _execute.args_to_matching_eager([means, stdevs, minvals, maxvals], _ctx)
+  seed2 = make_int(seed2, "seed2")
+  _attr_dtype, _inputs_dtype = args_to_matching_eager([means, stdevs, minvals, maxvals], _ctx)
   (means, stdevs, minvals, maxvals) = _inputs_dtype
-  _attr_T, (shape,) = _execute.args_to_matching_eager([shape], _ctx)
+  _attr_T, (shape,) = args_to_matching_eager([shape], _ctx)
   _inputs_flat = [shape, means, stdevs, minvals, maxvals]
   _attrs = ("seed", seed, "seed2", seed2, "dtype", _attr_dtype, "T", _attr_T)
-  _result = _execute.execute(b"ParameterizedTruncatedNormal", 1,
+  _result = execute(b"ParameterizedTruncatedNormal", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ParameterizedTruncatedNormal", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -228,10 +252,10 @@ def random_gamma(shape, alpha, seed=0, seed2=0, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RandomGamma", shape=shape, alpha=alpha, seed=seed, seed2=seed2,
         name=name)
@@ -239,7 +263,7 @@ def random_gamma(shape, alpha, seed=0, seed2=0, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("seed", _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "S", _op.get_attr("S"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "RandomGamma", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -269,17 +293,17 @@ def random_gamma_eager_fallback(shape, alpha, seed=0, seed2=0, name=None, ctx=No
   _ctx = ctx if ctx else _context.context()
   if seed is None:
     seed = 0
-  seed = _execute.make_int(seed, "seed")
+  seed = make_int(seed, "seed")
   if seed2 is None:
     seed2 = 0
-  seed2 = _execute.make_int(seed2, "seed2")
-  _attr_S, (shape,) = _execute.args_to_matching_eager([shape], _ctx)
-  _attr_T, (alpha,) = _execute.args_to_matching_eager([alpha], _ctx)
+  seed2 = make_int(seed2, "seed2")
+  _attr_S, (shape,) = args_to_matching_eager([shape], _ctx)
+  _attr_T, (alpha,) = args_to_matching_eager([alpha], _ctx)
   _inputs_flat = [shape, alpha]
   _attrs = ("seed", seed, "seed2", seed2, "S", _attr_S, "T", _attr_T)
-  _result = _execute.execute(b"RandomGamma", 1, inputs=_inputs_flat,
+  _result = execute(b"RandomGamma", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RandomGamma", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -303,7 +327,7 @@ def random_gamma_grad(alpha, sample, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "RandomGammaGrad", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -331,13 +355,13 @@ def random_gamma_grad_eager_fallback(alpha, sample, name=None, ctx=None):
   This is for function random_gamma_grad
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([alpha, sample], _ctx)
+  _attr_T, _inputs_T = args_to_matching_eager([alpha, sample], _ctx)
   (alpha, sample) = _inputs_T
   _inputs_flat = [alpha, sample]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"RandomGammaGrad", 1, inputs=_inputs_flat,
+  _result = execute(b"RandomGammaGrad", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RandomGammaGrad", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -360,10 +384,10 @@ def random_poisson(shape, rate, seed=0, seed2=0, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RandomPoisson", shape=shape, rate=rate, seed=seed, seed2=seed2,
         name=name)
@@ -371,7 +395,7 @@ def random_poisson(shape, rate, seed=0, seed2=0, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("seed", _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "S", _op.get_attr("S"), "dtype", _op.get_attr("dtype"))
-    _execute.record_gradient(
+    record_gradient(
       "RandomPoisson", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -401,17 +425,17 @@ def random_poisson_eager_fallback(shape, rate, seed=0, seed2=0, name=None, ctx=N
   _ctx = ctx if ctx else _context.context()
   if seed is None:
     seed = 0
-  seed = _execute.make_int(seed, "seed")
+  seed = make_int(seed, "seed")
   if seed2 is None:
     seed2 = 0
-  seed2 = _execute.make_int(seed2, "seed2")
-  _attr_S, (shape,) = _execute.args_to_matching_eager([shape], _ctx)
-  _attr_dtype, (rate,) = _execute.args_to_matching_eager([rate], _ctx)
+  seed2 = make_int(seed2, "seed2")
+  _attr_S, (shape,) = args_to_matching_eager([shape], _ctx)
+  _attr_dtype, (rate,) = args_to_matching_eager([rate], _ctx)
   _inputs_flat = [shape, rate]
   _attrs = ("seed", seed, "seed2", seed2, "S", _attr_S, "dtype", _attr_dtype)
-  _result = _execute.execute(b"RandomPoisson", 1, inputs=_inputs_flat,
+  _result = execute(b"RandomPoisson", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RandomPoisson", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -453,13 +477,13 @@ def random_poisson_v2(shape, rate, seed=0, seed2=0, dtype=_dtypes.int64, name=No
   if _ctx is None or not _ctx._eager_context.is_eager:
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     if dtype is None:
       dtype = _dtypes.int64
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RandomPoissonV2", shape=shape, rate=rate, seed=seed, seed2=seed2,
         dtype=dtype, name=name)
@@ -468,7 +492,7 @@ def random_poisson_v2(shape, rate, seed=0, seed2=0, dtype=_dtypes.int64, name=No
     _attrs = ("seed", _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "S", _op.get_attr("S"), "R", _op.get_attr("R"), "dtype",
               _op.get_attr("dtype"))
-    _execute.record_gradient(
+    record_gradient(
       "RandomPoissonV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -499,21 +523,21 @@ def random_poisson_v2_eager_fallback(shape, rate, seed=0, seed2=0, dtype=_dtypes
   _ctx = ctx if ctx else _context.context()
   if seed is None:
     seed = 0
-  seed = _execute.make_int(seed, "seed")
+  seed = make_int(seed, "seed")
   if seed2 is None:
     seed2 = 0
-  seed2 = _execute.make_int(seed2, "seed2")
+  seed2 = make_int(seed2, "seed2")
   if dtype is None:
     dtype = _dtypes.int64
-  dtype = _execute.make_type(dtype, "dtype")
-  _attr_S, (shape,) = _execute.args_to_matching_eager([shape], _ctx)
-  _attr_R, (rate,) = _execute.args_to_matching_eager([rate], _ctx, _dtypes.float64)
+  dtype = make_type(dtype, "dtype")
+  _attr_S, (shape,) = args_to_matching_eager([shape], _ctx)
+  _attr_R, (rate,) = args_to_matching_eager([rate], _ctx, _dtypes.float64)
   _inputs_flat = [shape, rate]
   _attrs = ("seed", seed, "seed2", seed2, "S", _attr_S, "R", _attr_R, "dtype",
   dtype)
-  _result = _execute.execute(b"RandomPoissonV2", 1, inputs=_inputs_flat,
+  _result = execute(b"RandomPoissonV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RandomPoissonV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -549,17 +573,17 @@ def random_shuffle(value, seed=0, seed2=0, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RandomShuffle", value=value, seed=seed, seed2=seed2, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("seed", _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "RandomShuffle", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -589,16 +613,16 @@ def random_shuffle_eager_fallback(value, seed=0, seed2=0, name=None, ctx=None):
   _ctx = ctx if ctx else _context.context()
   if seed is None:
     seed = 0
-  seed = _execute.make_int(seed, "seed")
+  seed = make_int(seed, "seed")
   if seed2 is None:
     seed2 = 0
-  seed2 = _execute.make_int(seed2, "seed2")
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
+  seed2 = make_int(seed2, "seed2")
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
   _inputs_flat = [value]
   _attrs = ("seed", seed, "seed2", seed2, "T", _attr_T)
-  _result = _execute.execute(b"RandomShuffle", 1, inputs=_inputs_flat,
+  _result = execute(b"RandomShuffle", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RandomShuffle", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -627,13 +651,13 @@ def random_standard_normal(shape, dtype, seed=0, seed2=0, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RandomStandardNormal", shape=shape, dtype=dtype, seed=seed,
         seed2=seed2, name=name)
@@ -641,7 +665,7 @@ def random_standard_normal(shape, dtype, seed=0, seed2=0, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("seed", _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "dtype", _op.get_attr("dtype"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "RandomStandardNormal", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -669,19 +693,19 @@ def random_standard_normal_eager_fallback(shape, dtype, seed=0, seed2=0, name=No
   This is for function random_standard_normal
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   if seed is None:
     seed = 0
-  seed = _execute.make_int(seed, "seed")
+  seed = make_int(seed, "seed")
   if seed2 is None:
     seed2 = 0
-  seed2 = _execute.make_int(seed2, "seed2")
-  _attr_T, (shape,) = _execute.args_to_matching_eager([shape], _ctx)
+  seed2 = make_int(seed2, "seed2")
+  _attr_T, (shape,) = args_to_matching_eager([shape], _ctx)
   _inputs_flat = [shape]
   _attrs = ("seed", seed, "seed2", seed2, "dtype", dtype, "T", _attr_T)
-  _result = _execute.execute(b"RandomStandardNormal", 1, inputs=_inputs_flat,
+  _result = execute(b"RandomStandardNormal", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RandomStandardNormal", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -711,13 +735,13 @@ def random_uniform(shape, dtype, seed=0, seed2=0, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RandomUniform", shape=shape, dtype=dtype, seed=seed, seed2=seed2,
         name=name)
@@ -725,7 +749,7 @@ def random_uniform(shape, dtype, seed=0, seed2=0, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("seed", _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "dtype", _op.get_attr("dtype"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "RandomUniform", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -753,19 +777,19 @@ def random_uniform_eager_fallback(shape, dtype, seed=0, seed2=0, name=None, ctx=
   This is for function random_uniform
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   if seed is None:
     seed = 0
-  seed = _execute.make_int(seed, "seed")
+  seed = make_int(seed, "seed")
   if seed2 is None:
     seed2 = 0
-  seed2 = _execute.make_int(seed2, "seed2")
-  _attr_T, (shape,) = _execute.args_to_matching_eager([shape], _ctx)
+  seed2 = make_int(seed2, "seed2")
+  _attr_T, (shape,) = args_to_matching_eager([shape], _ctx)
   _inputs_flat = [shape]
   _attrs = ("seed", seed, "seed2", seed2, "dtype", dtype, "T", _attr_T)
-  _result = _execute.execute(b"RandomUniform", 1, inputs=_inputs_flat,
+  _result = execute(b"RandomUniform", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RandomUniform", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -804,10 +828,10 @@ def random_uniform_int(shape, minval, maxval, seed=0, seed2=0, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RandomUniformInt", shape=shape, minval=minval, maxval=maxval,
         seed=seed, seed2=seed2, name=name)
@@ -815,7 +839,7 @@ def random_uniform_int(shape, minval, maxval, seed=0, seed2=0, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("seed", _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "Tout", _op.get_attr("Tout"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "RandomUniformInt", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -845,18 +869,18 @@ def random_uniform_int_eager_fallback(shape, minval, maxval, seed=0, seed2=0, na
   _ctx = ctx if ctx else _context.context()
   if seed is None:
     seed = 0
-  seed = _execute.make_int(seed, "seed")
+  seed = make_int(seed, "seed")
   if seed2 is None:
     seed2 = 0
-  seed2 = _execute.make_int(seed2, "seed2")
-  _attr_Tout, _inputs_Tout = _execute.args_to_matching_eager([minval, maxval], _ctx)
+  seed2 = make_int(seed2, "seed2")
+  _attr_Tout, _inputs_Tout = args_to_matching_eager([minval, maxval], _ctx)
   (minval, maxval) = _inputs_Tout
-  _attr_T, (shape,) = _execute.args_to_matching_eager([shape], _ctx)
+  _attr_T, (shape,) = args_to_matching_eager([shape], _ctx)
   _inputs_flat = [shape, minval, maxval]
   _attrs = ("seed", seed, "seed2", seed2, "Tout", _attr_Tout, "T", _attr_T)
-  _result = _execute.execute(b"RandomUniformInt", 1, inputs=_inputs_flat,
+  _result = execute(b"RandomUniformInt", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RandomUniformInt", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -887,13 +911,13 @@ def truncated_normal(shape, dtype, seed=0, seed2=0, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TruncatedNormal", shape=shape, dtype=dtype, seed=seed, seed2=seed2,
         name=name)
@@ -901,7 +925,7 @@ def truncated_normal(shape, dtype, seed=0, seed2=0, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("seed", _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "dtype", _op.get_attr("dtype"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TruncatedNormal", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -929,19 +953,19 @@ def truncated_normal_eager_fallback(shape, dtype, seed=0, seed2=0, name=None, ct
   This is for function truncated_normal
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   if seed is None:
     seed = 0
-  seed = _execute.make_int(seed, "seed")
+  seed = make_int(seed, "seed")
   if seed2 is None:
     seed2 = 0
-  seed2 = _execute.make_int(seed2, "seed2")
-  _attr_T, (shape,) = _execute.args_to_matching_eager([shape], _ctx)
+  seed2 = make_int(seed2, "seed2")
+  _attr_T, (shape,) = args_to_matching_eager([shape], _ctx)
   _inputs_flat = [shape]
   _attrs = ("seed", seed, "seed2", seed2, "dtype", dtype, "T", _attr_T)
-  _result = _execute.execute(b"TruncatedNormal", 1, inputs=_inputs_flat,
+  _result = execute(b"TruncatedNormal", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TruncatedNormal", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result

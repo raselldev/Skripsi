@@ -7,12 +7,73 @@ Original C++ source file: data_flow_ops.cc
 import collections as _collections
 import six as _six
 
-from tensorflow.python import execute as _execute
+#from tensorflow.python import execute as _execute
 from tensorflow.python import context as _context
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
 from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.python.framework import op_def_library as _op_def_library
+from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import tensor_shape
+from tensorflow.python.util import compat
+
+
+def record_gradient(unused_op_name, unused_inputs, unused_attrs, unused_results,
+                    unused_name):
+  
+  pass
+
+def make_shape(v, arg_name):
+  try:
+    shape = tensor_shape.as_shape(v)
+  except TypeError as e:
+    raise TypeError("Error converting %s to a TensorShape: %s." % (arg_name, e))
+  except ValueError as e:
+    raise ValueError("Error converting %s to a TensorShape: %s." % (arg_name,
+                                                                    e))
+  if shape.ndims is None:
+    return None
+  else:
+    return shape.as_list()
+
+
+def make_float(v, arg_name):
+  if not isinstance(v, compat.real_types):
+    raise TypeError("Expected float for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return float(v)
+
+def make_int(v, arg_name):
+  if isinstance(v, six.string_types):
+    raise TypeError("Expected int for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  try:
+    return int(v)
+  except (ValueError, TypeError):
+    raise TypeError("Expected int for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+
+def make_str(v, arg_name):
+  if not isinstance(v, compat.bytes_or_text_types):
+    raise TypeError("Expected string for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return compat.as_bytes(v)  # Convert unicode strings to bytes.
+
+def make_bool(v, arg_name):
+  if not isinstance(v, bool):
+    raise TypeError("Expected bool for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return v
+
+
+def make_type(v, arg_name):
+  try:
+    v = dtypes.as_dtype(v).base_dtype
+  except TypeError:
+    raise TypeError("Expected DataType for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  i = v.as_datatype_enum
+  return i
 
 
 def accumulator_apply_gradient(handle, local_step, gradient, name=None):
@@ -63,7 +124,7 @@ def accumulator_num_accumulated(handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "AccumulatorNumAccumulated", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -127,14 +188,14 @@ def accumulator_take_gradient(handle, num_required, dtype, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     _, _, _op = _op_def_lib._apply_op_helper(
         "AccumulatorTakeGradient", handle=handle, num_required=num_required,
         dtype=dtype, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"))
-    _execute.record_gradient(
+    record_gradient(
       "AccumulatorTakeGradient", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -184,23 +245,23 @@ def barrier(component_types, shapes=[], capacity=-1, container="", shared_name="
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'barrier' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if shapes is None:
       shapes = []
     if not isinstance(shapes, (list, tuple)):
       raise TypeError(
           "Expected list for 'shapes' argument to "
           "'barrier' Op, not %r." % shapes)
-    shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+    shapes = [make_shape(_s, "shapes") for _s in shapes]
     if capacity is None:
       capacity = -1
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Barrier", component_types=component_types, shapes=shapes,
         capacity=capacity, container=container, shared_name=shared_name,
@@ -211,7 +272,7 @@ def barrier(component_types, shapes=[], capacity=-1, container="", shared_name="
               _op.get_attr("shapes"), "capacity", _op.get_attr("capacity"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "Barrier", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -247,7 +308,7 @@ def barrier_close(handle, cancel_pending_enqueues=False, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if cancel_pending_enqueues is None:
       cancel_pending_enqueues = False
-    cancel_pending_enqueues = _execute.make_bool(cancel_pending_enqueues, "cancel_pending_enqueues")
+    cancel_pending_enqueues = make_bool(cancel_pending_enqueues, "cancel_pending_enqueues")
     _, _, _op = _op_def_lib._apply_op_helper(
         "BarrierClose", handle=handle,
         cancel_pending_enqueues=cancel_pending_enqueues, name=name)
@@ -278,7 +339,7 @@ def barrier_incomplete_size(handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "BarrierIncompleteSize", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -313,7 +374,7 @@ def barrier_insert_many(handle, keys, values, component_index, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    component_index = _execute.make_int(component_index, "component_index")
+    component_index = make_int(component_index, "component_index")
     _, _, _op = _op_def_lib._apply_op_helper(
         "BarrierInsertMany", handle=handle, keys=keys, values=values,
         component_index=component_index, name=name)
@@ -344,7 +405,7 @@ def barrier_ready_size(handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "BarrierReadySize", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -401,16 +462,16 @@ def barrier_take_many(handle, num_elements, component_types, allow_small_batch=F
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'barrier_take_many' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if allow_small_batch is None:
       allow_small_batch = False
-    allow_small_batch = _execute.make_bool(allow_small_batch, "allow_small_batch")
+    allow_small_batch = make_bool(allow_small_batch, "allow_small_batch")
     if wait_for_incomplete is None:
       wait_for_incomplete = False
-    wait_for_incomplete = _execute.make_bool(wait_for_incomplete, "wait_for_incomplete")
+    wait_for_incomplete = make_bool(wait_for_incomplete, "wait_for_incomplete")
     if timeout_ms is None:
       timeout_ms = -1
-    timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+    timeout_ms = make_int(timeout_ms, "timeout_ms")
     _, _, _op = _op_def_lib._apply_op_helper(
         "BarrierTakeMany", handle=handle, num_elements=num_elements,
         component_types=component_types, allow_small_batch=allow_small_batch,
@@ -422,7 +483,7 @@ def barrier_take_many(handle, num_elements, component_types, allow_small_batch=F
               "allow_small_batch", _op.get_attr("allow_small_batch"),
               "wait_for_incomplete", _op.get_attr("wait_for_incomplete"),
               "timeout_ms", _op.get_attr("timeout_ms"))
-    _execute.record_gradient(
+    record_gradient(
       "BarrierTakeMany", _inputs_flat, _attrs, _result, name)
     _result = _result[:2] + [_result[2:]]
     _result = _BarrierTakeManyOutput._make(_result)
@@ -463,17 +524,17 @@ def conditional_accumulator(dtype, shape, container="", shared_name="", reductio
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
-    shape = _execute.make_shape(shape, "shape")
+    dtype = make_type(dtype, "dtype")
+    shape = make_shape(shape, "shape")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     if reduction_type is None:
       reduction_type = "MEAN"
-    reduction_type = _execute.make_str(reduction_type, "reduction_type")
+    reduction_type = make_str(reduction_type, "reduction_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "ConditionalAccumulator", dtype=dtype, shape=shape,
         container=container, shared_name=shared_name,
@@ -484,7 +545,7 @@ def conditional_accumulator(dtype, shape, container="", shared_name="", reductio
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"), "reduction_type",
               _op.get_attr("reduction_type"))
-    _execute.record_gradient(
+    record_gradient(
       "ConditionalAccumulator", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -539,7 +600,7 @@ def delete_session_tensor_eager_fallback(handle, name=None, ctx=None):
   handle = _ops.convert_to_tensor(handle, _dtypes.string)
   _inputs_flat = [handle]
   _attrs = None
-  _result = _execute.execute(b"DeleteSessionTensor", 0, inputs=_inputs_flat,
+  _result = execute(b"DeleteSessionTensor", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -600,7 +661,7 @@ def dynamic_partition(data, partitions, num_partitions, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    num_partitions = _execute.make_int(num_partitions, "num_partitions")
+    num_partitions = make_int(num_partitions, "num_partitions")
     _, _, _op = _op_def_lib._apply_op_helper(
         "DynamicPartition", data=data, partitions=partitions,
         num_partitions=num_partitions, name=name)
@@ -608,7 +669,7 @@ def dynamic_partition(data, partitions, num_partitions, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("num_partitions", _op.get_attr("num_partitions"), "T",
               _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "DynamicPartition", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -636,15 +697,15 @@ def dynamic_partition_eager_fallback(data, partitions, num_partitions, name=None
   This is for function dynamic_partition
   """
   _ctx = ctx if ctx else _context.context()
-  num_partitions = _execute.make_int(num_partitions, "num_partitions")
-  _attr_T, (data,) = _execute.args_to_matching_eager([data], _ctx)
+  num_partitions = make_int(num_partitions, "num_partitions")
+  _attr_T, (data,) = args_to_matching_eager([data], _ctx)
   partitions = _ops.convert_to_tensor(partitions, _dtypes.int32)
   _inputs_flat = [data, partitions]
   _attrs = ("num_partitions", num_partitions, "T", _attr_T)
-  _result = _execute.execute(b"DynamicPartition", num_partitions,
+  _result = execute(b"DynamicPartition", num_partitions,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "DynamicPartition", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -745,7 +806,7 @@ def dynamic_stitch(indices, data, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("N", _op.get_attr("N"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "DynamicStitch", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -786,13 +847,13 @@ def dynamic_stitch_eager_fallback(indices, data, name=None, ctx=None):
         "List argument 'data' to 'dynamic_stitch' Op with length %d "
         "must match length %d of argument 'indices'." %
         (len(data), _attr_N))
-  _attr_T, data = _execute.args_to_matching_eager(list(data), _ctx)
+  _attr_T, data = args_to_matching_eager(list(data), _ctx)
   indices = _ops.convert_n_to_tensor(indices, _dtypes.int32)
   _inputs_flat = list(indices) + list(data)
   _attrs = ("N", _attr_N, "T", _attr_T)
-  _result = _execute.execute(b"DynamicStitch", 1, inputs=_inputs_flat,
+  _result = execute(b"DynamicStitch", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "DynamicStitch", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -829,23 +890,23 @@ def fifo_queue(component_types, shapes=[], capacity=-1, container="", shared_nam
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'fifo_queue' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if shapes is None:
       shapes = []
     if not isinstance(shapes, (list, tuple)):
       raise TypeError(
           "Expected list for 'shapes' argument to "
           "'fifo_queue' Op, not %r." % shapes)
-    shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+    shapes = [make_shape(_s, "shapes") for _s in shapes]
     if capacity is None:
       capacity = -1
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FIFOQueue", component_types=component_types, shapes=shapes,
         capacity=capacity, container=container, shared_name=shared_name,
@@ -856,7 +917,7 @@ def fifo_queue(component_types, shapes=[], capacity=-1, container="", shared_nam
               _op.get_attr("shapes"), "capacity", _op.get_attr("capacity"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "FIFOQueue", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -898,23 +959,23 @@ def fifo_queue_v2(component_types, shapes=[], capacity=-1, container="", shared_
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'fifo_queue_v2' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if shapes is None:
       shapes = []
     if not isinstance(shapes, (list, tuple)):
       raise TypeError(
           "Expected list for 'shapes' argument to "
           "'fifo_queue_v2' Op, not %r." % shapes)
-    shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+    shapes = [make_shape(_s, "shapes") for _s in shapes]
     if capacity is None:
       capacity = -1
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FIFOQueueV2", component_types=component_types, shapes=shapes,
         capacity=capacity, container=container, shared_name=shared_name,
@@ -925,7 +986,7 @@ def fifo_queue_v2(component_types, shapes=[], capacity=-1, container="", shared_
               _op.get_attr("shapes"), "capacity", _op.get_attr("capacity"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "FIFOQueueV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -959,29 +1020,29 @@ def fifo_queue_v2_eager_fallback(component_types, shapes=[], capacity=-1, contai
     raise TypeError(
         "Expected list for 'component_types' argument to "
         "'fifo_queue_v2' Op, not %r." % component_types)
-  component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+  component_types = [make_type(_t, "component_types") for _t in component_types]
   if shapes is None:
     shapes = []
   if not isinstance(shapes, (list, tuple)):
     raise TypeError(
         "Expected list for 'shapes' argument to "
         "'fifo_queue_v2' Op, not %r." % shapes)
-  shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+  shapes = [make_shape(_s, "shapes") for _s in shapes]
   if capacity is None:
     capacity = -1
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("component_types", component_types, "shapes", shapes, "capacity",
   capacity, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"FIFOQueueV2", 1, inputs=_inputs_flat,
+  _result = execute(b"FIFOQueueV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "FIFOQueueV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1004,7 +1065,7 @@ def fake_queue(resource, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "FakeQueue", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1032,7 +1093,7 @@ def get_session_handle(value, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "GetSessionHandle", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1059,12 +1120,12 @@ def get_session_handle_eager_fallback(value, name=None, ctx=None):
   This is for function get_session_handle
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
   _inputs_flat = [value]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"GetSessionHandle", 1, inputs=_inputs_flat,
+  _result = execute(b"GetSessionHandle", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "GetSessionHandle", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1087,7 +1148,7 @@ def get_session_handle_v2(value, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "GetSessionHandleV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1114,12 +1175,12 @@ def get_session_handle_v2_eager_fallback(value, name=None, ctx=None):
   This is for function get_session_handle_v2
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
   _inputs_flat = [value]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"GetSessionHandleV2", 1, inputs=_inputs_flat,
+  _result = execute(b"GetSessionHandleV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "GetSessionHandleV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1139,13 +1200,13 @@ def get_session_tensor(handle, dtype, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     _, _, _op = _op_def_lib._apply_op_helper(
         "GetSessionTensor", handle=handle, dtype=dtype, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"))
-    _execute.record_gradient(
+    record_gradient(
       "GetSessionTensor", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1173,13 +1234,13 @@ def get_session_tensor_eager_fallback(handle, dtype, name=None, ctx=None):
   This is for function get_session_tensor
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   handle = _ops.convert_to_tensor(handle, _dtypes.string)
   _inputs_flat = [handle]
   _attrs = ("dtype", dtype)
-  _result = _execute.execute(b"GetSessionTensor", 1, inputs=_inputs_flat,
+  _result = execute(b"GetSessionTensor", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "GetSessionTensor", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1205,19 +1266,19 @@ def map_clear(dtypes, capacity=0, memory_limit=0, container="", shared_name="", 
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'map_clear' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MapClear", dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -1255,23 +1316,23 @@ def map_clear_eager_fallback(dtypes, capacity=0, memory_limit=0, container="", s
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'map_clear' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"MapClear", 0, inputs=_inputs_flat,
+  _result = execute(b"MapClear", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -1297,19 +1358,19 @@ def map_incomplete_size(dtypes, capacity=0, memory_limit=0, container="", shared
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'map_incomplete_size' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MapIncompleteSize", dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -1320,7 +1381,7 @@ def map_incomplete_size(dtypes, capacity=0, memory_limit=0, container="", shared
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "MapIncompleteSize", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1354,25 +1415,25 @@ def map_incomplete_size_eager_fallback(dtypes, capacity=0, memory_limit=0, conta
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'map_incomplete_size' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"MapIncompleteSize", 1, inputs=_inputs_flat,
+  _result = execute(b"MapIncompleteSize", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MapIncompleteSize", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1403,19 +1464,19 @@ def map_peek(key, indices, dtypes, capacity=0, memory_limit=0, container="", sha
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'map_peek' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MapPeek", key=key, indices=indices, dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -1428,7 +1489,7 @@ def map_peek(key, indices, dtypes, capacity=0, memory_limit=0, container="", sha
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "MapPeek", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -1462,27 +1523,27 @@ def map_peek_eager_fallback(key, indices, dtypes, capacity=0, memory_limit=0, co
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'map_peek' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   key = _ops.convert_to_tensor(key, _dtypes.int64)
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   _inputs_flat = [key, indices]
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"MapPeek", len(dtypes), inputs=_inputs_flat,
+  _result = execute(b"MapPeek", len(dtypes), inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MapPeek", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -1507,19 +1568,19 @@ def map_size(dtypes, capacity=0, memory_limit=0, container="", shared_name="", n
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'map_size' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MapSize", dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -1530,7 +1591,7 @@ def map_size(dtypes, capacity=0, memory_limit=0, container="", shared_name="", n
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "MapSize", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1564,25 +1625,25 @@ def map_size_eager_fallback(dtypes, capacity=0, memory_limit=0, container="", sh
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'map_size' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"MapSize", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"MapSize", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MapSize", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1617,19 +1678,19 @@ def map_stage(key, indices, values, dtypes, capacity=0, memory_limit=0, containe
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'map_stage' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MapStage", key=key, indices=indices, values=values, dtypes=dtypes,
         capacity=capacity, memory_limit=memory_limit, container=container,
@@ -1668,27 +1729,27 @@ def map_stage_eager_fallback(key, indices, values, dtypes, capacity=0, memory_li
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'map_stage' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
-  _attr_fake_dtypes, values = _execute.convert_to_mixed_eager_tensors(values, _ctx)
+  shared_name = make_str(shared_name, "shared_name")
+  _attr_fake_dtypes, values = convert_to_mixed_eager_tensors(values, _ctx)
   key = _ops.convert_to_tensor(key, _dtypes.int64)
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   _inputs_flat = [key, indices] + list(values)
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "fake_dtypes", _attr_fake_dtypes, "container", container,
   "shared_name", shared_name)
-  _result = _execute.execute(b"MapStage", 0, inputs=_inputs_flat,
+  _result = execute(b"MapStage", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -1719,19 +1780,19 @@ def map_unstage(key, indices, dtypes, capacity=0, memory_limit=0, container="", 
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'map_unstage' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MapUnstage", key=key, indices=indices, dtypes=dtypes,
         capacity=capacity, memory_limit=memory_limit, container=container,
@@ -1744,7 +1805,7 @@ def map_unstage(key, indices, dtypes, capacity=0, memory_limit=0, container="", 
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "MapUnstage", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -1778,27 +1839,27 @@ def map_unstage_eager_fallback(key, indices, dtypes, capacity=0, memory_limit=0,
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'map_unstage' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   key = _ops.convert_to_tensor(key, _dtypes.int64)
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   _inputs_flat = [key, indices]
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"MapUnstage", len(dtypes), inputs=_inputs_flat,
+  _result = execute(b"MapUnstage", len(dtypes), inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MapUnstage", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -1835,19 +1896,19 @@ def map_unstage_no_key(indices, dtypes, capacity=0, memory_limit=0, container=""
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'map_unstage_no_key' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MapUnstageNoKey", indices=indices, dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -1858,7 +1919,7 @@ def map_unstage_no_key(indices, dtypes, capacity=0, memory_limit=0, container=""
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "MapUnstageNoKey", _inputs_flat, _attrs, _result, name)
     _result = _result[:1] + [_result[1:]]
     _result = _MapUnstageNoKeyOutput._make(_result)
@@ -1895,27 +1956,27 @@ def map_unstage_no_key_eager_fallback(indices, dtypes, capacity=0, memory_limit=
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'map_unstage_no_key' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   _inputs_flat = [indices]
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"MapUnstageNoKey", len(dtypes) + 1,
+  _result = execute(b"MapUnstageNoKey", len(dtypes) + 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MapUnstageNoKey", _inputs_flat, _attrs, _result, name)
   _result = _result[:1] + [_result[1:]]
   _result = _MapUnstageNoKeyOutput._make(_result)
@@ -1942,19 +2003,19 @@ def ordered_map_clear(dtypes, capacity=0, memory_limit=0, container="", shared_n
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'ordered_map_clear' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "OrderedMapClear", dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -1992,23 +2053,23 @@ def ordered_map_clear_eager_fallback(dtypes, capacity=0, memory_limit=0, contain
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'ordered_map_clear' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"OrderedMapClear", 0, inputs=_inputs_flat,
+  _result = execute(b"OrderedMapClear", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -2034,19 +2095,19 @@ def ordered_map_incomplete_size(dtypes, capacity=0, memory_limit=0, container=""
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'ordered_map_incomplete_size' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "OrderedMapIncompleteSize", dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -2057,7 +2118,7 @@ def ordered_map_incomplete_size(dtypes, capacity=0, memory_limit=0, container=""
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "OrderedMapIncompleteSize", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2091,26 +2152,26 @@ def ordered_map_incomplete_size_eager_fallback(dtypes, capacity=0, memory_limit=
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'ordered_map_incomplete_size' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"OrderedMapIncompleteSize", 1,
+  _result = execute(b"OrderedMapIncompleteSize", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "OrderedMapIncompleteSize", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2142,19 +2203,19 @@ def ordered_map_peek(key, indices, dtypes, capacity=0, memory_limit=0, container
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'ordered_map_peek' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "OrderedMapPeek", key=key, indices=indices, dtypes=dtypes,
         capacity=capacity, memory_limit=memory_limit, container=container,
@@ -2167,7 +2228,7 @@ def ordered_map_peek(key, indices, dtypes, capacity=0, memory_limit=0, container
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "OrderedMapPeek", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -2201,28 +2262,28 @@ def ordered_map_peek_eager_fallback(key, indices, dtypes, capacity=0, memory_lim
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'ordered_map_peek' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   key = _ops.convert_to_tensor(key, _dtypes.int64)
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   _inputs_flat = [key, indices]
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"OrderedMapPeek", len(dtypes),
+  _result = execute(b"OrderedMapPeek", len(dtypes),
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "OrderedMapPeek", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -2247,19 +2308,19 @@ def ordered_map_size(dtypes, capacity=0, memory_limit=0, container="", shared_na
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'ordered_map_size' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "OrderedMapSize", dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -2270,7 +2331,7 @@ def ordered_map_size(dtypes, capacity=0, memory_limit=0, container="", shared_na
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "OrderedMapSize", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2304,25 +2365,25 @@ def ordered_map_size_eager_fallback(dtypes, capacity=0, memory_limit=0, containe
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'ordered_map_size' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"OrderedMapSize", 1, inputs=_inputs_flat,
+  _result = execute(b"OrderedMapSize", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "OrderedMapSize", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2359,19 +2420,19 @@ def ordered_map_stage(key, indices, values, dtypes, capacity=0, memory_limit=0, 
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'ordered_map_stage' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "OrderedMapStage", key=key, indices=indices, values=values,
         dtypes=dtypes, capacity=capacity, memory_limit=memory_limit,
@@ -2410,27 +2471,27 @@ def ordered_map_stage_eager_fallback(key, indices, values, dtypes, capacity=0, m
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'ordered_map_stage' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
-  _attr_fake_dtypes, values = _execute.convert_to_mixed_eager_tensors(values, _ctx)
+  shared_name = make_str(shared_name, "shared_name")
+  _attr_fake_dtypes, values = convert_to_mixed_eager_tensors(values, _ctx)
   key = _ops.convert_to_tensor(key, _dtypes.int64)
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   _inputs_flat = [key, indices] + list(values)
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "fake_dtypes", _attr_fake_dtypes, "container", container,
   "shared_name", shared_name)
-  _result = _execute.execute(b"OrderedMapStage", 0, inputs=_inputs_flat,
+  _result = execute(b"OrderedMapStage", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -2461,19 +2522,19 @@ def ordered_map_unstage(key, indices, dtypes, capacity=0, memory_limit=0, contai
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'ordered_map_unstage' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "OrderedMapUnstage", key=key, indices=indices, dtypes=dtypes,
         capacity=capacity, memory_limit=memory_limit, container=container,
@@ -2486,7 +2547,7 @@ def ordered_map_unstage(key, indices, dtypes, capacity=0, memory_limit=0, contai
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "OrderedMapUnstage", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -2520,28 +2581,28 @@ def ordered_map_unstage_eager_fallback(key, indices, dtypes, capacity=0, memory_
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'ordered_map_unstage' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   key = _ops.convert_to_tensor(key, _dtypes.int64)
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   _inputs_flat = [key, indices]
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"OrderedMapUnstage", len(dtypes),
+  _result = execute(b"OrderedMapUnstage", len(dtypes),
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "OrderedMapUnstage", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -2578,19 +2639,19 @@ def ordered_map_unstage_no_key(indices, dtypes, capacity=0, memory_limit=0, cont
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'ordered_map_unstage_no_key' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "OrderedMapUnstageNoKey", indices=indices, dtypes=dtypes,
         capacity=capacity, memory_limit=memory_limit, container=container,
@@ -2601,7 +2662,7 @@ def ordered_map_unstage_no_key(indices, dtypes, capacity=0, memory_limit=0, cont
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "OrderedMapUnstageNoKey", _inputs_flat, _attrs, _result, name)
     _result = _result[:1] + [_result[1:]]
     _result = _OrderedMapUnstageNoKeyOutput._make(_result)
@@ -2638,27 +2699,27 @@ def ordered_map_unstage_no_key_eager_fallback(indices, dtypes, capacity=0, memor
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'ordered_map_unstage_no_key' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   _inputs_flat = [indices]
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"OrderedMapUnstageNoKey", len(dtypes) + 1,
+  _result = execute(b"OrderedMapUnstageNoKey", len(dtypes) + 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "OrderedMapUnstageNoKey", _inputs_flat, _attrs, _result, name)
   _result = _result[:1] + [_result[1:]]
   _result = _OrderedMapUnstageNoKeyOutput._make(_result)
@@ -2704,23 +2765,23 @@ def padding_fifo_queue(component_types, shapes=[], capacity=-1, container="", sh
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'padding_fifo_queue' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if shapes is None:
       shapes = []
     if not isinstance(shapes, (list, tuple)):
       raise TypeError(
           "Expected list for 'shapes' argument to "
           "'padding_fifo_queue' Op, not %r." % shapes)
-    shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+    shapes = [make_shape(_s, "shapes") for _s in shapes]
     if capacity is None:
       capacity = -1
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "PaddingFIFOQueue", component_types=component_types, shapes=shapes,
         capacity=capacity, container=container, shared_name=shared_name,
@@ -2731,7 +2792,7 @@ def padding_fifo_queue(component_types, shapes=[], capacity=-1, container="", sh
               _op.get_attr("shapes"), "capacity", _op.get_attr("capacity"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "PaddingFIFOQueue", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2781,23 +2842,23 @@ def padding_fifo_queue_v2(component_types, shapes=[], capacity=-1, container="",
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'padding_fifo_queue_v2' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if shapes is None:
       shapes = []
     if not isinstance(shapes, (list, tuple)):
       raise TypeError(
           "Expected list for 'shapes' argument to "
           "'padding_fifo_queue_v2' Op, not %r." % shapes)
-    shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+    shapes = [make_shape(_s, "shapes") for _s in shapes]
     if capacity is None:
       capacity = -1
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "PaddingFIFOQueueV2", component_types=component_types, shapes=shapes,
         capacity=capacity, container=container, shared_name=shared_name,
@@ -2808,7 +2869,7 @@ def padding_fifo_queue_v2(component_types, shapes=[], capacity=-1, container="",
               _op.get_attr("shapes"), "capacity", _op.get_attr("capacity"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "PaddingFIFOQueueV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2842,29 +2903,29 @@ def padding_fifo_queue_v2_eager_fallback(component_types, shapes=[], capacity=-1
     raise TypeError(
         "Expected list for 'component_types' argument to "
         "'padding_fifo_queue_v2' Op, not %r." % component_types)
-  component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+  component_types = [make_type(_t, "component_types") for _t in component_types]
   if shapes is None:
     shapes = []
   if not isinstance(shapes, (list, tuple)):
     raise TypeError(
         "Expected list for 'shapes' argument to "
         "'padding_fifo_queue_v2' Op, not %r." % shapes)
-  shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+  shapes = [make_shape(_s, "shapes") for _s in shapes]
   if capacity is None:
     capacity = -1
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("component_types", component_types, "shapes", shapes, "capacity",
   capacity, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"PaddingFIFOQueueV2", 1, inputs=_inputs_flat,
+  _result = execute(b"PaddingFIFOQueueV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "PaddingFIFOQueueV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2964,7 +3025,7 @@ def parallel_dynamic_stitch(indices, data, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("N", _op.get_attr("N"), "T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "ParallelDynamicStitch", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3006,13 +3067,13 @@ def parallel_dynamic_stitch_eager_fallback(indices, data, name=None, ctx=None):
         "List argument 'data' to 'parallel_dynamic_stitch' Op with length %d "
         "must match length %d of argument 'indices'." %
         (len(data), _attr_N))
-  _attr_T, data = _execute.args_to_matching_eager(list(data), _ctx)
+  _attr_T, data = args_to_matching_eager(list(data), _ctx)
   indices = _ops.convert_n_to_tensor(indices, _dtypes.int32)
   _inputs_flat = list(indices) + list(data)
   _attrs = ("N", _attr_N, "T", _attr_T)
-  _result = _execute.execute(b"ParallelDynamicStitch", 1, inputs=_inputs_flat,
+  _result = execute(b"ParallelDynamicStitch", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ParallelDynamicStitch", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3055,23 +3116,23 @@ def priority_queue(shapes, component_types=[], capacity=-1, container="", shared
       raise TypeError(
           "Expected list for 'shapes' argument to "
           "'priority_queue' Op, not %r." % shapes)
-    shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+    shapes = [make_shape(_s, "shapes") for _s in shapes]
     if component_types is None:
       component_types = []
     if not isinstance(component_types, (list, tuple)):
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'priority_queue' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if capacity is None:
       capacity = -1
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "PriorityQueue", shapes=shapes, component_types=component_types,
         capacity=capacity, container=container, shared_name=shared_name,
@@ -3082,7 +3143,7 @@ def priority_queue(shapes, component_types=[], capacity=-1, container="", shared
               _op.get_attr("shapes"), "capacity", _op.get_attr("capacity"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "PriorityQueue", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3130,23 +3191,23 @@ def priority_queue_v2(shapes, component_types=[], capacity=-1, container="", sha
       raise TypeError(
           "Expected list for 'shapes' argument to "
           "'priority_queue_v2' Op, not %r." % shapes)
-    shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+    shapes = [make_shape(_s, "shapes") for _s in shapes]
     if component_types is None:
       component_types = []
     if not isinstance(component_types, (list, tuple)):
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'priority_queue_v2' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if capacity is None:
       capacity = -1
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "PriorityQueueV2", shapes=shapes, component_types=component_types,
         capacity=capacity, container=container, shared_name=shared_name,
@@ -3157,7 +3218,7 @@ def priority_queue_v2(shapes, component_types=[], capacity=-1, container="", sha
               _op.get_attr("shapes"), "capacity", _op.get_attr("capacity"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "PriorityQueueV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -3191,29 +3252,29 @@ def priority_queue_v2_eager_fallback(shapes, component_types=[], capacity=-1, co
     raise TypeError(
         "Expected list for 'shapes' argument to "
         "'priority_queue_v2' Op, not %r." % shapes)
-  shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+  shapes = [make_shape(_s, "shapes") for _s in shapes]
   if component_types is None:
     component_types = []
   if not isinstance(component_types, (list, tuple)):
     raise TypeError(
         "Expected list for 'component_types' argument to "
         "'priority_queue_v2' Op, not %r." % component_types)
-  component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+  component_types = [make_type(_t, "component_types") for _t in component_types]
   if capacity is None:
     capacity = -1
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("component_types", component_types, "shapes", shapes, "capacity",
   capacity, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"PriorityQueueV2", 1, inputs=_inputs_flat,
+  _result = execute(b"PriorityQueueV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "PriorityQueueV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -3242,7 +3303,7 @@ def queue_close(handle, cancel_pending_enqueues=False, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if cancel_pending_enqueues is None:
       cancel_pending_enqueues = False
-    cancel_pending_enqueues = _execute.make_bool(cancel_pending_enqueues, "cancel_pending_enqueues")
+    cancel_pending_enqueues = make_bool(cancel_pending_enqueues, "cancel_pending_enqueues")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueClose", handle=handle,
         cancel_pending_enqueues=cancel_pending_enqueues, name=name)
@@ -3279,7 +3340,7 @@ def queue_close_v2(handle, cancel_pending_enqueues=False, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if cancel_pending_enqueues is None:
       cancel_pending_enqueues = False
-    cancel_pending_enqueues = _execute.make_bool(cancel_pending_enqueues, "cancel_pending_enqueues")
+    cancel_pending_enqueues = make_bool(cancel_pending_enqueues, "cancel_pending_enqueues")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueCloseV2", handle=handle,
         cancel_pending_enqueues=cancel_pending_enqueues, name=name)
@@ -3313,11 +3374,11 @@ def queue_close_v2_eager_fallback(handle, cancel_pending_enqueues=False, name=No
   _ctx = ctx if ctx else _context.context()
   if cancel_pending_enqueues is None:
     cancel_pending_enqueues = False
-  cancel_pending_enqueues = _execute.make_bool(cancel_pending_enqueues, "cancel_pending_enqueues")
+  cancel_pending_enqueues = make_bool(cancel_pending_enqueues, "cancel_pending_enqueues")
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   _inputs_flat = [handle]
   _attrs = ("cancel_pending_enqueues", cancel_pending_enqueues)
-  _result = _execute.execute(b"QueueCloseV2", 0, inputs=_inputs_flat,
+  _result = execute(b"QueueCloseV2", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -3352,10 +3413,10 @@ def queue_dequeue(handle, component_types, timeout_ms=-1, name=None):
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'queue_dequeue' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if timeout_ms is None:
       timeout_ms = -1
-    timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+    timeout_ms = make_int(timeout_ms, "timeout_ms")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueDequeue", handle=handle, component_types=component_types,
         timeout_ms=timeout_ms, name=name)
@@ -3363,7 +3424,7 @@ def queue_dequeue(handle, component_types, timeout_ms=-1, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("component_types", _op.get_attr("component_types"),
               "timeout_ms", _op.get_attr("timeout_ms"))
-    _execute.record_gradient(
+    record_gradient(
       "QueueDequeue", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -3410,10 +3471,10 @@ def queue_dequeue_many(handle, n, component_types, timeout_ms=-1, name=None):
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'queue_dequeue_many' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if timeout_ms is None:
       timeout_ms = -1
-    timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+    timeout_ms = make_int(timeout_ms, "timeout_ms")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueDequeueMany", handle=handle, n=n,
         component_types=component_types, timeout_ms=timeout_ms, name=name)
@@ -3421,7 +3482,7 @@ def queue_dequeue_many(handle, n, component_types, timeout_ms=-1, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("component_types", _op.get_attr("component_types"),
               "timeout_ms", _op.get_attr("timeout_ms"))
-    _execute.record_gradient(
+    record_gradient(
       "QueueDequeueMany", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -3468,10 +3529,10 @@ def queue_dequeue_many_v2(handle, n, component_types, timeout_ms=-1, name=None):
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'queue_dequeue_many_v2' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if timeout_ms is None:
       timeout_ms = -1
-    timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+    timeout_ms = make_int(timeout_ms, "timeout_ms")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueDequeueManyV2", handle=handle, n=n,
         component_types=component_types, timeout_ms=timeout_ms, name=name)
@@ -3481,7 +3542,7 @@ def queue_dequeue_many_v2(handle, n, component_types, timeout_ms=-1, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("component_types", _op.get_attr("component_types"),
               "timeout_ms", _op.get_attr("timeout_ms"))
-    _execute.record_gradient(
+    record_gradient(
       "QueueDequeueManyV2", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -3513,18 +3574,18 @@ def queue_dequeue_many_v2_eager_fallback(handle, n, component_types, timeout_ms=
     raise TypeError(
         "Expected list for 'component_types' argument to "
         "'queue_dequeue_many_v2' Op, not %r." % component_types)
-  component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+  component_types = [make_type(_t, "component_types") for _t in component_types]
   if timeout_ms is None:
     timeout_ms = -1
-  timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+  timeout_ms = make_int(timeout_ms, "timeout_ms")
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   n = _ops.convert_to_tensor(n, _dtypes.int32)
   _inputs_flat = [handle, n]
   _attrs = ("component_types", component_types, "timeout_ms", timeout_ms)
-  _result = _execute.execute(b"QueueDequeueManyV2", len(component_types),
+  _result = execute(b"QueueDequeueManyV2", len(component_types),
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QueueDequeueManyV2", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -3570,10 +3631,10 @@ def queue_dequeue_up_to(handle, n, component_types, timeout_ms=-1, name=None):
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'queue_dequeue_up_to' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if timeout_ms is None:
       timeout_ms = -1
-    timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+    timeout_ms = make_int(timeout_ms, "timeout_ms")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueDequeueUpTo", handle=handle, n=n,
         component_types=component_types, timeout_ms=timeout_ms, name=name)
@@ -3581,7 +3642,7 @@ def queue_dequeue_up_to(handle, n, component_types, timeout_ms=-1, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("component_types", _op.get_attr("component_types"),
               "timeout_ms", _op.get_attr("timeout_ms"))
-    _execute.record_gradient(
+    record_gradient(
       "QueueDequeueUpTo", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -3632,10 +3693,10 @@ def queue_dequeue_up_to_v2(handle, n, component_types, timeout_ms=-1, name=None)
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'queue_dequeue_up_to_v2' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if timeout_ms is None:
       timeout_ms = -1
-    timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+    timeout_ms = make_int(timeout_ms, "timeout_ms")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueDequeueUpToV2", handle=handle, n=n,
         component_types=component_types, timeout_ms=timeout_ms, name=name)
@@ -3645,7 +3706,7 @@ def queue_dequeue_up_to_v2(handle, n, component_types, timeout_ms=-1, name=None)
     _inputs_flat = _op.inputs
     _attrs = ("component_types", _op.get_attr("component_types"),
               "timeout_ms", _op.get_attr("timeout_ms"))
-    _execute.record_gradient(
+    record_gradient(
       "QueueDequeueUpToV2", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -3677,18 +3738,18 @@ def queue_dequeue_up_to_v2_eager_fallback(handle, n, component_types, timeout_ms
     raise TypeError(
         "Expected list for 'component_types' argument to "
         "'queue_dequeue_up_to_v2' Op, not %r." % component_types)
-  component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+  component_types = [make_type(_t, "component_types") for _t in component_types]
   if timeout_ms is None:
     timeout_ms = -1
-  timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+  timeout_ms = make_int(timeout_ms, "timeout_ms")
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   n = _ops.convert_to_tensor(n, _dtypes.int32)
   _inputs_flat = [handle, n]
   _attrs = ("component_types", component_types, "timeout_ms", timeout_ms)
-  _result = _execute.execute(b"QueueDequeueUpToV2", len(component_types),
+  _result = execute(b"QueueDequeueUpToV2", len(component_types),
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QueueDequeueUpToV2", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -3722,10 +3783,10 @@ def queue_dequeue_v2(handle, component_types, timeout_ms=-1, name=None):
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'queue_dequeue_v2' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if timeout_ms is None:
       timeout_ms = -1
-    timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+    timeout_ms = make_int(timeout_ms, "timeout_ms")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueDequeueV2", handle=handle, component_types=component_types,
         timeout_ms=timeout_ms, name=name)
@@ -3735,7 +3796,7 @@ def queue_dequeue_v2(handle, component_types, timeout_ms=-1, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("component_types", _op.get_attr("component_types"),
               "timeout_ms", _op.get_attr("timeout_ms"))
-    _execute.record_gradient(
+    record_gradient(
       "QueueDequeueV2", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -3767,17 +3828,17 @@ def queue_dequeue_v2_eager_fallback(handle, component_types, timeout_ms=-1, name
     raise TypeError(
         "Expected list for 'component_types' argument to "
         "'queue_dequeue_v2' Op, not %r." % component_types)
-  component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+  component_types = [make_type(_t, "component_types") for _t in component_types]
   if timeout_ms is None:
     timeout_ms = -1
-  timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+  timeout_ms = make_int(timeout_ms, "timeout_ms")
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   _inputs_flat = [handle]
   _attrs = ("component_types", component_types, "timeout_ms", timeout_ms)
-  _result = _execute.execute(b"QueueDequeueV2", len(component_types),
+  _result = execute(b"QueueDequeueV2", len(component_types),
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QueueDequeueV2", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -3808,7 +3869,7 @@ def queue_enqueue(handle, components, timeout_ms=-1, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if timeout_ms is None:
       timeout_ms = -1
-    timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+    timeout_ms = make_int(timeout_ms, "timeout_ms")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueEnqueue", handle=handle, components=components,
         timeout_ms=timeout_ms, name=name)
@@ -3853,7 +3914,7 @@ def queue_enqueue_many(handle, components, timeout_ms=-1, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if timeout_ms is None:
       timeout_ms = -1
-    timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+    timeout_ms = make_int(timeout_ms, "timeout_ms")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueEnqueueMany", handle=handle, components=components,
         timeout_ms=timeout_ms, name=name)
@@ -3898,7 +3959,7 @@ def queue_enqueue_many_v2(handle, components, timeout_ms=-1, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if timeout_ms is None:
       timeout_ms = -1
-    timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+    timeout_ms = make_int(timeout_ms, "timeout_ms")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueEnqueueManyV2", handle=handle, components=components,
         timeout_ms=timeout_ms, name=name)
@@ -3931,12 +3992,12 @@ def queue_enqueue_many_v2_eager_fallback(handle, components, timeout_ms=-1, name
   _ctx = ctx if ctx else _context.context()
   if timeout_ms is None:
     timeout_ms = -1
-  timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
-  _attr_Tcomponents, components = _execute.convert_to_mixed_eager_tensors(components, _ctx)
+  timeout_ms = make_int(timeout_ms, "timeout_ms")
+  _attr_Tcomponents, components = convert_to_mixed_eager_tensors(components, _ctx)
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   _inputs_flat = [handle] + list(components)
   _attrs = ("Tcomponents", _attr_Tcomponents, "timeout_ms", timeout_ms)
-  _result = _execute.execute(b"QueueEnqueueManyV2", 0, inputs=_inputs_flat,
+  _result = execute(b"QueueEnqueueManyV2", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -3968,7 +4029,7 @@ def queue_enqueue_v2(handle, components, timeout_ms=-1, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if timeout_ms is None:
       timeout_ms = -1
-    timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
+    timeout_ms = make_int(timeout_ms, "timeout_ms")
     _, _, _op = _op_def_lib._apply_op_helper(
         "QueueEnqueueV2", handle=handle, components=components,
         timeout_ms=timeout_ms, name=name)
@@ -4001,12 +4062,12 @@ def queue_enqueue_v2_eager_fallback(handle, components, timeout_ms=-1, name=None
   _ctx = ctx if ctx else _context.context()
   if timeout_ms is None:
     timeout_ms = -1
-  timeout_ms = _execute.make_int(timeout_ms, "timeout_ms")
-  _attr_Tcomponents, components = _execute.convert_to_mixed_eager_tensors(components, _ctx)
+  timeout_ms = make_int(timeout_ms, "timeout_ms")
+  _attr_Tcomponents, components = convert_to_mixed_eager_tensors(components, _ctx)
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   _inputs_flat = [handle] + list(components)
   _attrs = ("Tcomponents", _attr_Tcomponents, "timeout_ms", timeout_ms)
-  _result = _execute.execute(b"QueueEnqueueV2", 0, inputs=_inputs_flat,
+  _result = execute(b"QueueEnqueueV2", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -4032,7 +4093,7 @@ def queue_is_closed(handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "QueueIsClosed", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4063,7 +4124,7 @@ def queue_is_closed_v2(handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "QueueIsClosedV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4093,9 +4154,9 @@ def queue_is_closed_v2_eager_fallback(handle, name=None, ctx=None):
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   _inputs_flat = [handle]
   _attrs = None
-  _result = _execute.execute(b"QueueIsClosedV2", 1, inputs=_inputs_flat,
+  _result = execute(b"QueueIsClosedV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QueueIsClosedV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4118,7 +4179,7 @@ def queue_size(handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "QueueSize", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4146,7 +4207,7 @@ def queue_size_v2(handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "QueueSizeV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4176,9 +4237,9 @@ def queue_size_v2_eager_fallback(handle, name=None, ctx=None):
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   _inputs_flat = [handle]
   _attrs = None
-  _result = _execute.execute(b"QueueSizeV2", 1, inputs=_inputs_flat,
+  _result = execute(b"QueueSizeV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "QueueSizeV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4224,32 +4285,32 @@ def random_shuffle_queue(component_types, shapes=[], capacity=-1, min_after_dequ
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'random_shuffle_queue' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if shapes is None:
       shapes = []
     if not isinstance(shapes, (list, tuple)):
       raise TypeError(
           "Expected list for 'shapes' argument to "
           "'random_shuffle_queue' Op, not %r." % shapes)
-    shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+    shapes = [make_shape(_s, "shapes") for _s in shapes]
     if capacity is None:
       capacity = -1
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if min_after_dequeue is None:
       min_after_dequeue = 0
-    min_after_dequeue = _execute.make_int(min_after_dequeue, "min_after_dequeue")
+    min_after_dequeue = make_int(min_after_dequeue, "min_after_dequeue")
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RandomShuffleQueue", component_types=component_types, shapes=shapes,
         capacity=capacity, min_after_dequeue=min_after_dequeue, seed=seed,
@@ -4262,7 +4323,7 @@ def random_shuffle_queue(component_types, shapes=[], capacity=-1, min_after_dequ
               _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "RandomShuffleQueue", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4313,32 +4374,32 @@ def random_shuffle_queue_v2(component_types, shapes=[], capacity=-1, min_after_d
       raise TypeError(
           "Expected list for 'component_types' argument to "
           "'random_shuffle_queue_v2' Op, not %r." % component_types)
-    component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+    component_types = [make_type(_t, "component_types") for _t in component_types]
     if shapes is None:
       shapes = []
     if not isinstance(shapes, (list, tuple)):
       raise TypeError(
           "Expected list for 'shapes' argument to "
           "'random_shuffle_queue_v2' Op, not %r." % shapes)
-    shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+    shapes = [make_shape(_s, "shapes") for _s in shapes]
     if capacity is None:
       capacity = -1
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if min_after_dequeue is None:
       min_after_dequeue = 0
-    min_after_dequeue = _execute.make_int(min_after_dequeue, "min_after_dequeue")
+    min_after_dequeue = make_int(min_after_dequeue, "min_after_dequeue")
     if seed is None:
       seed = 0
-    seed = _execute.make_int(seed, "seed")
+    seed = make_int(seed, "seed")
     if seed2 is None:
       seed2 = 0
-    seed2 = _execute.make_int(seed2, "seed2")
+    seed2 = make_int(seed2, "seed2")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RandomShuffleQueueV2", component_types=component_types,
         shapes=shapes, capacity=capacity, min_after_dequeue=min_after_dequeue,
@@ -4352,7 +4413,7 @@ def random_shuffle_queue_v2(component_types, shapes=[], capacity=-1, min_after_d
               _op.get_attr("seed"), "seed2", _op.get_attr("seed2"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "RandomShuffleQueueV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4388,39 +4449,39 @@ def random_shuffle_queue_v2_eager_fallback(component_types, shapes=[], capacity=
     raise TypeError(
         "Expected list for 'component_types' argument to "
         "'random_shuffle_queue_v2' Op, not %r." % component_types)
-  component_types = [_execute.make_type(_t, "component_types") for _t in component_types]
+  component_types = [make_type(_t, "component_types") for _t in component_types]
   if shapes is None:
     shapes = []
   if not isinstance(shapes, (list, tuple)):
     raise TypeError(
         "Expected list for 'shapes' argument to "
         "'random_shuffle_queue_v2' Op, not %r." % shapes)
-  shapes = [_execute.make_shape(_s, "shapes") for _s in shapes]
+  shapes = [make_shape(_s, "shapes") for _s in shapes]
   if capacity is None:
     capacity = -1
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if min_after_dequeue is None:
     min_after_dequeue = 0
-  min_after_dequeue = _execute.make_int(min_after_dequeue, "min_after_dequeue")
+  min_after_dequeue = make_int(min_after_dequeue, "min_after_dequeue")
   if seed is None:
     seed = 0
-  seed = _execute.make_int(seed, "seed")
+  seed = make_int(seed, "seed")
   if seed2 is None:
     seed2 = 0
-  seed2 = _execute.make_int(seed2, "seed2")
+  seed2 = make_int(seed2, "seed2")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("component_types", component_types, "shapes", shapes, "capacity",
   capacity, "min_after_dequeue", min_after_dequeue, "seed", seed, "seed2",
   seed2, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"RandomShuffleQueueV2", 1, inputs=_inputs_flat,
+  _result = execute(b"RandomShuffleQueueV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RandomShuffleQueueV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4451,25 +4512,25 @@ def record_input(file_pattern, file_random_seed=301, file_shuffle_shift_ratio=0,
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    file_pattern = _execute.make_str(file_pattern, "file_pattern")
+    file_pattern = make_str(file_pattern, "file_pattern")
     if file_random_seed is None:
       file_random_seed = 301
-    file_random_seed = _execute.make_int(file_random_seed, "file_random_seed")
+    file_random_seed = make_int(file_random_seed, "file_random_seed")
     if file_shuffle_shift_ratio is None:
       file_shuffle_shift_ratio = 0
-    file_shuffle_shift_ratio = _execute.make_float(file_shuffle_shift_ratio, "file_shuffle_shift_ratio")
+    file_shuffle_shift_ratio = make_float(file_shuffle_shift_ratio, "file_shuffle_shift_ratio")
     if file_buffer_size is None:
       file_buffer_size = 10000
-    file_buffer_size = _execute.make_int(file_buffer_size, "file_buffer_size")
+    file_buffer_size = make_int(file_buffer_size, "file_buffer_size")
     if file_parallelism is None:
       file_parallelism = 16
-    file_parallelism = _execute.make_int(file_parallelism, "file_parallelism")
+    file_parallelism = make_int(file_parallelism, "file_parallelism")
     if batch_size is None:
       batch_size = 32
-    batch_size = _execute.make_int(batch_size, "batch_size")
+    batch_size = make_int(batch_size, "batch_size")
     if compression_type is None:
       compression_type = ""
-    compression_type = _execute.make_str(compression_type, "compression_type")
+    compression_type = make_str(compression_type, "compression_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RecordInput", file_pattern=file_pattern,
         file_random_seed=file_random_seed,
@@ -4486,7 +4547,7 @@ def record_input(file_pattern, file_random_seed=301, file_shuffle_shift_ratio=0,
               _op.get_attr("file_parallelism"), "batch_size",
               _op.get_attr("batch_size"), "compression_type",
               _op.get_attr("compression_type"))
-    _execute.record_gradient(
+    record_gradient(
       "RecordInput", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4521,33 +4582,33 @@ def record_input_eager_fallback(file_pattern, file_random_seed=301, file_shuffle
   This is for function record_input
   """
   _ctx = ctx if ctx else _context.context()
-  file_pattern = _execute.make_str(file_pattern, "file_pattern")
+  file_pattern = make_str(file_pattern, "file_pattern")
   if file_random_seed is None:
     file_random_seed = 301
-  file_random_seed = _execute.make_int(file_random_seed, "file_random_seed")
+  file_random_seed = make_int(file_random_seed, "file_random_seed")
   if file_shuffle_shift_ratio is None:
     file_shuffle_shift_ratio = 0
-  file_shuffle_shift_ratio = _execute.make_float(file_shuffle_shift_ratio, "file_shuffle_shift_ratio")
+  file_shuffle_shift_ratio = make_float(file_shuffle_shift_ratio, "file_shuffle_shift_ratio")
   if file_buffer_size is None:
     file_buffer_size = 10000
-  file_buffer_size = _execute.make_int(file_buffer_size, "file_buffer_size")
+  file_buffer_size = make_int(file_buffer_size, "file_buffer_size")
   if file_parallelism is None:
     file_parallelism = 16
-  file_parallelism = _execute.make_int(file_parallelism, "file_parallelism")
+  file_parallelism = make_int(file_parallelism, "file_parallelism")
   if batch_size is None:
     batch_size = 32
-  batch_size = _execute.make_int(batch_size, "batch_size")
+  batch_size = make_int(batch_size, "batch_size")
   if compression_type is None:
     compression_type = ""
-  compression_type = _execute.make_str(compression_type, "compression_type")
+  compression_type = make_str(compression_type, "compression_type")
   _inputs_flat = []
   _attrs = ("file_pattern", file_pattern, "file_random_seed",
   file_random_seed, "file_shuffle_shift_ratio", file_shuffle_shift_ratio,
   "file_buffer_size", file_buffer_size, "file_parallelism", file_parallelism,
   "batch_size", batch_size, "compression_type", compression_type)
-  _result = _execute.execute(b"RecordInput", 1, inputs=_inputs_flat,
+  _result = execute(b"RecordInput", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RecordInput", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4582,7 +4643,7 @@ def sparse_accumulator_apply_gradient(handle, local_step, gradient_indices, grad
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    has_known_shape = _execute.make_bool(has_known_shape, "has_known_shape")
+    has_known_shape = make_bool(has_known_shape, "has_known_shape")
     _, _, _op = _op_def_lib._apply_op_helper(
         "SparseAccumulatorApplyGradient", handle=handle,
         local_step=local_step, gradient_indices=gradient_indices,
@@ -4633,14 +4694,14 @@ def sparse_accumulator_take_gradient(handle, num_required, dtype, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     _, _, _op = _op_def_lib._apply_op_helper(
         "SparseAccumulatorTakeGradient", handle=handle,
         num_required=num_required, dtype=dtype, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"))
-    _execute.record_gradient(
+    record_gradient(
       "SparseAccumulatorTakeGradient", _inputs_flat, _attrs, _result, name)
     _result = _SparseAccumulatorTakeGradientOutput._make(_result)
     return _result
@@ -4679,17 +4740,17 @@ def sparse_conditional_accumulator(dtype, shape, container="", shared_name="", r
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
-    shape = _execute.make_shape(shape, "shape")
+    dtype = make_type(dtype, "dtype")
+    shape = make_shape(shape, "shape")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     if reduction_type is None:
       reduction_type = "MEAN"
-    reduction_type = _execute.make_str(reduction_type, "reduction_type")
+    reduction_type = make_str(reduction_type, "reduction_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "SparseConditionalAccumulator", dtype=dtype, shape=shape,
         container=container, shared_name=shared_name,
@@ -4700,7 +4761,7 @@ def sparse_conditional_accumulator(dtype, shape, container="", shared_name="", r
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"), "reduction_type",
               _op.get_attr("reduction_type"))
-    _execute.record_gradient(
+    record_gradient(
       "SparseConditionalAccumulator", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4724,17 +4785,17 @@ def _stack(elem_type, stack_name="", name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    elem_type = _execute.make_type(elem_type, "elem_type")
+    elem_type = make_type(elem_type, "elem_type")
     if stack_name is None:
       stack_name = ""
-    stack_name = _execute.make_str(stack_name, "stack_name")
+    stack_name = make_str(stack_name, "stack_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Stack", elem_type=elem_type, stack_name=stack_name, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("elem_type", _op.get_attr("elem_type"), "stack_name",
               _op.get_attr("stack_name"))
-    _execute.record_gradient(
+    record_gradient(
       "Stack", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4812,7 +4873,7 @@ def stack_close_v2_eager_fallback(handle, name=None, ctx=None):
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   _inputs_flat = [handle]
   _attrs = None
-  _result = _execute.execute(b"StackCloseV2", 0, inputs=_inputs_flat,
+  _result = execute(b"StackCloseV2", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -4831,13 +4892,13 @@ def stack_pop(handle, elem_type, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    elem_type = _execute.make_type(elem_type, "elem_type")
+    elem_type = make_type(elem_type, "elem_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StackPop", handle=handle, elem_type=elem_type, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("elem_type", _op.get_attr("elem_type"))
-    _execute.record_gradient(
+    record_gradient(
       "StackPop", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4861,13 +4922,13 @@ def stack_pop_v2(handle, elem_type, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    elem_type = _execute.make_type(elem_type, "elem_type")
+    elem_type = make_type(elem_type, "elem_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StackPopV2", handle=handle, elem_type=elem_type, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("elem_type", _op.get_attr("elem_type"))
-    _execute.record_gradient(
+    record_gradient(
       "StackPopV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4894,13 +4955,13 @@ def stack_pop_v2_eager_fallback(handle, elem_type, name=None, ctx=None):
   This is for function stack_pop_v2
   """
   _ctx = ctx if ctx else _context.context()
-  elem_type = _execute.make_type(elem_type, "elem_type")
+  elem_type = make_type(elem_type, "elem_type")
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   _inputs_flat = [handle]
   _attrs = ("elem_type", elem_type)
-  _result = _execute.execute(b"StackPopV2", 1, inputs=_inputs_flat,
+  _result = execute(b"StackPopV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "StackPopV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -4922,7 +4983,7 @@ def stack_push(handle, elem, swap_memory=False, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if swap_memory is None:
       swap_memory = False
-    swap_memory = _execute.make_bool(swap_memory, "swap_memory")
+    swap_memory = make_bool(swap_memory, "swap_memory")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StackPush", handle=handle, elem=elem, swap_memory=swap_memory,
         name=name)
@@ -4930,7 +4991,7 @@ def stack_push(handle, elem, swap_memory=False, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "swap_memory",
               _op.get_attr("swap_memory"))
-    _execute.record_gradient(
+    record_gradient(
       "StackPush", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4958,7 +5019,7 @@ def stack_push_v2(handle, elem, swap_memory=False, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if swap_memory is None:
       swap_memory = False
-    swap_memory = _execute.make_bool(swap_memory, "swap_memory")
+    swap_memory = make_bool(swap_memory, "swap_memory")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StackPushV2", handle=handle, elem=elem, swap_memory=swap_memory,
         name=name)
@@ -4966,7 +5027,7 @@ def stack_push_v2(handle, elem, swap_memory=False, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "swap_memory",
               _op.get_attr("swap_memory"))
-    _execute.record_gradient(
+    record_gradient(
       "StackPushV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -4996,14 +5057,14 @@ def stack_push_v2_eager_fallback(handle, elem, swap_memory=False, name=None, ctx
   _ctx = ctx if ctx else _context.context()
   if swap_memory is None:
     swap_memory = False
-  swap_memory = _execute.make_bool(swap_memory, "swap_memory")
-  _attr_T, (elem,) = _execute.args_to_matching_eager([elem], _ctx)
+  swap_memory = make_bool(swap_memory, "swap_memory")
+  _attr_T, (elem,) = args_to_matching_eager([elem], _ctx)
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   _inputs_flat = [handle, elem]
   _attrs = ("T", _attr_T, "swap_memory", swap_memory)
-  _result = _execute.execute(b"StackPushV2", 1, inputs=_inputs_flat,
+  _result = execute(b"StackPushV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "StackPushV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5027,10 +5088,10 @@ def stack_v2(max_size, elem_type, stack_name="", name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    elem_type = _execute.make_type(elem_type, "elem_type")
+    elem_type = make_type(elem_type, "elem_type")
     if stack_name is None:
       stack_name = ""
-    stack_name = _execute.make_str(stack_name, "stack_name")
+    stack_name = make_str(stack_name, "stack_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StackV2", max_size=max_size, elem_type=elem_type,
         stack_name=stack_name, name=name)
@@ -5038,7 +5099,7 @@ def stack_v2(max_size, elem_type, stack_name="", name=None):
     _inputs_flat = _op.inputs
     _attrs = ("elem_type", _op.get_attr("elem_type"), "stack_name",
               _op.get_attr("stack_name"))
-    _execute.record_gradient(
+    record_gradient(
       "StackV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5067,16 +5128,16 @@ def stack_v2_eager_fallback(max_size, elem_type, stack_name="", name=None, ctx=N
   This is for function stack_v2
   """
   _ctx = ctx if ctx else _context.context()
-  elem_type = _execute.make_type(elem_type, "elem_type")
+  elem_type = make_type(elem_type, "elem_type")
   if stack_name is None:
     stack_name = ""
-  stack_name = _execute.make_str(stack_name, "stack_name")
+  stack_name = make_str(stack_name, "stack_name")
   max_size = _ops.convert_to_tensor(max_size, _dtypes.int32)
   _inputs_flat = [max_size]
   _attrs = ("elem_type", elem_type, "stack_name", stack_name)
-  _result = _execute.execute(b"StackV2", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"StackV2", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "StackV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5111,16 +5172,16 @@ def stage(values, capacity=0, memory_limit=0, container="", shared_name="", name
   if _ctx is None or not _ctx._eager_context.is_eager:
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Stage", values=values, capacity=capacity, memory_limit=memory_limit,
         container=container, shared_name=shared_name, name=name)
@@ -5155,21 +5216,21 @@ def stage_eager_fallback(values, capacity=0, memory_limit=0, container="", share
   _ctx = ctx if ctx else _context.context()
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
-  _attr_dtypes, values = _execute.convert_to_mixed_eager_tensors(values, _ctx)
+  shared_name = make_str(shared_name, "shared_name")
+  _attr_dtypes, values = convert_to_mixed_eager_tensors(values, _ctx)
   _inputs_flat = list(values)
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   _attr_dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"Stage", 0, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Stage", 0, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
   _result = None
   return _result
@@ -5195,19 +5256,19 @@ def stage_clear(dtypes, capacity=0, memory_limit=0, container="", shared_name=""
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'stage_clear' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StageClear", dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -5245,23 +5306,23 @@ def stage_clear_eager_fallback(dtypes, capacity=0, memory_limit=0, container="",
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'stage_clear' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"StageClear", 0, inputs=_inputs_flat,
+  _result = execute(b"StageClear", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -5292,19 +5353,19 @@ def stage_peek(index, dtypes, capacity=0, memory_limit=0, container="", shared_n
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'stage_peek' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StagePeek", index=index, dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -5317,7 +5378,7 @@ def stage_peek(index, dtypes, capacity=0, memory_limit=0, container="", shared_n
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "StagePeek", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -5350,26 +5411,26 @@ def stage_peek_eager_fallback(index, dtypes, capacity=0, memory_limit=0, contain
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'stage_peek' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   index = _ops.convert_to_tensor(index, _dtypes.int32)
   _inputs_flat = [index]
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"StagePeek", len(dtypes), inputs=_inputs_flat,
+  _result = execute(b"StagePeek", len(dtypes), inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "StagePeek", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -5394,19 +5455,19 @@ def stage_size(dtypes, capacity=0, memory_limit=0, container="", shared_name="",
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'stage_size' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StageSize", dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -5417,7 +5478,7 @@ def stage_size(dtypes, capacity=0, memory_limit=0, container="", shared_name="",
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "StageSize", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5451,25 +5512,25 @@ def stage_size_eager_fallback(dtypes, capacity=0, memory_limit=0, container="", 
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'stage_size' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"StageSize", 1, inputs=_inputs_flat,
+  _result = execute(b"StageSize", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "StageSize", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -5492,19 +5553,19 @@ def tensor_array(size, dtype, dynamic_size=False, clear_after_read=True, tensor_
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if dynamic_size is None:
       dynamic_size = False
-    dynamic_size = _execute.make_bool(dynamic_size, "dynamic_size")
+    dynamic_size = make_bool(dynamic_size, "dynamic_size")
     if clear_after_read is None:
       clear_after_read = True
-    clear_after_read = _execute.make_bool(clear_after_read, "clear_after_read")
+    clear_after_read = make_bool(clear_after_read, "clear_after_read")
     if tensor_array_name is None:
       tensor_array_name = ""
-    tensor_array_name = _execute.make_str(tensor_array_name, "tensor_array_name")
+    tensor_array_name = make_str(tensor_array_name, "tensor_array_name")
     if element_shape is None:
       element_shape = None
-    element_shape = _execute.make_shape(element_shape, "element_shape")
+    element_shape = make_shape(element_shape, "element_shape")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArray", size=size, dtype=dtype, dynamic_size=dynamic_size,
         clear_after_read=clear_after_read,
@@ -5517,7 +5578,7 @@ def tensor_array(size, dtype, dynamic_size=False, clear_after_read=True, tensor_
               _op.get_attr("clear_after_read"), "tensor_array_name",
               _op.get_attr("tensor_array_name"), "element_shape",
               _op.get_attr("element_shape"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArray", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5595,7 +5656,7 @@ def tensor_array_close_v2_eager_fallback(handle, name=None, ctx=None):
   handle = _ops.convert_to_tensor(handle, _dtypes.string)
   _inputs_flat = [handle]
   _attrs = None
-  _result = _execute.execute(b"TensorArrayCloseV2", 0, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayCloseV2", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -5648,7 +5709,7 @@ def tensor_array_close_v3_eager_fallback(handle, name=None, ctx=None):
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   _inputs_flat = [handle]
   _attrs = None
-  _result = _execute.execute(b"TensorArrayCloseV3", 0, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayCloseV3", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -5677,10 +5738,10 @@ def tensor_array_concat(handle, flow_in, dtype, element_shape_except0=None, name
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if element_shape_except0 is None:
       element_shape_except0 = None
-    element_shape_except0 = _execute.make_shape(element_shape_except0, "element_shape_except0")
+    element_shape_except0 = make_shape(element_shape_except0, "element_shape_except0")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayConcat", handle=handle, flow_in=flow_in, dtype=dtype,
         element_shape_except0=element_shape_except0, name=name)
@@ -5688,7 +5749,7 @@ def tensor_array_concat(handle, flow_in, dtype, element_shape_except0=None, name
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "element_shape_except0",
               _op.get_attr("element_shape_except0"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayConcat", _inputs_flat, _attrs, _result, name)
     _result = _TensorArrayConcatOutput._make(_result)
     return _result
@@ -5722,10 +5783,10 @@ def tensor_array_concat_v2(handle, flow_in, dtype, element_shape_except0=None, n
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if element_shape_except0 is None:
       element_shape_except0 = None
-    element_shape_except0 = _execute.make_shape(element_shape_except0, "element_shape_except0")
+    element_shape_except0 = make_shape(element_shape_except0, "element_shape_except0")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayConcatV2", handle=handle, flow_in=flow_in, dtype=dtype,
         element_shape_except0=element_shape_except0, name=name)
@@ -5733,7 +5794,7 @@ def tensor_array_concat_v2(handle, flow_in, dtype, element_shape_except0=None, n
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "element_shape_except0",
               _op.get_attr("element_shape_except0"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayConcatV2", _inputs_flat, _attrs, _result, name)
     _result = _TensorArrayConcatV2Output._make(_result)
     return _result
@@ -5764,17 +5825,17 @@ def tensor_array_concat_v2_eager_fallback(handle, flow_in, dtype, element_shape_
   This is for function tensor_array_concat_v2
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   if element_shape_except0 is None:
     element_shape_except0 = None
-  element_shape_except0 = _execute.make_shape(element_shape_except0, "element_shape_except0")
+  element_shape_except0 = make_shape(element_shape_except0, "element_shape_except0")
   handle = _ops.convert_to_tensor(handle, _dtypes.string)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, flow_in]
   _attrs = ("dtype", dtype, "element_shape_except0", element_shape_except0)
-  _result = _execute.execute(b"TensorArrayConcatV2", 2, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayConcatV2", 2, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayConcatV2", _inputs_flat, _attrs, _result, name)
   _result = _TensorArrayConcatV2Output._make(_result)
   return _result
@@ -5820,10 +5881,10 @@ def tensor_array_concat_v3(handle, flow_in, dtype, element_shape_except0=None, n
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if element_shape_except0 is None:
       element_shape_except0 = None
-    element_shape_except0 = _execute.make_shape(element_shape_except0, "element_shape_except0")
+    element_shape_except0 = make_shape(element_shape_except0, "element_shape_except0")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayConcatV3", handle=handle, flow_in=flow_in, dtype=dtype,
         element_shape_except0=element_shape_except0, name=name)
@@ -5831,7 +5892,7 @@ def tensor_array_concat_v3(handle, flow_in, dtype, element_shape_except0=None, n
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "element_shape_except0",
               _op.get_attr("element_shape_except0"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayConcatV3", _inputs_flat, _attrs, _result, name)
     _result = _TensorArrayConcatV3Output._make(_result)
     return _result
@@ -5862,17 +5923,17 @@ def tensor_array_concat_v3_eager_fallback(handle, flow_in, dtype, element_shape_
   This is for function tensor_array_concat_v3
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   if element_shape_except0 is None:
     element_shape_except0 = None
-  element_shape_except0 = _execute.make_shape(element_shape_except0, "element_shape_except0")
+  element_shape_except0 = make_shape(element_shape_except0, "element_shape_except0")
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, flow_in]
   _attrs = ("dtype", dtype, "element_shape_except0", element_shape_except0)
-  _result = _execute.execute(b"TensorArrayConcatV3", 2, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayConcatV3", 2, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayConcatV3", _inputs_flat, _attrs, _result, name)
   _result = _TensorArrayConcatV3Output._make(_result)
   return _result
@@ -5894,10 +5955,10 @@ def tensor_array_gather(handle, indices, flow_in, dtype, element_shape=None, nam
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if element_shape is None:
       element_shape = None
-    element_shape = _execute.make_shape(element_shape, "element_shape")
+    element_shape = make_shape(element_shape, "element_shape")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayGather", handle=handle, indices=indices, flow_in=flow_in,
         dtype=dtype, element_shape=element_shape, name=name)
@@ -5905,7 +5966,7 @@ def tensor_array_gather(handle, indices, flow_in, dtype, element_shape=None, nam
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "element_shape",
               _op.get_attr("element_shape"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayGather", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5932,10 +5993,10 @@ def tensor_array_gather_v2(handle, indices, flow_in, dtype, element_shape=None, 
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if element_shape is None:
       element_shape = None
-    element_shape = _execute.make_shape(element_shape, "element_shape")
+    element_shape = make_shape(element_shape, "element_shape")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayGatherV2", handle=handle, indices=indices,
         flow_in=flow_in, dtype=dtype, element_shape=element_shape, name=name)
@@ -5943,7 +6004,7 @@ def tensor_array_gather_v2(handle, indices, flow_in, dtype, element_shape=None, 
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "element_shape",
               _op.get_attr("element_shape"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayGatherV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -5972,18 +6033,18 @@ def tensor_array_gather_v2_eager_fallback(handle, indices, flow_in, dtype, eleme
   This is for function tensor_array_gather_v2
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   if element_shape is None:
     element_shape = None
-  element_shape = _execute.make_shape(element_shape, "element_shape")
+  element_shape = make_shape(element_shape, "element_shape")
   handle = _ops.convert_to_tensor(handle, _dtypes.string)
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, indices, flow_in]
   _attrs = ("dtype", dtype, "element_shape", element_shape)
-  _result = _execute.execute(b"TensorArrayGatherV2", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayGatherV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayGatherV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6012,10 +6073,10 @@ def tensor_array_gather_v3(handle, indices, flow_in, dtype, element_shape=None, 
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if element_shape is None:
       element_shape = None
-    element_shape = _execute.make_shape(element_shape, "element_shape")
+    element_shape = make_shape(element_shape, "element_shape")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayGatherV3", handle=handle, indices=indices,
         flow_in=flow_in, dtype=dtype, element_shape=element_shape, name=name)
@@ -6023,7 +6084,7 @@ def tensor_array_gather_v3(handle, indices, flow_in, dtype, element_shape=None, 
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "element_shape",
               _op.get_attr("element_shape"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayGatherV3", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6052,18 +6113,18 @@ def tensor_array_gather_v3_eager_fallback(handle, indices, flow_in, dtype, eleme
   This is for function tensor_array_gather_v3
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   if element_shape is None:
     element_shape = None
-  element_shape = _execute.make_shape(element_shape, "element_shape")
+  element_shape = make_shape(element_shape, "element_shape")
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, indices, flow_in]
   _attrs = ("dtype", dtype, "element_shape", element_shape)
-  _result = _execute.execute(b"TensorArrayGatherV3", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayGatherV3", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayGatherV3", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6083,14 +6144,14 @@ def tensor_array_grad(handle, flow_in, source, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    source = _execute.make_str(source, "source")
+    source = make_str(source, "source")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayGrad", handle=handle, flow_in=flow_in, source=source,
         name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("source", _op.get_attr("source"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayGrad", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6115,14 +6176,14 @@ def tensor_array_grad_v2(handle, flow_in, source, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    source = _execute.make_str(source, "source")
+    source = make_str(source, "source")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayGradV2", handle=handle, flow_in=flow_in, source=source,
         name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("source", _op.get_attr("source"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayGradV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6150,14 +6211,14 @@ def tensor_array_grad_v2_eager_fallback(handle, flow_in, source, name=None, ctx=
   This is for function tensor_array_grad_v2
   """
   _ctx = ctx if ctx else _context.context()
-  source = _execute.make_str(source, "source")
+  source = make_str(source, "source")
   handle = _ops.convert_to_tensor(handle, _dtypes.string)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, flow_in]
   _attrs = ("source", source)
-  _result = _execute.execute(b"TensorArrayGradV2", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayGradV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayGradV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6226,14 +6287,14 @@ def tensor_array_grad_v3(handle, flow_in, source, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    source = _execute.make_str(source, "source")
+    source = make_str(source, "source")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayGradV3", handle=handle, flow_in=flow_in, source=source,
         name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("source", _op.get_attr("source"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayGradV3", _inputs_flat, _attrs, _result, name)
     _result = _TensorArrayGradV3Output._make(_result)
     return _result
@@ -6262,14 +6323,14 @@ def tensor_array_grad_v3_eager_fallback(handle, flow_in, source, name=None, ctx=
   This is for function tensor_array_grad_v3
   """
   _ctx = ctx if ctx else _context.context()
-  source = _execute.make_str(source, "source")
+  source = make_str(source, "source")
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, flow_in]
   _attrs = ("source", source)
-  _result = _execute.execute(b"TensorArrayGradV3", 2, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayGradV3", 2, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayGradV3", _inputs_flat, _attrs, _result, name)
   _result = _TensorArrayGradV3Output._make(_result)
   return _result
@@ -6310,14 +6371,14 @@ def tensor_array_grad_with_shape(handle, flow_in, shape_to_prepend, source, name
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    source = _execute.make_str(source, "source")
+    source = make_str(source, "source")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayGradWithShape", handle=handle, flow_in=flow_in,
         shape_to_prepend=shape_to_prepend, source=source, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("source", _op.get_attr("source"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayGradWithShape", _inputs_flat, _attrs, _result, name)
     _result = _TensorArrayGradWithShapeOutput._make(_result)
     return _result
@@ -6347,16 +6408,16 @@ def tensor_array_grad_with_shape_eager_fallback(handle, flow_in, shape_to_prepen
   This is for function tensor_array_grad_with_shape
   """
   _ctx = ctx if ctx else _context.context()
-  source = _execute.make_str(source, "source")
+  source = make_str(source, "source")
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   shape_to_prepend = _ops.convert_to_tensor(shape_to_prepend, _dtypes.int32)
   _inputs_flat = [handle, flow_in, shape_to_prepend]
   _attrs = ("source", source)
-  _result = _execute.execute(b"TensorArrayGradWithShape", 2,
+  _result = execute(b"TensorArrayGradWithShape", 2,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayGradWithShape", _inputs_flat, _attrs, _result, name)
   _result = _TensorArrayGradWithShapeOutput._make(_result)
   return _result
@@ -6377,10 +6438,10 @@ def tensor_array_pack(handle, flow_in, dtype, element_shape=None, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if element_shape is None:
       element_shape = None
-    element_shape = _execute.make_shape(element_shape, "element_shape")
+    element_shape = make_shape(element_shape, "element_shape")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayPack", handle=handle, flow_in=flow_in, dtype=dtype,
         element_shape=element_shape, name=name)
@@ -6388,7 +6449,7 @@ def tensor_array_pack(handle, flow_in, dtype, element_shape=None, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"), "element_shape",
               _op.get_attr("element_shape"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayPack", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6414,14 +6475,14 @@ def tensor_array_read(handle, index, flow_in, dtype, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayRead", handle=handle, index=index, flow_in=flow_in,
         dtype=dtype, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayRead", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6447,14 +6508,14 @@ def tensor_array_read_v2(handle, index, flow_in, dtype, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayReadV2", handle=handle, index=index, flow_in=flow_in,
         dtype=dtype, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayReadV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6482,15 +6543,15 @@ def tensor_array_read_v2_eager_fallback(handle, index, flow_in, dtype, name=None
   This is for function tensor_array_read_v2
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   handle = _ops.convert_to_tensor(handle, _dtypes.string)
   index = _ops.convert_to_tensor(index, _dtypes.int32)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, index, flow_in]
   _attrs = ("dtype", dtype)
-  _result = _execute.execute(b"TensorArrayReadV2", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayReadV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayReadV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6512,14 +6573,14 @@ def tensor_array_read_v3(handle, index, flow_in, dtype, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayReadV3", handle=handle, index=index, flow_in=flow_in,
         dtype=dtype, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("dtype", _op.get_attr("dtype"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayReadV3", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6547,15 +6608,15 @@ def tensor_array_read_v3_eager_fallback(handle, index, flow_in, dtype, name=None
   This is for function tensor_array_read_v3
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   index = _ops.convert_to_tensor(index, _dtypes.int32)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, index, flow_in]
   _attrs = ("dtype", dtype)
-  _result = _execute.execute(b"TensorArrayReadV3", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayReadV3", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayReadV3", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6582,7 +6643,7 @@ def tensor_array_scatter(handle, indices, value, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayScatter", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6614,7 +6675,7 @@ def tensor_array_scatter_v2(handle, indices, value, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayScatterV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6642,15 +6703,15 @@ def tensor_array_scatter_v2_eager_fallback(handle, indices, value, flow_in, name
   This is for function tensor_array_scatter_v2
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
   handle = _ops.convert_to_tensor(handle, _dtypes.string)
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, indices, value, flow_in]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"TensorArrayScatterV2", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayScatterV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayScatterV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6681,7 +6742,7 @@ def tensor_array_scatter_v3(handle, indices, value, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayScatterV3", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6709,15 +6770,15 @@ def tensor_array_scatter_v3_eager_fallback(handle, indices, value, flow_in, name
   This is for function tensor_array_scatter_v3
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   indices = _ops.convert_to_tensor(indices, _dtypes.int32)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, indices, value, flow_in]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"TensorArrayScatterV3", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayScatterV3", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayScatterV3", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6741,7 +6802,7 @@ def tensor_array_size(handle, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "TensorArraySize", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6770,7 +6831,7 @@ def tensor_array_size_v2(handle, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "TensorArraySizeV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6802,9 +6863,9 @@ def tensor_array_size_v2_eager_fallback(handle, flow_in, name=None, ctx=None):
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, flow_in]
   _attrs = None
-  _result = _execute.execute(b"TensorArraySizeV2", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArraySizeV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArraySizeV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6830,7 +6891,7 @@ def tensor_array_size_v3(handle, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "TensorArraySizeV3", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6862,9 +6923,9 @@ def tensor_array_size_v3_eager_fallback(handle, flow_in, name=None, ctx=None):
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, flow_in]
   _attrs = None
-  _result = _execute.execute(b"TensorArraySizeV3", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArraySizeV3", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArraySizeV3", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -6891,7 +6952,7 @@ def tensor_array_split(handle, value, lengths, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArraySplit", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6923,7 +6984,7 @@ def tensor_array_split_v2(handle, value, lengths, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArraySplitV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -6951,15 +7012,15 @@ def tensor_array_split_v2_eager_fallback(handle, value, lengths, flow_in, name=N
   This is for function tensor_array_split_v2
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
   handle = _ops.convert_to_tensor(handle, _dtypes.string)
   lengths = _ops.convert_to_tensor(lengths, _dtypes.int64)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, value, lengths, flow_in]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"TensorArraySplitV2", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArraySplitV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArraySplitV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7007,7 +7068,7 @@ def tensor_array_split_v3(handle, value, lengths, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArraySplitV3", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7035,15 +7096,15 @@ def tensor_array_split_v3_eager_fallback(handle, value, lengths, flow_in, name=N
   This is for function tensor_array_split_v3
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   lengths = _ops.convert_to_tensor(lengths, _dtypes.int64)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, value, lengths, flow_in]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"TensorArraySplitV3", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArraySplitV3", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArraySplitV3", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7069,7 +7130,7 @@ def tensor_array_unpack(handle, value, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayUnpack", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7097,19 +7158,19 @@ def tensor_array_v2(size, dtype, element_shape=None, dynamic_size=False, clear_a
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if element_shape is None:
       element_shape = None
-    element_shape = _execute.make_shape(element_shape, "element_shape")
+    element_shape = make_shape(element_shape, "element_shape")
     if dynamic_size is None:
       dynamic_size = False
-    dynamic_size = _execute.make_bool(dynamic_size, "dynamic_size")
+    dynamic_size = make_bool(dynamic_size, "dynamic_size")
     if clear_after_read is None:
       clear_after_read = True
-    clear_after_read = _execute.make_bool(clear_after_read, "clear_after_read")
+    clear_after_read = make_bool(clear_after_read, "clear_after_read")
     if tensor_array_name is None:
       tensor_array_name = ""
-    tensor_array_name = _execute.make_str(tensor_array_name, "tensor_array_name")
+    tensor_array_name = make_str(tensor_array_name, "tensor_array_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayV2", size=size, dtype=dtype, element_shape=element_shape,
         dynamic_size=dynamic_size, clear_after_read=clear_after_read,
@@ -7121,7 +7182,7 @@ def tensor_array_v2(size, dtype, element_shape=None, dynamic_size=False, clear_a
               _op.get_attr("dynamic_size"), "clear_after_read",
               _op.get_attr("clear_after_read"), "tensor_array_name",
               _op.get_attr("tensor_array_name"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7153,27 +7214,27 @@ def tensor_array_v2_eager_fallback(size, dtype, element_shape=None, dynamic_size
   This is for function tensor_array_v2
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   if element_shape is None:
     element_shape = None
-  element_shape = _execute.make_shape(element_shape, "element_shape")
+  element_shape = make_shape(element_shape, "element_shape")
   if dynamic_size is None:
     dynamic_size = False
-  dynamic_size = _execute.make_bool(dynamic_size, "dynamic_size")
+  dynamic_size = make_bool(dynamic_size, "dynamic_size")
   if clear_after_read is None:
     clear_after_read = True
-  clear_after_read = _execute.make_bool(clear_after_read, "clear_after_read")
+  clear_after_read = make_bool(clear_after_read, "clear_after_read")
   if tensor_array_name is None:
     tensor_array_name = ""
-  tensor_array_name = _execute.make_str(tensor_array_name, "tensor_array_name")
+  tensor_array_name = make_str(tensor_array_name, "tensor_array_name")
   size = _ops.convert_to_tensor(size, _dtypes.int32)
   _inputs_flat = [size]
   _attrs = ("dtype", dtype, "element_shape", element_shape, "dynamic_size",
   dynamic_size, "clear_after_read", clear_after_read, "tensor_array_name",
   tensor_array_name)
-  _result = _execute.execute(b"TensorArrayV2", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7224,22 +7285,22 @@ def tensor_array_v3(size, dtype, element_shape=None, dynamic_size=False, clear_a
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dtype = _execute.make_type(dtype, "dtype")
+    dtype = make_type(dtype, "dtype")
     if element_shape is None:
       element_shape = None
-    element_shape = _execute.make_shape(element_shape, "element_shape")
+    element_shape = make_shape(element_shape, "element_shape")
     if dynamic_size is None:
       dynamic_size = False
-    dynamic_size = _execute.make_bool(dynamic_size, "dynamic_size")
+    dynamic_size = make_bool(dynamic_size, "dynamic_size")
     if clear_after_read is None:
       clear_after_read = True
-    clear_after_read = _execute.make_bool(clear_after_read, "clear_after_read")
+    clear_after_read = make_bool(clear_after_read, "clear_after_read")
     if identical_element_shapes is None:
       identical_element_shapes = False
-    identical_element_shapes = _execute.make_bool(identical_element_shapes, "identical_element_shapes")
+    identical_element_shapes = make_bool(identical_element_shapes, "identical_element_shapes")
     if tensor_array_name is None:
       tensor_array_name = ""
-    tensor_array_name = _execute.make_str(tensor_array_name, "tensor_array_name")
+    tensor_array_name = make_str(tensor_array_name, "tensor_array_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayV3", size=size, dtype=dtype, element_shape=element_shape,
         dynamic_size=dynamic_size, clear_after_read=clear_after_read,
@@ -7253,7 +7314,7 @@ def tensor_array_v3(size, dtype, element_shape=None, dynamic_size=False, clear_a
               _op.get_attr("clear_after_read"), "identical_element_shapes",
               _op.get_attr("identical_element_shapes"), "tensor_array_name",
               _op.get_attr("tensor_array_name"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayV3", _inputs_flat, _attrs, _result, name)
     _result = _TensorArrayV3Output._make(_result)
     return _result
@@ -7287,31 +7348,31 @@ def tensor_array_v3_eager_fallback(size, dtype, element_shape=None, dynamic_size
   This is for function tensor_array_v3
   """
   _ctx = ctx if ctx else _context.context()
-  dtype = _execute.make_type(dtype, "dtype")
+  dtype = make_type(dtype, "dtype")
   if element_shape is None:
     element_shape = None
-  element_shape = _execute.make_shape(element_shape, "element_shape")
+  element_shape = make_shape(element_shape, "element_shape")
   if dynamic_size is None:
     dynamic_size = False
-  dynamic_size = _execute.make_bool(dynamic_size, "dynamic_size")
+  dynamic_size = make_bool(dynamic_size, "dynamic_size")
   if clear_after_read is None:
     clear_after_read = True
-  clear_after_read = _execute.make_bool(clear_after_read, "clear_after_read")
+  clear_after_read = make_bool(clear_after_read, "clear_after_read")
   if identical_element_shapes is None:
     identical_element_shapes = False
-  identical_element_shapes = _execute.make_bool(identical_element_shapes, "identical_element_shapes")
+  identical_element_shapes = make_bool(identical_element_shapes, "identical_element_shapes")
   if tensor_array_name is None:
     tensor_array_name = ""
-  tensor_array_name = _execute.make_str(tensor_array_name, "tensor_array_name")
+  tensor_array_name = make_str(tensor_array_name, "tensor_array_name")
   size = _ops.convert_to_tensor(size, _dtypes.int32)
   _inputs_flat = [size]
   _attrs = ("dtype", dtype, "element_shape", element_shape, "dynamic_size",
   dynamic_size, "clear_after_read", clear_after_read,
   "identical_element_shapes", identical_element_shapes, "tensor_array_name",
   tensor_array_name)
-  _result = _execute.execute(b"TensorArrayV3", 2, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayV3", 2, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayV3", _inputs_flat, _attrs, _result, name)
   _result = _TensorArrayV3Output._make(_result)
   return _result
@@ -7338,7 +7399,7 @@ def tensor_array_write(handle, index, value, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayWrite", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7370,7 +7431,7 @@ def tensor_array_write_v2(handle, index, value, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayWriteV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7398,15 +7459,15 @@ def tensor_array_write_v2_eager_fallback(handle, index, value, flow_in, name=Non
   This is for function tensor_array_write_v2
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
   handle = _ops.convert_to_tensor(handle, _dtypes.string)
   index = _ops.convert_to_tensor(index, _dtypes.int32)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, index, value, flow_in]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"TensorArrayWriteV2", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayWriteV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayWriteV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7435,7 +7496,7 @@ def tensor_array_write_v3(handle, index, value, flow_in, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "TensorArrayWriteV3", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -7463,15 +7524,15 @@ def tensor_array_write_v3_eager_fallback(handle, index, value, flow_in, name=Non
   This is for function tensor_array_write_v3
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (value,) = _execute.args_to_matching_eager([value], _ctx)
+  _attr_T, (value,) = args_to_matching_eager([value], _ctx)
   handle = _ops.convert_to_tensor(handle, _dtypes.resource)
   index = _ops.convert_to_tensor(index, _dtypes.int32)
   flow_in = _ops.convert_to_tensor(flow_in, _dtypes.float32)
   _inputs_flat = [handle, index, value, flow_in]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"TensorArrayWriteV3", 1, inputs=_inputs_flat,
+  _result = execute(b"TensorArrayWriteV3", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TensorArrayWriteV3", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -7500,19 +7561,19 @@ def unstage(dtypes, capacity=0, memory_limit=0, container="", shared_name="", na
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'unstage' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     if capacity is None:
       capacity = 0
-    capacity = _execute.make_int(capacity, "capacity")
+    capacity = make_int(capacity, "capacity")
     if memory_limit is None:
       memory_limit = 0
-    memory_limit = _execute.make_int(memory_limit, "memory_limit")
+    memory_limit = make_int(memory_limit, "memory_limit")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Unstage", dtypes=dtypes, capacity=capacity,
         memory_limit=memory_limit, container=container,
@@ -7525,7 +7586,7 @@ def unstage(dtypes, capacity=0, memory_limit=0, container="", shared_name="", na
               _op.get_attr("memory_limit"), "dtypes", _op.get_attr("dtypes"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "Unstage", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -7558,25 +7619,25 @@ def unstage_eager_fallback(dtypes, capacity=0, memory_limit=0, container="", sha
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'unstage' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   if capacity is None:
     capacity = 0
-  capacity = _execute.make_int(capacity, "capacity")
+  capacity = make_int(capacity, "capacity")
   if memory_limit is None:
     memory_limit = 0
-  memory_limit = _execute.make_int(memory_limit, "memory_limit")
+  memory_limit = make_int(memory_limit, "memory_limit")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("capacity", capacity, "memory_limit", memory_limit, "dtypes",
   dtypes, "container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"Unstage", len(dtypes), inputs=_inputs_flat,
+  _result = execute(b"Unstage", len(dtypes), inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Unstage", _inputs_flat, _attrs, _result, name)
   return _result
 

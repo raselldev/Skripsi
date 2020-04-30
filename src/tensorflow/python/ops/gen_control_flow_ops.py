@@ -7,12 +7,41 @@ Original C++ source file: control_flow_ops.cc
 import collections as _collections
 import six as _six
 
-from tensorflow.python import execute as _execute
+#from tensorflow.python import execute as _execute
 from tensorflow.python import context as _context
 from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.framework import op_def_registry as _op_def_registry
+from tensorflow.python.util import compat
+
+def make_int(v, arg_name):
+  if isinstance(v, _six.string_types):
+    raise TypeError("Expected int for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  try:
+    return int(v)
+  except (ValueError, TypeError):
+    raise TypeError("Expected int for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+
+def make_bool(v, arg_name):
+  if not isinstance(v, bool):
+    raise TypeError("Expected bool for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return v
+
+
+def make_str(v, arg_name):
+  if not isinstance(v, compat.bytes_or_text_types):
+    raise TypeError("Expected string for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return compat.as_bytes(v)
+
+def record_gradient(unused_op_name, unused_inputs, unused_attrs, unused_results,
+                    unused_name):
+  
+  pass
 
 def abort(error_msg="", exit_without_error=False, name=None):
   r"""Raise a exception to abort the process when called.
@@ -35,10 +64,10 @@ def abort(error_msg="", exit_without_error=False, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if error_msg is None:
       error_msg = ""
-    error_msg = _execute.make_str(error_msg, "error_msg")
+    error_msg = make_str(error_msg, "error_msg")
     if exit_without_error is None:
       exit_without_error = False
-    exit_without_error = _execute.make_bool(exit_without_error, "exit_without_error")
+    exit_without_error = make_bool(exit_without_error, "exit_without_error")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Abort", error_msg=error_msg, exit_without_error=exit_without_error,
         name=name)
@@ -72,13 +101,13 @@ def abort_eager_fallback(error_msg="", exit_without_error=False, name=None, ctx=
   _ctx = ctx if ctx else _context.context()
   if error_msg is None:
     error_msg = ""
-  error_msg = _execute.make_str(error_msg, "error_msg")
+  error_msg = make_str(error_msg, "error_msg")
   if exit_without_error is None:
     exit_without_error = False
-  exit_without_error = _execute.make_bool(exit_without_error, "exit_without_error")
+  exit_without_error = make_bool(exit_without_error, "exit_without_error")
   _inputs_flat = []
   _attrs = ("error_msg", error_msg, "exit_without_error", exit_without_error)
-  _result = _execute.execute(b"Abort", 0, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Abort", 0, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
   _result = None
   return _result
@@ -127,7 +156,7 @@ def control_trigger_eager_fallback(name=None, ctx=None):
   _ctx = ctx if ctx else _context.context()
   _inputs_flat = []
   _attrs = None
-  _result = _execute.execute(b"ControlTrigger", 0, inputs=_inputs_flat,
+  _result = execute(b"ControlTrigger", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -156,13 +185,13 @@ def enter(data, frame_name, is_constant=False, parallel_iterations=10, name=None
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    frame_name = _execute.make_str(frame_name, "frame_name")
+    frame_name = make_str(frame_name, "frame_name")
     if is_constant is None:
       is_constant = False
-    is_constant = _execute.make_bool(is_constant, "is_constant")
+    is_constant = make_bool(is_constant, "is_constant")
     if parallel_iterations is None:
       parallel_iterations = 10
-    parallel_iterations = _execute.make_int(parallel_iterations, "parallel_iterations")
+    parallel_iterations = make_int(parallel_iterations, "parallel_iterations")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Enter", data=data, frame_name=frame_name, is_constant=is_constant,
         parallel_iterations=parallel_iterations, name=name)
@@ -172,7 +201,7 @@ def enter(data, frame_name, is_constant=False, parallel_iterations=10, name=None
               _op.get_attr("frame_name"), "is_constant",
               _op.get_attr("is_constant"), "parallel_iterations",
               _op.get_attr("parallel_iterations"))
-    _execute.record_gradient(
+    record_gradient(
       "Enter", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -202,20 +231,20 @@ def enter_eager_fallback(data, frame_name, is_constant=False, parallel_iteration
   This is for function enter
   """
   _ctx = ctx if ctx else _context.context()
-  frame_name = _execute.make_str(frame_name, "frame_name")
+  frame_name = make_str(frame_name, "frame_name")
   if is_constant is None:
     is_constant = False
-  is_constant = _execute.make_bool(is_constant, "is_constant")
+  is_constant = make_bool(is_constant, "is_constant")
   if parallel_iterations is None:
     parallel_iterations = 10
-  parallel_iterations = _execute.make_int(parallel_iterations, "parallel_iterations")
-  _attr_T, (data,) = _execute.args_to_matching_eager([data], _ctx)
+  parallel_iterations = make_int(parallel_iterations, "parallel_iterations")
+  _attr_T, (data,) = args_to_matching_eager([data], _ctx)
   _inputs_flat = [data]
   _attrs = ("T", _attr_T, "frame_name", frame_name, "is_constant",
   is_constant, "parallel_iterations", parallel_iterations)
-  _result = _execute.execute(b"Enter", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Enter", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Enter", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -240,7 +269,7 @@ def _exit(data, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Exit", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -267,12 +296,12 @@ def _exit_eager_fallback(data, name=None, ctx=None):
   This is for function _exit
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (data,) = _execute.args_to_matching_eager([data], _ctx)
+  _attr_T, (data,) = args_to_matching_eager([data], _ctx)
   _inputs_flat = [data]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Exit", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Exit", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Exit", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -299,7 +328,7 @@ def loop_cond(input, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "LoopCond", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -329,9 +358,9 @@ def loop_cond_eager_fallback(input, name=None, ctx=None):
   input = _ops.convert_to_tensor(input, _dtypes.bool)
   _inputs_flat = [input]
   _attrs = None
-  _result = _execute.execute(b"LoopCond", 1, inputs=_inputs_flat,
+  _result = execute(b"LoopCond", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "LoopCond", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -374,7 +403,7 @@ def merge(inputs, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "N", _op.get_attr("N"))
-    _execute.record_gradient(
+    record_gradient(
       "Merge", _inputs_flat, _attrs, _result, name)
     _result = _MergeOutput._make(_result)
     return _result
@@ -407,12 +436,12 @@ def merge_eager_fallback(inputs, name=None, ctx=None):
         "Expected list for 'inputs' argument to "
         "'merge' Op, not %r." % inputs)
   _attr_N = len(inputs)
-  _attr_T, inputs = _execute.args_to_matching_eager(list(inputs), _ctx)
+  _attr_T, inputs = args_to_matching_eager(list(inputs), _ctx)
   _inputs_flat = list(inputs)
   _attrs = ("T", _attr_T, "N", _attr_N)
-  _result = _execute.execute(b"Merge", 2, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Merge", 2, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Merge", _inputs_flat, _attrs, _result, name)
   _result = _MergeOutput._make(_result)
   return _result
@@ -435,7 +464,7 @@ def next_iteration(data, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "NextIteration", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -462,12 +491,12 @@ def next_iteration_eager_fallback(data, name=None, ctx=None):
   This is for function next_iteration
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (data,) = _execute.args_to_matching_eager([data], _ctx)
+  _attr_T, (data,) = args_to_matching_eager([data], _ctx)
   _inputs_flat = [data]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"NextIteration", 1, inputs=_inputs_flat,
+  _result = execute(b"NextIteration", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "NextIteration", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -515,7 +544,7 @@ def no_op_eager_fallback(name=None, ctx=None):
   _ctx = ctx if ctx else _context.context()
   _inputs_flat = []
   _attrs = None
-  _result = _execute.execute(b"NoOp", 0, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"NoOp", 0, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
   _result = None
   return _result
@@ -544,13 +573,13 @@ def ref_enter(data, frame_name, is_constant=False, parallel_iterations=10, name=
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    frame_name = _execute.make_str(frame_name, "frame_name")
+    frame_name = make_str(frame_name, "frame_name")
     if is_constant is None:
       is_constant = False
-    is_constant = _execute.make_bool(is_constant, "is_constant")
+    is_constant = make_bool(is_constant, "is_constant")
     if parallel_iterations is None:
       parallel_iterations = 10
-    parallel_iterations = _execute.make_int(parallel_iterations, "parallel_iterations")
+    parallel_iterations = make_int(parallel_iterations, "parallel_iterations")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RefEnter", data=data, frame_name=frame_name, is_constant=is_constant,
         parallel_iterations=parallel_iterations, name=name)
@@ -560,7 +589,7 @@ def ref_enter(data, frame_name, is_constant=False, parallel_iterations=10, name=
               _op.get_attr("frame_name"), "is_constant",
               _op.get_attr("is_constant"), "parallel_iterations",
               _op.get_attr("parallel_iterations"))
-    _execute.record_gradient(
+    record_gradient(
       "RefEnter", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -591,7 +620,7 @@ def ref_exit(data, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "RefExit", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -639,7 +668,7 @@ def ref_merge(inputs, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "N", _op.get_attr("N"))
-    _execute.record_gradient(
+    record_gradient(
       "RefMerge", _inputs_flat, _attrs, _result, name)
     _result = _RefMergeOutput._make(_result)
     return _result
@@ -668,7 +697,7 @@ def ref_next_iteration(data, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "RefNextIteration", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -704,7 +733,7 @@ def ref_select(index, inputs, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "N", _op.get_attr("N"))
-    _execute.record_gradient(
+    record_gradient(
       "RefSelect", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -748,7 +777,7 @@ def ref_switch(data, pred, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "RefSwitch", _inputs_flat, _attrs, _result, name)
     _result = _RefSwitchOutput._make(_result)
     return _result
@@ -791,7 +820,7 @@ def switch(data, pred, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Switch", _inputs_flat, _attrs, _result, name)
     _result = _SwitchOutput._make(_result)
     return _result
@@ -819,13 +848,13 @@ def switch_eager_fallback(data, pred, name=None, ctx=None):
   This is for function switch
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, (data,) = _execute.args_to_matching_eager([data], _ctx)
+  _attr_T, (data,) = args_to_matching_eager([data], _ctx)
   pred = _ops.convert_to_tensor(pred, _dtypes.bool)
   _inputs_flat = [data, pred]
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Switch", 2, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Switch", 2, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Switch", _inputs_flat, _attrs, _result, name)
   _result = _SwitchOutput._make(_result)
   return _result

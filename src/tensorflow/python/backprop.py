@@ -24,7 +24,7 @@ import operator
 import six
 
 from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
-from tensorflow.python import execute
+#from tensorflow.python import execute
 from tensorflow.python.ops import gen_array_ops
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.util import tf_contextlib
@@ -112,7 +112,7 @@ def _record_gradient(op_name, inputs, attrs, results, name):
                                                  results, name)
 
 
-execute.record_gradient = _record_gradient
+#execute.record_gradient = _record_gradient
 
 
 def implicit_val_and_grad(f):

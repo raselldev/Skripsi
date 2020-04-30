@@ -7,12 +7,64 @@ Original C++ source file: state_ops.cc
 import collections as _collections
 import six as _six
 
-from tensorflow.python import execute as _execute
+#from tensorflow.python import execute as _execute
 from tensorflow.python import context as _context
 from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
 from tensorflow.python.util.tf_export import tf_export
+from tensorflow.python.framework import tensor_shape
+from tensorflow.python.framework import dtypes as _dtypes
+from tensorflow.python.util import compat
+
+
+def make_bool(v, arg_name):
+  if not isinstance(v, bool):
+    raise TypeError("Expected bool for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return v
+
+
+def record_gradient(unused_op_name, unused_inputs, unused_attrs, unused_results,
+                    unused_name):
+  
+  pass
+
+def make_str(v, arg_name):
+  if not isinstance(v, compat.bytes_or_text_types):
+    raise TypeError("Expected string for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return compat.as_bytes(v)
+
+def make_shape(v, arg_name):
+  try:
+    shape = tensor_shape.as_shape(v)
+  except TypeError as e:
+    raise TypeError("Error converting %s to a TensorShape: %s." % (arg_name, e))
+  except ValueError as e:
+    raise ValueError("Error converting %s to a TensorShape: %s." % (arg_name,
+                                                                    e))
+  if shape.ndims is None:
+    return None
+  else:
+    return shape.as_list()
+
+
+def make_type(v, arg_name):
+  try:
+    v = _dtypes.as_dtype(v).base_dtype
+  except TypeError:
+    raise TypeError("Expected DataType for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  i = v.as_datatype_enum
+  return i
+
+
+def make_str(v, arg_name):
+  if not isinstance(v, compat.bytes_or_text_types):
+    raise TypeError("Expected string for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return compat.as_bytes(v)  # Convert unicode strings to bytes.
 
 
 def assign(ref, value, validate_shape=True, use_locking=True, name=None):
@@ -42,10 +94,10 @@ def assign(ref, value, validate_shape=True, use_locking=True, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if validate_shape is None:
       validate_shape = True
-    validate_shape = _execute.make_bool(validate_shape, "validate_shape")
+    validate_shape = make_bool(validate_shape, "validate_shape")
     if use_locking is None:
       use_locking = True
-    use_locking = _execute.make_bool(use_locking, "use_locking")
+    use_locking = make_bool(use_locking, "use_locking")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Assign", ref=ref, value=value, validate_shape=validate_shape,
         use_locking=use_locking, name=name)
@@ -54,7 +106,7 @@ def assign(ref, value, validate_shape=True, use_locking=True, name=None):
     _attrs = ("T", _op.get_attr("T"), "validate_shape",
               _op.get_attr("validate_shape"), "use_locking",
               _op.get_attr("use_locking"))
-    _execute.record_gradient(
+    record_gradient(
       "Assign", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1334,14 +1386,14 @@ def variable_v2(shape, dtype, container="", shared_name="", name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    shape = _execute.make_shape(shape, "shape")
-    dtype = _execute.make_type(dtype, "dtype")
+    shape = make_shape(shape, "shape")
+    dtype = make_type(dtype, "dtype")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "VariableV2", shape=shape, dtype=dtype, container=container,
         shared_name=shared_name, name=name)
@@ -1350,7 +1402,7 @@ def variable_v2(shape, dtype, container="", shared_name="", name=None):
     _attrs = ("shape", _op.get_attr("shape"), "dtype", _op.get_attr("dtype"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "VariableV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result

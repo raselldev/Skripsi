@@ -7,13 +7,30 @@ Original C++ source file: io_ops.cc
 import collections as _collections
 import six as _six
 
-from tensorflow.python import execute as _execute
+#from tensorflow.python import execute as _execute
 from tensorflow.python import context as _context
 from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
 from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.util.deprecation import deprecated_endpoints
 from tensorflow.python.util.tf_export import tf_export
+from tensorflow.python.framework import dtypes
+
+
+def record_gradient(unused_op_name, unused_inputs, unused_attrs, unused_results,
+                    unused_name):
+  
+  pass
+
+
+def make_type(v, arg_name):
+  try:
+    v = dtypes.as_dtype(v).base_dtype
+  except TypeError:
+    raise TypeError("Expected DataType for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  i = v.as_datatype_enum
+  return i
 
 
 def fixed_length_record_reader(record_bytes, header_bytes=0, footer_bytes=0, hop_bytes=0, container="", shared_name="", name=None):
@@ -41,22 +58,22 @@ def fixed_length_record_reader(record_bytes, header_bytes=0, footer_bytes=0, hop
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    record_bytes = _execute.make_int(record_bytes, "record_bytes")
+    record_bytes = make_int(record_bytes, "record_bytes")
     if header_bytes is None:
       header_bytes = 0
-    header_bytes = _execute.make_int(header_bytes, "header_bytes")
+    header_bytes = make_int(header_bytes, "header_bytes")
     if footer_bytes is None:
       footer_bytes = 0
-    footer_bytes = _execute.make_int(footer_bytes, "footer_bytes")
+    footer_bytes = make_int(footer_bytes, "footer_bytes")
     if hop_bytes is None:
       hop_bytes = 0
-    hop_bytes = _execute.make_int(hop_bytes, "hop_bytes")
+    hop_bytes = make_int(hop_bytes, "hop_bytes")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FixedLengthRecordReader", record_bytes=record_bytes,
         header_bytes=header_bytes, footer_bytes=footer_bytes,
@@ -70,7 +87,7 @@ def fixed_length_record_reader(record_bytes, header_bytes=0, footer_bytes=0, hop
               _op.get_attr("hop_bytes"), "container",
               _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "FixedLengthRecordReader", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -109,25 +126,25 @@ def fixed_length_record_reader_v2(record_bytes, header_bytes=0, footer_bytes=0, 
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    record_bytes = _execute.make_int(record_bytes, "record_bytes")
+    record_bytes = make_int(record_bytes, "record_bytes")
     if header_bytes is None:
       header_bytes = 0
-    header_bytes = _execute.make_int(header_bytes, "header_bytes")
+    header_bytes = make_int(header_bytes, "header_bytes")
     if footer_bytes is None:
       footer_bytes = 0
-    footer_bytes = _execute.make_int(footer_bytes, "footer_bytes")
+    footer_bytes = make_int(footer_bytes, "footer_bytes")
     if hop_bytes is None:
       hop_bytes = 0
-    hop_bytes = _execute.make_int(hop_bytes, "hop_bytes")
+    hop_bytes = make_int(hop_bytes, "hop_bytes")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     if encoding is None:
       encoding = ""
-    encoding = _execute.make_str(encoding, "encoding")
+    encoding = make_str(encoding, "encoding")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FixedLengthRecordReaderV2", record_bytes=record_bytes,
         header_bytes=header_bytes, footer_bytes=footer_bytes,
@@ -142,7 +159,7 @@ def fixed_length_record_reader_v2(record_bytes, header_bytes=0, footer_bytes=0, 
               _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"), "encoding",
               _op.get_attr("encoding"))
-    _execute.record_gradient(
+    record_gradient(
       "FixedLengthRecordReaderV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -174,33 +191,33 @@ def fixed_length_record_reader_v2_eager_fallback(record_bytes, header_bytes=0, f
   This is for function fixed_length_record_reader_v2
   """
   _ctx = ctx if ctx else _context.context()
-  record_bytes = _execute.make_int(record_bytes, "record_bytes")
+  record_bytes = make_int(record_bytes, "record_bytes")
   if header_bytes is None:
     header_bytes = 0
-  header_bytes = _execute.make_int(header_bytes, "header_bytes")
+  header_bytes = make_int(header_bytes, "header_bytes")
   if footer_bytes is None:
     footer_bytes = 0
-  footer_bytes = _execute.make_int(footer_bytes, "footer_bytes")
+  footer_bytes = make_int(footer_bytes, "footer_bytes")
   if hop_bytes is None:
     hop_bytes = 0
-  hop_bytes = _execute.make_int(hop_bytes, "hop_bytes")
+  hop_bytes = make_int(hop_bytes, "hop_bytes")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   if encoding is None:
     encoding = ""
-  encoding = _execute.make_str(encoding, "encoding")
+  encoding = make_str(encoding, "encoding")
   _inputs_flat = []
   _attrs = ("header_bytes", header_bytes, "record_bytes", record_bytes,
   "footer_bytes", footer_bytes, "hop_bytes", hop_bytes, "container",
   container, "shared_name", shared_name, "encoding", encoding)
-  _result = _execute.execute(b"FixedLengthRecordReaderV2", 1,
+  _result = execute(b"FixedLengthRecordReaderV2", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "FixedLengthRecordReaderV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -228,10 +245,10 @@ def identity_reader(container="", shared_name="", name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "IdentityReader", container=container, shared_name=shared_name,
         name=name)
@@ -239,7 +256,7 @@ def identity_reader(container="", shared_name="", name=None):
     _inputs_flat = _op.inputs
     _attrs = ("container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "IdentityReader", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -272,10 +289,10 @@ def identity_reader_v2(container="", shared_name="", name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "IdentityReaderV2", container=container, shared_name=shared_name,
         name=name)
@@ -283,7 +300,7 @@ def identity_reader_v2(container="", shared_name="", name=None):
     _inputs_flat = _op.inputs
     _attrs = ("container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "IdentityReaderV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -313,15 +330,15 @@ def identity_reader_v2_eager_fallback(container="", shared_name="", name=None, c
   _ctx = ctx if ctx else _context.context()
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"IdentityReaderV2", 1, inputs=_inputs_flat,
+  _result = execute(b"IdentityReaderV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "IdentityReaderV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -346,17 +363,17 @@ def lmdb_reader(container="", shared_name="", name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "LMDBReader", container=container, shared_name=shared_name, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "LMDBReader", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -391,7 +408,7 @@ def matching_files(pattern, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "MatchingFiles", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -421,9 +438,9 @@ def matching_files_eager_fallback(pattern, name=None, ctx=None):
   pattern = _ops.convert_to_tensor(pattern, _dtypes.string)
   _inputs_flat = [pattern]
   _attrs = None
-  _result = _execute.execute(b"MatchingFiles", 1, inputs=_inputs_flat,
+  _result = execute(b"MatchingFiles", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "MatchingFiles", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -457,7 +474,7 @@ def merge_v2_checkpoints(checkpoint_prefixes, destination_prefix, delete_old_dir
   if _ctx is None or not _ctx._eager_context.is_eager:
     if delete_old_dirs is None:
       delete_old_dirs = True
-    delete_old_dirs = _execute.make_bool(delete_old_dirs, "delete_old_dirs")
+    delete_old_dirs = make_bool(delete_old_dirs, "delete_old_dirs")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MergeV2Checkpoints", checkpoint_prefixes=checkpoint_prefixes,
         destination_prefix=destination_prefix,
@@ -493,12 +510,12 @@ def merge_v2_checkpoints_eager_fallback(checkpoint_prefixes, destination_prefix,
   _ctx = ctx if ctx else _context.context()
   if delete_old_dirs is None:
     delete_old_dirs = True
-  delete_old_dirs = _execute.make_bool(delete_old_dirs, "delete_old_dirs")
+  delete_old_dirs = make_bool(delete_old_dirs, "delete_old_dirs")
   checkpoint_prefixes = _ops.convert_to_tensor(checkpoint_prefixes, _dtypes.string)
   destination_prefix = _ops.convert_to_tensor(destination_prefix, _dtypes.string)
   _inputs_flat = [checkpoint_prefixes, destination_prefix]
   _attrs = ("delete_old_dirs", delete_old_dirs)
-  _result = _execute.execute(b"MergeV2Checkpoints", 0, inputs=_inputs_flat,
+  _result = execute(b"MergeV2Checkpoints", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -523,7 +540,7 @@ def read_file(filename, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ReadFile", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -553,9 +570,9 @@ def read_file_eager_fallback(filename, name=None, ctx=None):
   filename = _ops.convert_to_tensor(filename, _dtypes.string)
   _inputs_flat = [filename]
   _attrs = None
-  _result = _execute.execute(b"ReadFile", 1, inputs=_inputs_flat,
+  _result = execute(b"ReadFile", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ReadFile", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -581,7 +598,7 @@ def reader_num_records_produced(reader_handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ReaderNumRecordsProduced", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -612,7 +629,7 @@ def reader_num_records_produced_v2(reader_handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ReaderNumRecordsProducedV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -643,10 +660,10 @@ def reader_num_records_produced_v2_eager_fallback(reader_handle, name=None, ctx=
   reader_handle = _ops.convert_to_tensor(reader_handle, _dtypes.resource)
   _inputs_flat = [reader_handle]
   _attrs = None
-  _result = _execute.execute(b"ReaderNumRecordsProducedV2", 1,
+  _result = execute(b"ReaderNumRecordsProducedV2", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ReaderNumRecordsProducedV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -669,7 +686,7 @@ def reader_num_work_units_completed(reader_handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ReaderNumWorkUnitsCompleted", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -698,7 +715,7 @@ def reader_num_work_units_completed_v2(reader_handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ReaderNumWorkUnitsCompletedV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -729,10 +746,10 @@ def reader_num_work_units_completed_v2_eager_fallback(reader_handle, name=None, 
   reader_handle = _ops.convert_to_tensor(reader_handle, _dtypes.resource)
   _inputs_flat = [reader_handle]
   _attrs = None
-  _result = _execute.execute(b"ReaderNumWorkUnitsCompletedV2", 1,
+  _result = execute(b"ReaderNumWorkUnitsCompletedV2", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ReaderNumWorkUnitsCompletedV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -770,7 +787,7 @@ def reader_read(reader_handle, queue_handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ReaderRead", _inputs_flat, _attrs, _result, name)
     _result = _ReaderReadOutput._make(_result)
     return _result
@@ -816,7 +833,7 @@ def reader_read_up_to(reader_handle, queue_handle, num_records, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ReaderReadUpTo", _inputs_flat, _attrs, _result, name)
     _result = _ReaderReadUpToOutput._make(_result)
     return _result
@@ -862,7 +879,7 @@ def reader_read_up_to_v2(reader_handle, queue_handle, num_records, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ReaderReadUpToV2", _inputs_flat, _attrs, _result, name)
     _result = _ReaderReadUpToV2Output._make(_result)
     return _result
@@ -896,9 +913,9 @@ def reader_read_up_to_v2_eager_fallback(reader_handle, queue_handle, num_records
   num_records = _ops.convert_to_tensor(num_records, _dtypes.int64)
   _inputs_flat = [reader_handle, queue_handle, num_records]
   _attrs = None
-  _result = _execute.execute(b"ReaderReadUpToV2", 2, inputs=_inputs_flat,
+  _result = execute(b"ReaderReadUpToV2", 2, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ReaderReadUpToV2", _inputs_flat, _attrs, _result, name)
   _result = _ReaderReadUpToV2Output._make(_result)
   return _result
@@ -936,7 +953,7 @@ def reader_read_v2(reader_handle, queue_handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ReaderReadV2", _inputs_flat, _attrs, _result, name)
     _result = _ReaderReadV2Output._make(_result)
     return _result
@@ -968,9 +985,9 @@ def reader_read_v2_eager_fallback(reader_handle, queue_handle, name=None, ctx=No
   queue_handle = _ops.convert_to_tensor(queue_handle, _dtypes.resource)
   _inputs_flat = [reader_handle, queue_handle]
   _attrs = None
-  _result = _execute.execute(b"ReaderReadV2", 2, inputs=_inputs_flat,
+  _result = execute(b"ReaderReadV2", 2, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ReaderReadV2", _inputs_flat, _attrs, _result, name)
   _result = _ReaderReadV2Output._make(_result)
   return _result
@@ -1043,7 +1060,7 @@ def reader_reset_v2_eager_fallback(reader_handle, name=None, ctx=None):
   reader_handle = _ops.convert_to_tensor(reader_handle, _dtypes.resource)
   _inputs_flat = [reader_handle]
   _attrs = None
-  _result = _execute.execute(b"ReaderResetV2", 0, inputs=_inputs_flat,
+  _result = execute(b"ReaderResetV2", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -1132,7 +1149,7 @@ def reader_restore_state_v2_eager_fallback(reader_handle, state, name=None, ctx=
   state = _ops.convert_to_tensor(state, _dtypes.string)
   _inputs_flat = [reader_handle, state]
   _attrs = None
-  _result = _execute.execute(b"ReaderRestoreStateV2", 0, inputs=_inputs_flat,
+  _result = execute(b"ReaderRestoreStateV2", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -1158,7 +1175,7 @@ def reader_serialize_state(reader_handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ReaderSerializeState", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1189,7 +1206,7 @@ def reader_serialize_state_v2(reader_handle, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ReaderSerializeStateV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1220,10 +1237,10 @@ def reader_serialize_state_v2_eager_fallback(reader_handle, name=None, ctx=None)
   reader_handle = _ops.convert_to_tensor(reader_handle, _dtypes.resource)
   _inputs_flat = [reader_handle]
   _attrs = None
-  _result = _execute.execute(b"ReaderSerializeStateV2", 1,
+  _result = execute(b"ReaderSerializeStateV2", 1,
                              inputs=_inputs_flat, attrs=_attrs, ctx=_ctx,
                              name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ReaderSerializeStateV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1267,10 +1284,10 @@ def restore(file_pattern, tensor_name, dt, preferred_shard=-1, name=None):
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dt = _execute.make_type(dt, "dt")
+    dt = make_type(dt, "dt")
     if preferred_shard is None:
       preferred_shard = -1
-    preferred_shard = _execute.make_int(preferred_shard, "preferred_shard")
+    preferred_shard = make_int(preferred_shard, "preferred_shard")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Restore", file_pattern=file_pattern, tensor_name=tensor_name, dt=dt,
         preferred_shard=preferred_shard, name=name)
@@ -1278,7 +1295,7 @@ def restore(file_pattern, tensor_name, dt, preferred_shard=-1, name=None):
     _inputs_flat = _op.inputs
     _attrs = ("dt", _op.get_attr("dt"), "preferred_shard",
               _op.get_attr("preferred_shard"))
-    _execute.record_gradient(
+    record_gradient(
       "Restore", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1307,17 +1324,17 @@ def restore_eager_fallback(file_pattern, tensor_name, dt, preferred_shard=-1, na
   This is for function restore
   """
   _ctx = ctx if ctx else _context.context()
-  dt = _execute.make_type(dt, "dt")
+  dt = make_type(dt, "dt")
   if preferred_shard is None:
     preferred_shard = -1
-  preferred_shard = _execute.make_int(preferred_shard, "preferred_shard")
+  preferred_shard = make_int(preferred_shard, "preferred_shard")
   file_pattern = _ops.convert_to_tensor(file_pattern, _dtypes.string)
   tensor_name = _ops.convert_to_tensor(tensor_name, _dtypes.string)
   _inputs_flat = [file_pattern, tensor_name]
   _attrs = ("dt", dt, "preferred_shard", preferred_shard)
-  _result = _execute.execute(b"Restore", 1, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Restore", 1, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "Restore", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1354,10 +1371,10 @@ def restore_slice(file_pattern, tensor_name, shape_and_slice, dt, preferred_shar
   """
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    dt = _execute.make_type(dt, "dt")
+    dt = make_type(dt, "dt")
     if preferred_shard is None:
       preferred_shard = -1
-    preferred_shard = _execute.make_int(preferred_shard, "preferred_shard")
+    preferred_shard = make_int(preferred_shard, "preferred_shard")
     _, _, _op = _op_def_lib._apply_op_helper(
         "RestoreSlice", file_pattern=file_pattern, tensor_name=tensor_name,
         shape_and_slice=shape_and_slice, dt=dt,
@@ -1366,7 +1383,7 @@ def restore_slice(file_pattern, tensor_name, shape_and_slice, dt, preferred_shar
     _inputs_flat = _op.inputs
     _attrs = ("dt", _op.get_attr("dt"), "preferred_shard",
               _op.get_attr("preferred_shard"))
-    _execute.record_gradient(
+    record_gradient(
       "RestoreSlice", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1395,18 +1412,18 @@ def restore_slice_eager_fallback(file_pattern, tensor_name, shape_and_slice, dt,
   This is for function restore_slice
   """
   _ctx = ctx if ctx else _context.context()
-  dt = _execute.make_type(dt, "dt")
+  dt = make_type(dt, "dt")
   if preferred_shard is None:
     preferred_shard = -1
-  preferred_shard = _execute.make_int(preferred_shard, "preferred_shard")
+  preferred_shard = make_int(preferred_shard, "preferred_shard")
   file_pattern = _ops.convert_to_tensor(file_pattern, _dtypes.string)
   tensor_name = _ops.convert_to_tensor(tensor_name, _dtypes.string)
   shape_and_slice = _ops.convert_to_tensor(shape_and_slice, _dtypes.string)
   _inputs_flat = [file_pattern, tensor_name, shape_and_slice]
   _attrs = ("dt", dt, "preferred_shard", preferred_shard)
-  _result = _execute.execute(b"RestoreSlice", 1, inputs=_inputs_flat,
+  _result = execute(b"RestoreSlice", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RestoreSlice", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1451,7 +1468,7 @@ def restore_v2(prefix, tensor_names, shape_and_slices, dtypes, name=None):
       raise TypeError(
           "Expected list for 'dtypes' argument to "
           "'restore_v2' Op, not %r." % dtypes)
-    dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+    dtypes = [make_type(_t, "dtypes") for _t in dtypes]
     _, _, _op = _op_def_lib._apply_op_helper(
         "RestoreV2", prefix=prefix, tensor_names=tensor_names,
         shape_and_slices=shape_and_slices, dtypes=dtypes, name=name)
@@ -1460,7 +1477,7 @@ def restore_v2(prefix, tensor_names, shape_and_slices, dtypes, name=None):
       return _op
     _inputs_flat = _op.inputs
     _attrs = ("dtypes", _op.get_attr("dtypes"))
-    _execute.record_gradient(
+    record_gradient(
       "RestoreV2", _inputs_flat, _attrs, _result, name)
     return _result
 
@@ -1492,15 +1509,15 @@ def restore_v2_eager_fallback(prefix, tensor_names, shape_and_slices, dtypes, na
     raise TypeError(
         "Expected list for 'dtypes' argument to "
         "'restore_v2' Op, not %r." % dtypes)
-  dtypes = [_execute.make_type(_t, "dtypes") for _t in dtypes]
+  dtypes = [make_type(_t, "dtypes") for _t in dtypes]
   prefix = _ops.convert_to_tensor(prefix, _dtypes.string)
   tensor_names = _ops.convert_to_tensor(tensor_names, _dtypes.string)
   shape_and_slices = _ops.convert_to_tensor(shape_and_slices, _dtypes.string)
   _inputs_flat = [prefix, tensor_names, shape_and_slices]
   _attrs = ("dtypes", dtypes)
-  _result = _execute.execute(b"RestoreV2", len(dtypes), inputs=_inputs_flat,
+  _result = execute(b"RestoreV2", len(dtypes), inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "RestoreV2", _inputs_flat, _attrs, _result, name)
   return _result
 
@@ -1556,12 +1573,12 @@ def save_eager_fallback(filename, tensor_names, data, name=None, ctx=None):
   This is for function save
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, data = _execute.convert_to_mixed_eager_tensors(data, _ctx)
+  _attr_T, data = convert_to_mixed_eager_tensors(data, _ctx)
   filename = _ops.convert_to_tensor(filename, _dtypes.string)
   tensor_names = _ops.convert_to_tensor(tensor_names, _dtypes.string)
   _inputs_flat = [filename, tensor_names] + list(data)
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Save", 0, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"Save", 0, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
   _result = None
   return _result
@@ -1640,13 +1657,13 @@ def save_slices_eager_fallback(filename, tensor_names, shapes_and_slices, data, 
   This is for function save_slices
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_T, data = _execute.convert_to_mixed_eager_tensors(data, _ctx)
+  _attr_T, data = convert_to_mixed_eager_tensors(data, _ctx)
   filename = _ops.convert_to_tensor(filename, _dtypes.string)
   tensor_names = _ops.convert_to_tensor(tensor_names, _dtypes.string)
   shapes_and_slices = _ops.convert_to_tensor(shapes_and_slices, _dtypes.string)
   _inputs_flat = [filename, tensor_names, shapes_and_slices] + list(data)
   _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"SaveSlices", 0, inputs=_inputs_flat,
+  _result = execute(b"SaveSlices", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result
@@ -1707,13 +1724,13 @@ def save_v2_eager_fallback(prefix, tensor_names, shape_and_slices, tensors, name
   This is for function save_v2
   """
   _ctx = ctx if ctx else _context.context()
-  _attr_dtypes, tensors = _execute.convert_to_mixed_eager_tensors(tensors, _ctx)
+  _attr_dtypes, tensors = convert_to_mixed_eager_tensors(tensors, _ctx)
   prefix = _ops.convert_to_tensor(prefix, _dtypes.string)
   tensor_names = _ops.convert_to_tensor(tensor_names, _dtypes.string)
   shape_and_slices = _ops.convert_to_tensor(shape_and_slices, _dtypes.string)
   _inputs_flat = [prefix, tensor_names, shape_and_slices] + list(tensors)
   _attrs = ("dtypes", _attr_dtypes)
-  _result = _execute.execute(b"SaveV2", 0, inputs=_inputs_flat, attrs=_attrs,
+  _result = execute(b"SaveV2", 0, inputs=_inputs_flat, attrs=_attrs,
                              ctx=_ctx, name=name)
   _result = None
   return _result
@@ -1741,7 +1758,7 @@ def sharded_filename(basename, shard, num_shards, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ShardedFilename", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1774,9 +1791,9 @@ def sharded_filename_eager_fallback(basename, shard, num_shards, name=None, ctx=
   num_shards = _ops.convert_to_tensor(num_shards, _dtypes.int32)
   _inputs_flat = [basename, shard, num_shards]
   _attrs = None
-  _result = _execute.execute(b"ShardedFilename", 1, inputs=_inputs_flat,
+  _result = execute(b"ShardedFilename", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ShardedFilename", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1801,7 +1818,7 @@ def sharded_filespec(basename, num_shards, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = None
-    _execute.record_gradient(
+    record_gradient(
       "ShardedFilespec", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1833,9 +1850,9 @@ def sharded_filespec_eager_fallback(basename, num_shards, name=None, ctx=None):
   num_shards = _ops.convert_to_tensor(num_shards, _dtypes.int32)
   _inputs_flat = [basename, num_shards]
   _attrs = None
-  _result = _execute.execute(b"ShardedFilespec", 1, inputs=_inputs_flat,
+  _result = execute(b"ShardedFilespec", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "ShardedFilespec", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1861,13 +1878,13 @@ def tf_record_reader(container="", shared_name="", compression_type="", name=Non
   if _ctx is None or not _ctx._eager_context.is_eager:
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     if compression_type is None:
       compression_type = ""
-    compression_type = _execute.make_str(compression_type, "compression_type")
+    compression_type = make_str(compression_type, "compression_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TFRecordReader", container=container, shared_name=shared_name,
         compression_type=compression_type, name=name)
@@ -1876,7 +1893,7 @@ def tf_record_reader(container="", shared_name="", compression_type="", name=Non
     _attrs = ("container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"), "compression_type",
               _op.get_attr("compression_type"))
-    _execute.record_gradient(
+    record_gradient(
       "TFRecordReader", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1907,13 +1924,13 @@ def tf_record_reader_v2(container="", shared_name="", compression_type="", name=
   if _ctx is None or not _ctx._eager_context.is_eager:
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     if compression_type is None:
       compression_type = ""
-    compression_type = _execute.make_str(compression_type, "compression_type")
+    compression_type = make_str(compression_type, "compression_type")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TFRecordReaderV2", container=container, shared_name=shared_name,
         compression_type=compression_type, name=name)
@@ -1922,7 +1939,7 @@ def tf_record_reader_v2(container="", shared_name="", compression_type="", name=
     _attrs = ("container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"), "compression_type",
               _op.get_attr("compression_type"))
-    _execute.record_gradient(
+    record_gradient(
       "TFRecordReaderV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -1954,19 +1971,19 @@ def tf_record_reader_v2_eager_fallback(container="", shared_name="", compression
   _ctx = ctx if ctx else _context.context()
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   if compression_type is None:
     compression_type = ""
-  compression_type = _execute.make_str(compression_type, "compression_type")
+  compression_type = make_str(compression_type, "compression_type")
   _inputs_flat = []
   _attrs = ("container", container, "shared_name", shared_name,
   "compression_type", compression_type)
-  _result = _execute.execute(b"TFRecordReaderV2", 1, inputs=_inputs_flat,
+  _result = execute(b"TFRecordReaderV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TFRecordReaderV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -1993,13 +2010,13 @@ def text_line_reader(skip_header_lines=0, container="", shared_name="", name=Non
   if _ctx is None or not _ctx._eager_context.is_eager:
     if skip_header_lines is None:
       skip_header_lines = 0
-    skip_header_lines = _execute.make_int(skip_header_lines, "skip_header_lines")
+    skip_header_lines = make_int(skip_header_lines, "skip_header_lines")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TextLineReader", skip_header_lines=skip_header_lines,
         container=container, shared_name=shared_name, name=name)
@@ -2008,7 +2025,7 @@ def text_line_reader(skip_header_lines=0, container="", shared_name="", name=Non
     _attrs = ("skip_header_lines", _op.get_attr("skip_header_lines"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "TextLineReader", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2040,13 +2057,13 @@ def text_line_reader_v2(skip_header_lines=0, container="", shared_name="", name=
   if _ctx is None or not _ctx._eager_context.is_eager:
     if skip_header_lines is None:
       skip_header_lines = 0
-    skip_header_lines = _execute.make_int(skip_header_lines, "skip_header_lines")
+    skip_header_lines = make_int(skip_header_lines, "skip_header_lines")
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TextLineReaderV2", skip_header_lines=skip_header_lines,
         container=container, shared_name=shared_name, name=name)
@@ -2055,7 +2072,7 @@ def text_line_reader_v2(skip_header_lines=0, container="", shared_name="", name=
     _attrs = ("skip_header_lines", _op.get_attr("skip_header_lines"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "TextLineReaderV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2087,19 +2104,19 @@ def text_line_reader_v2_eager_fallback(skip_header_lines=0, container="", shared
   _ctx = ctx if ctx else _context.context()
   if skip_header_lines is None:
     skip_header_lines = 0
-  skip_header_lines = _execute.make_int(skip_header_lines, "skip_header_lines")
+  skip_header_lines = make_int(skip_header_lines, "skip_header_lines")
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("skip_header_lines", skip_header_lines, "container", container,
   "shared_name", shared_name)
-  _result = _execute.execute(b"TextLineReaderV2", 1, inputs=_inputs_flat,
+  _result = execute(b"TextLineReaderV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "TextLineReaderV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2127,10 +2144,10 @@ def whole_file_reader(container="", shared_name="", name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "WholeFileReader", container=container, shared_name=shared_name,
         name=name)
@@ -2138,7 +2155,7 @@ def whole_file_reader(container="", shared_name="", name=None):
     _inputs_flat = _op.inputs
     _attrs = ("container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "WholeFileReader", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2171,10 +2188,10 @@ def whole_file_reader_v2(container="", shared_name="", name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if container is None:
       container = ""
-    container = _execute.make_str(container, "container")
+    container = make_str(container, "container")
     if shared_name is None:
       shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+    shared_name = make_str(shared_name, "shared_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "WholeFileReaderV2", container=container, shared_name=shared_name,
         name=name)
@@ -2182,7 +2199,7 @@ def whole_file_reader_v2(container="", shared_name="", name=None):
     _inputs_flat = _op.inputs
     _attrs = ("container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
+    record_gradient(
       "WholeFileReaderV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -2212,15 +2229,15 @@ def whole_file_reader_v2_eager_fallback(container="", shared_name="", name=None,
   _ctx = ctx if ctx else _context.context()
   if container is None:
     container = ""
-  container = _execute.make_str(container, "container")
+  container = make_str(container, "container")
   if shared_name is None:
     shared_name = ""
-  shared_name = _execute.make_str(shared_name, "shared_name")
+  shared_name = make_str(shared_name, "shared_name")
   _inputs_flat = []
   _attrs = ("container", container, "shared_name", shared_name)
-  _result = _execute.execute(b"WholeFileReaderV2", 1, inputs=_inputs_flat,
+  _result = execute(b"WholeFileReaderV2", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
+  record_gradient(
       "WholeFileReaderV2", _inputs_flat, _attrs, _result, name)
   _result, = _result
   return _result
@@ -2277,7 +2294,7 @@ def write_file_eager_fallback(filename, contents, name=None, ctx=None):
   contents = _ops.convert_to_tensor(contents, _dtypes.string)
   _inputs_flat = [filename, contents]
   _attrs = None
-  _result = _execute.execute(b"WriteFile", 0, inputs=_inputs_flat,
+  _result = execute(b"WriteFile", 0, inputs=_inputs_flat,
                              attrs=_attrs, ctx=_ctx, name=name)
   _result = None
   return _result

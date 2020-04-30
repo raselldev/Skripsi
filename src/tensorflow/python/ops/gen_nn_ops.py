@@ -1,12 +1,47 @@
 import collections as _collections
 import six as _six
 
+from tensorflow.python.util import compat
 from tensorflow.python import context as _context
-from tensorflow.python import execute as _execute
+#from tensorflow.python import execute as _execute
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
 from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.python.framework import op_def_library as _op_def_library
+
+def record_gradient(unused_op_name, unused_inputs, unused_attrs, unused_results,
+                    unused_name):
+  
+  pass
+
+def make_float(v, arg_name):
+  if not isinstance(v, compat.real_types):
+    raise TypeError("Expected float for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return float(v)
+
+def make_int(v, arg_name):
+  if isinstance(v, _six.string_types):
+    raise TypeError("Expected int for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  try:
+    return int(v)
+  except (ValueError, TypeError):
+    raise TypeError("Expected int for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+
+def make_str(v, arg_name):
+  if not isinstance(v, compat.bytes_or_text_types):
+    raise TypeError("Expected string for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return compat.as_bytes(v)  # Convert unicode strings to bytes.
+
+def make_bool(v, arg_name):
+  if not isinstance(v, bool):
+    raise TypeError("Expected bool for argument '%s' not %s." %
+                    (arg_name, repr(v)))
+  return v
+
 
 def bias_add(value, bias, data_format="NHWC", name=None):
   r"""Adds `bias` to `value`.
@@ -36,14 +71,14 @@ def bias_add(value, bias, data_format="NHWC", name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if data_format is None:
       data_format = "NHWC"
-    data_format = _execute.make_str(data_format, "data_format")
+    data_format = make_str(data_format, "data_format")
     _, _, _op = _op_def_lib._apply_op_helper(
         "BiasAdd", value=value, bias=bias, data_format=data_format, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "data_format",
               _op.get_attr("data_format"))
-    _execute.record_gradient(
+    record_gradient(
       "BiasAdd", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -92,7 +127,7 @@ def bias_add_grad(out_backprop, data_format="NHWC", name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if data_format is None:
       data_format = "NHWC"
-    data_format = _execute.make_str(data_format, "data_format")
+    data_format = make_str(data_format, "data_format")
     _, _, _op = _op_def_lib._apply_op_helper(
         "BiasAddGrad", out_backprop=out_backprop, data_format=data_format,
         name=name)
@@ -100,7 +135,7 @@ def bias_add_grad(out_backprop, data_format="NHWC", name=None):
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "data_format",
               _op.get_attr("data_format"))
-    _execute.record_gradient(
+    record_gradient(
       "BiasAddGrad", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -185,21 +220,21 @@ def conv2d(input, filter, strides, padding, use_cudnn_on_gpu=True, data_format="
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'conv2d' Op, not %r." % strides)
-    strides = [_execute.make_int(_i, "strides") for _i in strides]
-    padding = _execute.make_str(padding, "padding")
+    strides = [make_int(_i, "strides") for _i in strides]
+    padding = make_str(padding, "padding")
     if use_cudnn_on_gpu is None:
       use_cudnn_on_gpu = True
-    use_cudnn_on_gpu = _execute.make_bool(use_cudnn_on_gpu, "use_cudnn_on_gpu")
+    use_cudnn_on_gpu = make_bool(use_cudnn_on_gpu, "use_cudnn_on_gpu")
     if data_format is None:
       data_format = "NHWC"
-    data_format = _execute.make_str(data_format, "data_format")
+    data_format = make_str(data_format, "data_format")
     if dilations is None:
       dilations = [1, 1, 1, 1]
     if not isinstance(dilations, (list, tuple)):
       raise TypeError(
           "Expected list for 'dilations' argument to "
           "'conv2d' Op, not %r." % dilations)
-    dilations = [_execute.make_int(_i, "dilations") for _i in dilations]
+    dilations = [make_int(_i, "dilations") for _i in dilations]
     _, _, _op = _op_def_lib._apply_op_helper(
         "Conv2D", input=input, filter=filter, strides=strides,
         padding=padding, use_cudnn_on_gpu=use_cudnn_on_gpu,
@@ -211,7 +246,7 @@ def conv2d(input, filter, strides, padding, use_cudnn_on_gpu=True, data_format="
               _op.get_attr("padding"), "data_format",
               _op.get_attr("data_format"), "dilations",
               _op.get_attr("dilations"))
-    _execute.record_gradient(
+    record_gradient(
       "Conv2D", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -280,21 +315,21 @@ def conv2d_backprop_filter(input, filter_sizes, out_backprop, strides, padding, 
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'conv2d_backprop_filter' Op, not %r." % strides)
-    strides = [_execute.make_int(_i, "strides") for _i in strides]
-    padding = _execute.make_str(padding, "padding")
+    strides = [make_int(_i, "strides") for _i in strides]
+    padding = make_str(padding, "padding")
     if use_cudnn_on_gpu is None:
       use_cudnn_on_gpu = True
-    use_cudnn_on_gpu = _execute.make_bool(use_cudnn_on_gpu, "use_cudnn_on_gpu")
+    use_cudnn_on_gpu = make_bool(use_cudnn_on_gpu, "use_cudnn_on_gpu")
     if data_format is None:
       data_format = "NHWC"
-    data_format = _execute.make_str(data_format, "data_format")
+    data_format = make_str(data_format, "data_format")
     if dilations is None:
       dilations = [1, 1, 1, 1]
     if not isinstance(dilations, (list, tuple)):
       raise TypeError(
           "Expected list for 'dilations' argument to "
           "'conv2d_backprop_filter' Op, not %r." % dilations)
-    dilations = [_execute.make_int(_i, "dilations") for _i in dilations]
+    dilations = [make_int(_i, "dilations") for _i in dilations]
     _, _, _op = _op_def_lib._apply_op_helper(
         "Conv2DBackpropFilter", input=input, filter_sizes=filter_sizes,
         out_backprop=out_backprop, strides=strides, padding=padding,
@@ -307,7 +342,7 @@ def conv2d_backprop_filter(input, filter_sizes, out_backprop, strides, padding, 
               _op.get_attr("padding"), "data_format",
               _op.get_attr("data_format"), "dilations",
               _op.get_attr("dilations"))
-    _execute.record_gradient(
+    record_gradient(
       "Conv2DBackpropFilter", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -377,21 +412,21 @@ def conv2d_backprop_input(input_sizes, filter, out_backprop, strides, padding, u
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'conv2d_backprop_input' Op, not %r." % strides)
-    strides = [_execute.make_int(_i, "strides") for _i in strides]
-    padding = _execute.make_str(padding, "padding")
+    strides = [make_int(_i, "strides") for _i in strides]
+    padding = make_str(padding, "padding")
     if use_cudnn_on_gpu is None:
       use_cudnn_on_gpu = True
-    use_cudnn_on_gpu = _execute.make_bool(use_cudnn_on_gpu, "use_cudnn_on_gpu")
+    use_cudnn_on_gpu = make_bool(use_cudnn_on_gpu, "use_cudnn_on_gpu")
     if data_format is None:
       data_format = "NHWC"
-    data_format = _execute.make_str(data_format, "data_format")
+    data_format = make_str(data_format, "data_format")
     if dilations is None:
       dilations = [1, 1, 1, 1]
     if not isinstance(dilations, (list, tuple)):
       raise TypeError(
           "Expected list for 'dilations' argument to "
           "'conv2d_backprop_input' Op, not %r." % dilations)
-    dilations = [_execute.make_int(_i, "dilations") for _i in dilations]
+    dilations = [make_int(_i, "dilations") for _i in dilations]
     _, _, _op = _op_def_lib._apply_op_helper(
         "Conv2DBackpropInput", input_sizes=input_sizes, filter=filter,
         out_backprop=out_backprop, strides=strides, padding=padding,
@@ -404,7 +439,7 @@ def conv2d_backprop_input(input_sizes, filter, out_backprop, strides, padding, u
               _op.get_attr("padding"), "data_format",
               _op.get_attr("data_format"), "dilations",
               _op.get_attr("dilations"))
-    _execute.record_gradient(
+    record_gradient(
       "Conv2DBackpropInput", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -451,7 +486,7 @@ def elu(features, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Elu", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -518,13 +553,13 @@ def _fused_batch_norm(x, scale, offset, mean, variance, epsilon=0.0001, data_for
   if _ctx is None or not _ctx._eager_context.is_eager:
     if epsilon is None:
       epsilon = 0.0001
-    epsilon = _execute.make_float(epsilon, "epsilon")
+    epsilon = make_float(epsilon, "epsilon")
     if data_format is None:
       data_format = "NHWC"
-    data_format = _execute.make_str(data_format, "data_format")
+    data_format = make_str(data_format, "data_format")
     if is_training is None:
       is_training = True
-    is_training = _execute.make_bool(is_training, "is_training")
+    is_training = make_bool(is_training, "is_training")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FusedBatchNorm", x=x, scale=scale, offset=offset, mean=mean,
         variance=variance, epsilon=epsilon, data_format=data_format,
@@ -534,7 +569,7 @@ def _fused_batch_norm(x, scale, offset, mean, variance, epsilon=0.0001, data_for
     _attrs = ("T", _op.get_attr("T"), "epsilon", _op.get_attr("epsilon"),
               "data_format", _op.get_attr("data_format"), "is_training",
               _op.get_attr("is_training"))
-    _execute.record_gradient(
+    record_gradient(
       "FusedBatchNorm", _inputs_flat, _attrs, _result, name)
     _result = _FusedBatchNormOutput._make(_result)
     return _result
@@ -613,13 +648,13 @@ def fused_batch_norm_grad(y_backprop, x, scale, reserve_space_1, reserve_space_2
   if _ctx is None or not _ctx._eager_context.is_eager:
     if epsilon is None:
       epsilon = 0.0001
-    epsilon = _execute.make_float(epsilon, "epsilon")
+    epsilon = make_float(epsilon, "epsilon")
     if data_format is None:
       data_format = "NHWC"
-    data_format = _execute.make_str(data_format, "data_format")
+    data_format = make_str(data_format, "data_format")
     if is_training is None:
       is_training = True
-    is_training = _execute.make_bool(is_training, "is_training")
+    is_training = make_bool(is_training, "is_training")
     _, _, _op = _op_def_lib._apply_op_helper(
         "FusedBatchNormGrad", y_backprop=y_backprop, x=x, scale=scale,
         reserve_space_1=reserve_space_1, reserve_space_2=reserve_space_2,
@@ -630,7 +665,7 @@ def fused_batch_norm_grad(y_backprop, x, scale, reserve_space_1, reserve_space_2
     _attrs = ("T", _op.get_attr("T"), "epsilon", _op.get_attr("epsilon"),
               "data_format", _op.get_attr("data_format"), "is_training",
               _op.get_attr("is_training"))
-    _execute.record_gradient(
+    record_gradient(
       "FusedBatchNormGrad", _inputs_flat, _attrs, _result, name)
     _result = _FusedBatchNormGradOutput._make(_result)
     return _result
@@ -686,16 +721,16 @@ def max_pool(input, ksize, strides, padding, data_format="NHWC", name=None):
       raise TypeError(
           "Expected list for 'ksize' argument to "
           "'max_pool' Op, not %r." % ksize)
-    ksize = [_execute.make_int(_i, "ksize") for _i in ksize]
+    ksize = [make_int(_i, "ksize") for _i in ksize]
     if not isinstance(strides, (list, tuple)):
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'max_pool' Op, not %r." % strides)
-    strides = [_execute.make_int(_i, "strides") for _i in strides]
-    padding = _execute.make_str(padding, "padding")
+    strides = [make_int(_i, "strides") for _i in strides]
+    padding = make_str(padding, "padding")
     if data_format is None:
       data_format = "NHWC"
-    data_format = _execute.make_str(data_format, "data_format")
+    data_format = make_str(data_format, "data_format")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MaxPool", input=input, ksize=ksize, strides=strides, padding=padding,
         data_format=data_format, name=name)
@@ -705,7 +740,7 @@ def max_pool(input, ksize, strides, padding, data_format="NHWC", name=None):
               "strides", _op.get_attr("strides"), "padding",
               _op.get_attr("padding"), "data_format",
               _op.get_attr("data_format"))
-    _execute.record_gradient(
+    record_gradient(
       "MaxPool", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -762,16 +797,16 @@ def max_pool_grad(orig_input, orig_output, grad, ksize, strides, padding, data_f
       raise TypeError(
           "Expected list for 'ksize' argument to "
           "'max_pool_grad' Op, not %r." % ksize)
-    ksize = [_execute.make_int(_i, "ksize") for _i in ksize]
+    ksize = [make_int(_i, "ksize") for _i in ksize]
     if not isinstance(strides, (list, tuple)):
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'max_pool_grad' Op, not %r." % strides)
-    strides = [_execute.make_int(_i, "strides") for _i in strides]
-    padding = _execute.make_str(padding, "padding")
+    strides = [make_int(_i, "strides") for _i in strides]
+    padding = make_str(padding, "padding")
     if data_format is None:
       data_format = "NHWC"
-    data_format = _execute.make_str(data_format, "data_format")
+    data_format = make_str(data_format, "data_format")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MaxPoolGrad", orig_input=orig_input, orig_output=orig_output,
         grad=grad, ksize=ksize, strides=strides, padding=padding,
@@ -782,7 +817,7 @@ def max_pool_grad(orig_input, orig_output, grad, ksize, strides, padding, data_f
               _op.get_attr("strides"), "padding", _op.get_attr("padding"),
               "data_format", _op.get_attr("data_format"), "T",
               _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "MaxPoolGrad", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -815,7 +850,7 @@ def relu(features, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "Relu", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
@@ -857,7 +892,7 @@ def relu_grad(gradients, features, name=None):
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
+    record_gradient(
       "ReluGrad", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
