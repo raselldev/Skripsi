@@ -26,7 +26,6 @@ from tensorflow.python.ops import variables as tf_variables
 from tensorflow.python.base_layer import InputSpec
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import tensor_shape
-#from tensorflow.python import regularizers
 from tensorflow.python.base_layer import Layer
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.framework.smart_cond import smart_cond

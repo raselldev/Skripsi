@@ -6,7 +6,7 @@ import collections as _collections
 
 import six as _six
 
-from tensorflow.python import pywrap_tensorflow as _pywrap_tensorflow
+from tensorflow.python import pywrap_tensorflow_internal as _pywrap_tensorflow
 
 
 def _get_attrs_values(obj):

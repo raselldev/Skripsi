@@ -31,7 +31,7 @@ import six
 
 from tensorflow.python.ops import gradients_impl
 from tensorflow.python.framework import ops
-from tensorflow.python import pywrap_tensorflow
+from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
 
 
 # This is to avoid a circular dependency with cond_v2_impl

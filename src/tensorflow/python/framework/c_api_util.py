@@ -20,7 +20,7 @@ from __future__ import division
 from __future__ import print_function
 
 from tensorflow.python.util import tf_contextlib
-from tensorflow.python import pywrap_tensorflow as c_api
+from tensorflow.python import pywrap_tensorflow_internal as c_api
 
 
 class ScopedTFStatus(object):

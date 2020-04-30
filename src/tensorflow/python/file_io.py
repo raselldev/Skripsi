@@ -27,7 +27,7 @@ import uuid
 
 import six
 
-from tensorflow.python import pywrap_tensorflow
+from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
 from tensorflow.python.framework import c_api_util
 from tensorflow.python.framework import errors_impl as errors
 from tensorflow.python.util import compat

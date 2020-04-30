@@ -20,7 +20,7 @@ from __future__ import print_function
 
 import collections
 
-from tensorflow.python import pywrap_tensorflow
+from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_util

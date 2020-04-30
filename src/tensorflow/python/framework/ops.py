@@ -9,7 +9,7 @@ import copy
 import re
 import sys
 import threading
-
+import contextlib
 import numpy as np
 import six
 from six.moves import xrange  # pylint: disable=redefined-builtin
@@ -17,7 +17,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 from tensorflow.python.framework import device as pydev
 from tensorflow.python.util import function_utils
 from tensorflow.python.framework import tensor_shape
-from tensorflow.python import tape
+#from tensorflow.python import tape
 from tensorflow.python.ops import control_flow_util
 from tensorflow.core.framework import op_def_pb2
 from tensorflow.python.framework import errors_impl as errors
@@ -39,7 +39,7 @@ from tensorflow.python.util import decorator_utils
 from tensorflow.python.util.deprecation import deprecated_args
 from tensorflow.python.util import tf_contextlib
 from tensorflow.python.framework import registry
-from tensorflow.python import pywrap_tensorflow as c_api
+from tensorflow.python import pywrap_tensorflow_internal as c_api
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
 
@@ -47,6 +47,18 @@ from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
 # calls to the C API. These will be removed once all functionality is supported.
 _USE_C_API = True
 _USE_C_SHAPES = True
+
+
+
+@contextlib.contextmanager
+def stop_recording():
+  try:
+    pywrap_tensorflow.TFE_Py_TapeSetStopOnThread()
+    yield
+  finally:
+    pywrap_tensorflow.TFE_Py_TapeSetRestartOnThread()
+
+
 
 
 class _UserDeviceSpec(object):
@@ -5088,53 +5100,7 @@ _default_graph_stack = _DefaultGraphStack()
 @tf_export("init_scope")
 @tf_contextlib.contextmanager
 def init_scope():
-  """A context manager that lifts ops out of control-flow scopes and function-building graphs.
-
-  There is often a need to lift variable initialization ops out of control-flow
-  scopes, function-building graphs, and gradient tapes. Entering an
-  `init_scope` is a mechanism for satisfying these desiderata. In particular,
-  entering an `init_scope` has three effects:
-
-    (1) All control dependencies are cleared the moment the scope is entered;
-        this is equivalent to entering the context manager returned from
-        `control_dependencies(None)`, which has the side-effect of exiting
-        control-flow scopes like `tf.cond` and `tf.while_loop`.
-
-    (2) All operations that are created while the scope is active are lifted
-        into the lowest context on the `context_stack` that is not building a
-        graph function. Here, a context is defined as either a graph or an eager
-        context. Every context switch, i.e., every installation of a graph as
-        the default graph and every switch into eager mode, is logged in a
-        thread-local stack called `context_switches`; the log entry for a
-        context switch is popped from the stack when the context is exited.
-        Entering an `init_scope` is equivalent to crawling up
-        `context_switches`, finding the first context that is not building a
-        graph function, and entering it. A caveat is that if graph mode is
-        enabled but the default graph stack is empty, then entering an
-        `init_scope` will simply install a fresh graph as the default one.
-
-    (3) The gradient tape is paused while the scope is active.
-
-  When eager execution is enabled, code inside an init_scope block runs with
-  eager execution enabled even when defining graph functions via
-  tf.contrib.eager.defun. For example:
-
-  ```python
-  tf.enable_eager_execution()
-
-  @tf.contrib.eager.defun
-  def func():
-    # A defun-decorated function constructs TensorFlow graphs,
-    # it does not execute eagerly.
-    assert not tf.executing_eagerly()
-    with tf.init_scope():
-      # Initialization runs with eager execution enabled
-      assert tf.executing_eagerly()
-  ```
-
-  Raises:
-    RuntimeError: if graph state is incompatible with this initialization.
-  """
+  
   # pylint: enable=g-doc-return-or-yield,line-too-long
 
   if context.executing_eagerly():
@@ -5183,7 +5149,7 @@ def init_scope():
     outer_device_stack = None
     try:
       with outer_context(), name_scope(scope), control_dependencies(
-          None), tape.stop_recording():
+          None), stop_recording():
         if not context.executing_eagerly():
           # The device stack is preserved when lifting into a graph. Eager
           # execution doesn't implement device stacks and in particular it

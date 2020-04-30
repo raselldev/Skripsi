@@ -23,7 +23,7 @@ import operator
 
 import six
 
-from tensorflow.python import pywrap_tensorflow
+from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
 from tensorflow.python import execute
 from tensorflow.python.ops import gen_array_ops
 from tensorflow.python.util.tf_export import tf_export
