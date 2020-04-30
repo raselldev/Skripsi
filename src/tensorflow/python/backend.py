@@ -35,13 +35,4 @@ from tensorflow.python.ops import tensor_array_grad
 
 _GRAPH_VARIABLES = weakref.WeakKeyDictionary()
 
-PER_GRAPH_LAYER_NAME_UIDS = weakref.WeakKeyDictionary()
-
-def track_variable(v):
-  """Tracks the given variable for initialization."""
-  if context.executing_eagerly():
-    return
-  graph = v.graph if hasattr(v, 'graph') else ops.get_default_graph()
-  if graph not in _GRAPH_VARIABLES:
-    _GRAPH_VARIABLES[graph] = weakref.WeakSet()
-  _GRAPH_VARIABLES[graph].add(v)
+#PER_GRAPH_LAYER_NAME_UIDS = weakref.WeakKeyDictionary()

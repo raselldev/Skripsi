@@ -36,6 +36,12 @@ from tensorflow.python.base_layer import Layer
 from tensorflow.python.util.tf_export import tf_export
 
 
+
+
+
+
+
+
 def get(identifier):
   if identifier is None:
     return None
@@ -91,8 +97,8 @@ class BatchNormalization(Layer):
     self.moving_mean_initializer = get(moving_mean_initializer)
     self.moving_variance_initializer = get(
         moving_variance_initializer)
-    self.beta_regularizer = regularizers.get(beta_regularizer)
-    self.gamma_regularizer = regularizers.get(gamma_regularizer)
+    self.beta_regularizer = get(beta_regularizer)
+    self.gamma_regularizer = get(gamma_regularizer)
 #    self.gamma_constraint = constraints.get(gamma_constraint)
     self.renorm = renorm
     self.virtual_batch_size = virtual_batch_size

@@ -12,18 +12,19 @@ import inspect
 import numpy as np
 from six.moves import zip 
 import six 
+import weakref
 
 from tensorflow.python.ops.init_ops import GlorotUniform as glorot_uniform
 from tensorflow.python import function as eager_function
 #from tensorflow.python import generic_utils
 #from tensorflow.python import constraints
-from tensorflow.python import regularizers
+#from tensorflow.python import regularizers
 #from tensorflow.python import initializers
 from tensorflow.python import context
 from tensorflow.python.util import nest
 from tensorflow.python.util import tf_inspect
 from tensorflow.python.util import function_utils
-from tensorflow.python import backend
+#from tensorflow.python import backend
 from tensorflow.python.framework import ops
 #from tensorflow.python.generic_utils import to_snake_case
 from tensorflow.python.framework import dtypes
@@ -31,6 +32,18 @@ from tensorflow.python.ops import variables as tf_variables
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.training import base as checkpointable
 #from tensorflow import doc_controls
+
+PER_GRAPH_LAYER_NAME_UIDS = weakref.WeakKeyDictionary()
+_GRAPH_VARIABLES = weakref.WeakKeyDictionary()
+
+def track_variable(v):
+  """Tracks the given variable for initialization."""
+  if context.executing_eagerly():
+    return
+  graph = v.graph if hasattr(v, 'graph') else ops.get_default_graph()
+  if graph not in _GRAPH_VARIABLES:
+    _GRAPH_VARIABLES[graph] = weakref.WeakSet()
+  _GRAPH_VARIABLES[graph].add(v)
 
 
 def get(identifier):
@@ -174,7 +187,7 @@ class Layer(checkpointable.CheckpointableBase):
     self._non_trainable_weights = []
     self._updates = []
     # A list of zero-argument lambdas which return Tensors, used for variable
-    # regularizers.
+    # 
     self._callable_losses = []
     # A list of Tensors containing activity regularizers and losses manually
     # added through `add_loss`. Empty when executing eagerly.
@@ -447,7 +460,7 @@ class Layer(checkpointable.CheckpointableBase):
       if loss is None:
         return None  # Will be filtered out when computing the .losses property
       if not tensor_util.is_tensor(loss):
-        loss = ops.convert_to_tensor(loss, dtype=backend.floatx())
+        loss = ops.convert_to_tensor(loss, dtype=floatx())
       loss._unconditional_loss = (inputs is None)  # pylint: disable=protected-access
       return loss
 
@@ -569,10 +582,10 @@ class Layer(checkpointable.CheckpointableBase):
     collections = kwargs.pop('collections', None)
 
     if dtype is None:
-      dtype = self.dtype or backend.floatx()
+      dtype = self.dtype or floatx()
     dtype = dtypes.as_dtype(dtype)
     initializer = get(initializer)
-    regularizer = regularizers.get(regularizer)
+    regularizer = get(regularizer)
 #    constraint = constraints.get(constraint)
 
     if synchronization == tf_variables.VariableSynchronization.ON_READ:
@@ -619,7 +632,7 @@ class Layer(checkpointable.CheckpointableBase):
         collections=collections,
         synchronization=synchronization,
         aggregation=aggregation)
-    backend.track_variable(variable)
+    track_variable(variable)
 
     if regularizer is not None:
       # TODO(fchollet): in the future, this should be handled at the
@@ -1350,14 +1363,14 @@ class Layer(checkpointable.CheckpointableBase):
     if not params:
       return
     weight_value_tuples = []
-    param_values = backend.batch_get_value(params)
+    param_values = batch_get_value(params)
     for pv, p, w in zip(param_values, params, weights):
       if pv.shape != w.shape:
         raise ValueError('Layer weight shape ' + str(pv.shape) +
                          ' not compatible with '
                          'provided weight shape ' + str(w.shape))
       weight_value_tuples.append((p, w))
-    backend.batch_set_value(weight_value_tuples)
+    batch_set_value(weight_value_tuples)
 
   def get_weights(self):
     """Returns the current weights of the layer.
@@ -1366,7 +1379,7 @@ class Layer(checkpointable.CheckpointableBase):
         Weights values as a list of numpy arrays.
     """
     params = self.weights
-    return backend.batch_get_value(params)
+    return batch_get_value(params)
 
 
 @tf_export('keras.layers.InputSpec', 'layers.InputSpec')
@@ -1472,12 +1485,12 @@ def collect_previous_mask(input_tensors):
 
 
 def get_default_graph_uid_map():
-  # TODO(fchollet): refactor this into backend.
+  # TODO(fchollet): refactor this into 
   graph = ops.get_default_graph()
-  name_uid_map = backend.PER_GRAPH_LAYER_NAME_UIDS.get(graph, None)
+  name_uid_map = PER_GRAPH_LAYER_NAME_UIDS.get(graph, None)
   if name_uid_map is None:
     name_uid_map = collections_lib.defaultdict(int)
-    backend.PER_GRAPH_LAYER_NAME_UIDS[graph] = name_uid_map
+    PER_GRAPH_LAYER_NAME_UIDS[graph] = name_uid_map
   return name_uid_map
 
 

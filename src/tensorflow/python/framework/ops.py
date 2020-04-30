@@ -1,17 +1,3 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 """Classes and functions used to construct graphs."""
 # pylint: disable=g-bad-name
 from __future__ import absolute_import
@@ -55,16 +41,12 @@ from tensorflow.python.util import tf_contextlib
 from tensorflow.python.framework import registry
 from tensorflow.python import pywrap_tensorflow as c_api
 from tensorflow.python.util.tf_export import tf_export
+from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
 
 # Temporary global switches determining if we should enable the work-in-progress
 # calls to the C API. These will be removed once all functionality is supported.
 _USE_C_API = True
 _USE_C_SHAPES = True
-
-
-def tensor_id(tensor):
-  """Returns a unique identifier for this Tensor."""
-  return tensor._id  # pylint: disable=protected-access
 
 
 class _UserDeviceSpec(object):
@@ -91,14 +73,6 @@ class _UserDeviceSpec(object):
             callable(self._device_name_or_function)):
       self.function = pydev.merge_device(self._device_name_or_function)
 
-
-class _NullContextmanager(object):
-
-  def __enter__(self):
-    pass
-
-  def __exit__(self, type_arg, value_arg, traceback_arg):
-    return False  # False values do not suppress exceptions
 
 
 def _override_helper(clazz_object, operator, func):
@@ -847,7 +821,7 @@ class _EagerTensorBase(Tensor):
       self_device = self.device
       def grad_fun(dresult):
         return [dresult._copy(device_name=self_device)]
-      tape.record_operation("_copy", [new_tensor], [self], grad_fun)
+      record_operation("_copy", [new_tensor], [self], grad_fun)
     return new_tensor
     # pylint: enable=protected-access
 
@@ -4926,20 +4900,6 @@ def device(device_name_or_function):
     return get_default_graph().device(device_name_or_function)
 
 
-@tf_export("container")
-def container(container_name):
-  """Wrapper for `Graph.container()` using the default graph.
-
-  Args:
-    container_name: The container string to use in the context.
-
-  Returns:
-    A context manager that specifies the default container to use for newly
-    created stateful ops.
-  """
-  return get_default_graph().container(container_name)
-
-
 def _colocate_with_for_gradient(op, gradient_uid, ignore_existing=False):
   if context.executing_eagerly():
     if op is not None:
@@ -5042,72 +5002,6 @@ class _DefaultStack(threading.local):
 _default_session_stack = _DefaultStack()  # pylint: disable=protected-access
 
 
-def default_session(session):
-  """Python "with" handler for defining a default session.
-
-  This function provides a means of registering a session for handling
-  Tensor.eval() and Operation.run() calls. It is primarily intended for use
-  by session.Session, but can be used with any object that implements
-  the Session.run() interface.
-
-  Use with the "with" keyword to specify that Tensor.eval() and Operation.run()
-  invocations within the scope of a block should be executed by a particular
-  session.
-
-  The default session applies to the current thread only, so it is always
-  possible to inspect the call stack and determine the scope of a default
-  session. If you create a new thread, and wish to use the default session
-  in that thread, you must explicitly add a "with ops.default_session(sess):"
-  block in that thread's function.
-
-  Example:
-    The following code examples are equivalent:
-
-    # 1. Using the Session object directly:
-    sess = ...
-    c = tf.constant(5.0)
-    sess.run(c)
-
-    # 2. Using default_session():
-    sess = ...
-    with ops.default_session(sess):
-      c = tf.constant(5.0)
-      result = c.eval()
-
-    # 3. Overriding default_session():
-    sess = ...
-    with ops.default_session(sess):
-      c = tf.constant(5.0)
-      with ops.default_session(...):
-        c.eval(session=sess)
-
-  Args:
-    session: The session to be installed as the default session.
-
-  Returns:
-    A context manager for the default session.
-  """
-  return _default_session_stack.get_controller(session)
-
-
-@tf_export("get_default_session")
-def get_default_session():
-  """Returns the default session for the current thread.
-
-  The returned `Session` will be the innermost session on which a
-  `Session` or `Session.as_default()` context has been entered.
-
-  NOTE: The default session is a property of the current thread. If you
-  create a new thread, and wish to use the default session in that
-  thread, you must explicitly add a `with sess.as_default():` in that
-  thread's function.
-
-  Returns:
-    The default `Session` being used in the current thread.
-  """
-  return _default_session_stack.get_default()
-
-
 def _eval_using_default_session(tensors, feed_dict, graph, session=None):
   """Uses the default session to evaluate one or more tensors.
 
@@ -5147,40 +5041,6 @@ def _eval_using_default_session(tensors, feed_dict, graph, session=None):
                        "graph.")
   return session.run(tensors, feed_dict)
 
-
-def _run_using_default_session(operation, feed_dict, graph, session=None):
-  """Uses the default session to run "operation".
-
-  Args:
-    operation: The Operation to be run.
-    feed_dict: A dictionary that maps Tensor objects (or tensor names) to lists,
-      numpy ndarrays, TensorProtos, or strings.
-    graph: The graph in which "operation" is defined.
-    session: (Optional) A different session to use to run "operation".
-
-  Raises:
-    ValueError: If no default session is available; the default session
-      does not have "graph" as its graph; or if "session" is specified,
-      and it does not have "graph" as its graph.
-  """
-  if session is None:
-    session = get_default_session()
-    if session is None:
-      raise ValueError("Cannot execute operation using `run()`: No default "
-                       "session is registered. Use `with "
-                       "sess.as_default():` or pass an explicit session to "
-                       "`run(session=sess)`")
-    if session.graph is not graph:
-      raise ValueError("Cannot use the default session to execute operation: "
-                       "the operation's graph is different from the "
-                       "session's graph. Pass an explicit session to "
-                       "run(session=sess).")
-  else:
-    if session.graph is not graph:
-      raise ValueError("Cannot use the given session to execute operation: "
-                       "the operation's graph is different from the session's "
-                       "graph.")
-  session.run(operation, feed_dict)
 
 
 class _DefaultGraphStack(_DefaultStack):  # pylint: disable=protected-access
@@ -5223,11 +5083,8 @@ class _DefaultGraphStack(_DefaultStack):  # pylint: disable=protected-access
       # the try-block (just above).
       context.context().context_switches.pop()
 
-
 _default_graph_stack = _DefaultGraphStack()
 
-
-# pylint: disable=g-doc-return-or-yield,line-too-long
 @tf_export("init_scope")
 @tf_contextlib.contextmanager
 def init_scope():
@@ -5282,7 +5139,7 @@ def init_scope():
 
   if context.executing_eagerly():
     # Fastpath.
-    with tape.stop_recording():
+    with stop_recording():
       yield
   else:
     # Retrieve the active name scope: entering an `init_scope` preserves
@@ -5343,196 +5200,6 @@ def init_scope():
         outer_graph._device_function_stack = outer_device_stack  # pylint: disable=protected-access
 
 
-@tf_export("enable_eager_execution")
-def enable_eager_execution(config=None,
-                           device_policy=None,
-                           execution_mode=None):
-  """Enables eager execution for the lifetime of this program.
-
-  Eager execution provides an imperative interface to TensorFlow. With eager
-  execution enabled, TensorFlow functions execute operations immediately (as
-  opposed to adding to a graph to be executed later in a `tf.Session`) and
-  return concrete values (as opposed to symbolic references to a node in a
-  computational graph).
-
-  For example:
-
-  ```python
-  tf.enable_eager_execution()
-
-  # After eager execution is enabled, operations are executed as they are
-  # defined and Tensor objects hold concrete values, which can be accessed as
-  # numpy.ndarray`s through the numpy() method.
-  assert tf.multiply(6, 7).numpy() == 42
-  ```
-
-  Eager execution cannot be enabled after TensorFlow APIs have been used to
-  create or execute graphs. It is typically recommended to invoke this function
-  at program startup and not in a library (as most libraries should be usable
-  both with and without eager execution).
-
-  Args:
-    config: (Optional.) A `tf.ConfigProto` to use to configure the environment
-      in which operations are executed. Note that `tf.ConfigProto` is also
-      used to configure graph execution (via `tf.Session`) and many options
-      within `tf.ConfigProto` are not implemented (or are irrelevant) when
-      eager execution is enabled.
-    device_policy: (Optional.) Policy controlling how operations requiring
-      inputs on a specific device (e.g., a GPU 0) handle inputs on a different
-      device  (e.g. GPU 1 or CPU). When set to None, an appropriate value will be
-      picked automatically. The value picked may change between TensorFlow
-      releases.
-      Valid values:
-      - tf.contrib.eager.DEVICE_PLACEMENT_EXPLICIT: raises an error if the
-        placement is not correct.
-      - tf.contrib.eager.DEVICE_PLACEMENT_WARN: copies the tensors which are not
-        on the right device but logs a warning.
-      - tf.contrib.eager.DEVICE_PLACEMENT_SILENT: silently copies the tensors.
-        Note that this may hide performance problems as there is no notification
-        provided when operations are blocked on the tensor being copied between
-        devices.
-      - tf.contrib.eager.DEVICE_PLACEMENT_SILENT_FOR_INT32: silently copies
-        int32 tensors, raising errors on the other ones.
-    execution_mode: (Optional.) Policy controlling how operations dispatched are
-      actually executed. When set to None, an appropriate value will be picked
-      automatically. The value picked may change between TensorFlow releases.
-      Valid values:
-      - tf.contrib.eager.SYNC: executes each operation synchronously.
-      - tf.contrib.eager.ASYNC: executes each operation asynchronously. These
-        operations may return "non-ready" handles.
-
-  Raises:
-    ValueError: If eager execution is enabled after creating/executing a
-     TensorFlow graph, or if options provided conflict with a previous call
-     to this function.
-  """
-  if context.default_execution_mode != context.EAGER_MODE:
-    return enable_eager_execution_internal(
-        config=config,
-        device_policy=device_policy,
-        execution_mode=execution_mode,
-        server_def=None)
-
-
-def enable_eager_execution_internal(config=None,
-                                    device_policy=None,
-                                    execution_mode=None,
-                                    server_def=None):
-  """Enables eager execution for the lifetime of this program.
-
-  Most of the doc string for enable_eager_execution is relevant here as well.
-  Args:
-    config: See enable_eager_execution doc string
-    device_policy: See enable_eager_execution doc string
-    execution_mode: See enable_eager_execution doc string
-    server_def: (Optional.) A tensorflow::ServerDef proto.
-      Enables execution on remote devices. GrpcServers need to be started by
-      creating an identical server_def to this, and setting the appropriate
-      task_indexes, so that the servers can communicate. It will then be
-      possible to execute operations on remote devices.
-
-  Raises:
-    ValueError
-
-  """
-  if config is not None and not isinstance(config, config_pb2.ConfigProto):
-    raise TypeError(
-        "config must be a tf.ConfigProto, but got %s" % type(config))
-  if device_policy not in (None, context.DEVICE_PLACEMENT_EXPLICIT,
-                           context.DEVICE_PLACEMENT_WARN,
-                           context.DEVICE_PLACEMENT_SILENT,
-                           context.DEVICE_PLACEMENT_SILENT_FOR_INT32):
-    raise ValueError(
-        "device_policy must be one of None, tf.contrib.eager.DEVICE_PLACEMENT_*"
-    )
-  if execution_mode not in (None, context.SYNC, context.ASYNC):
-    raise ValueError(
-        "execution_mode must be one of None, tf.contrib.eager.SYNC, "
-        "tf.contrib.eager.ASYNC")
-  if context.default_execution_mode == context.GRAPH_MODE:
-    graph_mode_has_been_used = (
-        _default_session_stack.stack
-        or len(get_default_graph().get_operations()) > 0)  # pylint: disable=g-explicit-length-test
-    if graph_mode_has_been_used:
-      raise ValueError(
-          "tf.enable_eager_execution must be called at program startup.")
-  context.default_execution_mode = context.EAGER_MODE
-  # pylint: disable=protected-access
-  if context._context is None:
-    context._context = context.Context(
-        config=config,
-        device_policy=device_policy,
-        execution_mode=execution_mode,
-        server_def=server_def)
-  elif ((config is not None and config is not context._context._config) or
-        (device_policy is not None and
-         device_policy is not context._context._device_policy) or
-        (execution_mode is not None and
-         execution_mode is not context._context._execution_mode)):
-    raise ValueError("Trying to change the options of an active eager"
-                     " execution. Context config: %s, specified config:"
-                     " %s. Context device policy: %s, specified device"
-                     " policy: %s. Context execution mode: %s, "
-                     " specified execution mode %s." %
-                     (context._context._config, config,
-                      context._context._device_policy, device_policy,
-                      context._context._execution_mode, execution_mode))
-  else:
-    raise ValueError(
-        "tf.enable_eager_execution must be called at program startup.")
-
-  # Monkey patch to get rid of an unnecessary conditional since the context is
-  # now initialized.
-  context.context = context.context_safe
-
-
-def eager_run(main=None, argv=None):
-  """Runs the program with an optional main function and argv list.
-
-  The program will run with eager execution enabled.
-
-  Example:
-  ```python
-  import tensorflow as tf
-  # Import subject to future changes:
-  from tensorflow.contrib.eager.python import tfe
-
-  def main(_):
-    u = tf.constant(6.0)
-    v = tf.constant(7.0)
-    print(u * v)
-
-  if __name__ == "__main__":
-    tfe.run()
-  ```
-
-  Args:
-    main: the main function to run.
-    argv: the arguments to pass to it.
-  """
-  enable_eager_execution()
-  app.run(main, argv)
-
-
-@tf_export("reset_default_graph")
-def reset_default_graph():
-  """Clears the default graph stack and resets the global default graph.
-
-  NOTE: The default graph is a property of the current thread. This
-  function applies only to the current thread.  Calling this function while
-  a `tf.Session` or `tf.InteractiveSession` is active will result in undefined
-  behavior. Using any previously created `tf.Operation` or `tf.Tensor` objects
-  after calling this function will result in undefined behavior.
-  Raises:
-    AssertionError: If this function is called within a nested graph.
-  """
-  if not _default_graph_stack.is_cleared():
-    raise AssertionError("Do not use tf.reset_default_graph() to clear "
-                         "nested graphs. If you need a cleared graph, "
-                         "exit the nesting and create a new graph.")
-  _default_graph_stack.reset()
-
-
 @tf_export("get_default_graph")
 def get_default_graph():
   """Returns the default graph for the current thread.
@@ -5550,10 +5217,6 @@ def get_default_graph():
     The default `Graph` being used in the current thread.
   """
   return _default_graph_stack.get_default()
-
-def has_default_graph():
-  """Returns True if there is a default graph."""
-  return len(_default_graph_stack.stack) >= 1
 
 
 def get_name_scope():
@@ -5662,56 +5325,6 @@ def _get_graph_from_inputs(op_input_list, graph=None):
 
 @tf_export("GraphKeys")
 class GraphKeys(object):
-  """Standard names to use for graph collections.
-
-  The standard library uses various well-known names to collect and
-  retrieve values associated with a graph. For example, the
-  `tf.Optimizer` subclasses default to optimizing the variables
-  collected under `tf.GraphKeys.TRAINABLE_VARIABLES` if none is
-  specified, but it is also possible to pass an explicit list of
-  variables.
-
-  The following standard keys are defined:
-
-  * `GLOBAL_VARIABLES`: the default collection of `Variable` objects, shared
-    across distributed environment (model variables are subset of these). See
-    `tf.global_variables`
-    for more details.
-    Commonly, all `TRAINABLE_VARIABLES` variables will be in `MODEL_VARIABLES`,
-    and all `MODEL_VARIABLES` variables will be in `GLOBAL_VARIABLES`.
-  * `LOCAL_VARIABLES`: the subset of `Variable` objects that are local to each
-    machine. Usually used for temporarily variables, like counters.
-    Note: use `tf.contrib.framework.local_variable` to add to this collection.
-  * `MODEL_VARIABLES`: the subset of `Variable` objects that are used in the
-    model for inference (feed forward). Note: use
-    `tf.contrib.framework.model_variable` to add to this collection.
-  * `TRAINABLE_VARIABLES`: the subset of `Variable` objects that will
-    be trained by an optimizer. See
-    `tf.trainable_variables`
-    for more details.
-  * `SUMMARIES`: the summary `Tensor` objects that have been created in the
-    graph. See
-    `tf.summary.merge_all`
-    for more details.
-  * `QUEUE_RUNNERS`: the `QueueRunner` objects that are used to
-    produce input for a computation. See
-    `tf.train.start_queue_runners`
-    for more details.
-  * `MOVING_AVERAGE_VARIABLES`: the subset of `Variable` objects that will also
-    keep moving averages.  See
-    `tf.moving_average_variables`
-    for more details.
-  * `REGULARIZATION_LOSSES`: regularization losses collected during graph
-    construction.
-
-  The following standard keys are _defined_, but their collections are **not**
-  automatically populated as many of the others are:
-
-  * `WEIGHTS`
-  * `BIASES`
-  * `ACTIVATIONS`
-  """
-
   # Key to collect Variable objects that are global (shared across machines).
   # Default collection for all variables, except local ones.
   GLOBAL_VARIABLES = "variables"
@@ -5806,26 +5419,6 @@ class GraphKeys(object):
     return cls.GLOBAL_VARIABLES
 
 
-def dismantle_graph(graph):
-  """Cleans up reference cycles from a `Graph`.
-
-  Helpful for making sure the garbage collector doesn't need to run after a
-  temporary `Graph` is no longer needed.
-
-  Args:
-    graph: A `Graph` object to destroy. Neither it nor any of its ops are usable
-      after this function runs.
-  """
-  memory.dismantle_ordered_dict(graph._functions)  # pylint: disable=protected-access
-
-  # Now clean up Operation<->Graph reference cycles by clearing all of the
-  # attributes for the Graph and its ops.
-  graph_operations = graph.get_operations()
-  for op in graph_operations:
-    op.__dict__ = {}
-  graph.__dict__ = {}
-
-
 @tf_export("add_to_collection")
 def add_to_collection(name, value):
   """Wrapper for `Graph.add_to_collection()` using the default graph.
@@ -5844,6 +5437,7 @@ def add_to_collection(name, value):
   @end_compatibility
   """
   get_default_graph().add_to_collection(name, value)
+
 
 @tf_export("add_to_collections")
 def add_to_collections(names, value):
@@ -5867,91 +5461,15 @@ def add_to_collections(names, value):
 
 @tf_export("get_collection_ref")
 def get_collection_ref(key):
-  """Wrapper for `Graph.get_collection_ref()` using the default graph.
-
-  See `tf.Graph.get_collection_ref`
-  for more details.
-
-  Args:
-    key: The key for the collection. For example, the `GraphKeys` class
-      contains many standard names for collections.
-
-  Returns:
-    The list of values in the collection with the given `name`, or an empty
-    list if no value has been added to that collection.  Note that this returns
-    the collection list itself, which can be modified in place to change the
-    collection.
-
-  @compatibility(eager)
-  Collections are not supported when eager execution is enabled.
-  @end_compatibility
-  """
+  
   return get_default_graph().get_collection_ref(key)
 
 
-@tf_export("get_collection")
 def get_collection(key, scope=None):
-  """Wrapper for `Graph.get_collection()` using the default graph.
-
-  See `tf.Graph.get_collection`
-  for more details.
-
-  Args:
-    key: The key for the collection. For example, the `GraphKeys` class
-      contains many standard names for collections.
-    scope: (Optional.) If supplied, the resulting list is filtered to include
-      only items whose `name` attribute matches using `re.match`. Items
-      without a `name` attribute are never returned if a scope is supplied and
-      the choice or `re.match` means that a `scope` without special tokens
-      filters by prefix.
-
-  Returns:
-    The list of values in the collection with the given `name`, or
-    an empty list if no value has been added to that collection. The
-    list contains the values in the order under which they were
-    collected.
-
-  @compatibility(eager)
-  Collections are not supported when eager execution is enabled.
-  @end_compatibility
-  """
   return get_default_graph().get_collection(key, scope)
 
 
-def get_all_collection_keys():
-  """Returns a list of collections used in the default graph."""
-  return get_default_graph().get_all_collection_keys()
-
-
-name_scope_cache = {}
-
-
-# Named like a function for backwards compatibility with the
-# @tf_contextlib.contextmanager version, which was switched to a class to avoid
-# some object creation overhead.
-@tf_export("name_scope", "keras.backend.name_scope")
-class name_scope(object):  # pylint: disable=invalid-name
-  """A context manager for use when defining a Python op.
-
-  This context manager validates that the given `values` are from the
-  same graph, makes that graph the default graph, and pushes a
-  name scope in that graph (see
-  `tf.Graph.name_scope`
-  for more details on that).
-
-  For example, to define a new Python op called `my_op`:
-
-  ```python
-  def my_op(a, b, c, name=None):
-    with tf.name_scope(name, "MyOp", [a, b, c]) as scope:
-      a = tf.convert_to_tensor(a, name="a")
-      b = tf.convert_to_tensor(b, name="b")
-      c = tf.convert_to_tensor(c, name="c")
-      # Define some computation that uses `a`, `b`, and `c`.
-      return foo_op(..., name=scope)
-  ```
-  """
-
+class name_scope(object):
   @property
   def name(self):
     return self._name
@@ -6030,95 +5548,12 @@ class name_scope(object):  # pylint: disable=invalid-name
     return False  # False values do not suppress exceptions
 
 
-def strip_name_scope(name, export_scope):
-  """Removes name scope from a name.
-
-  Args:
-    name: A `string` name.
-    export_scope: Optional `string`. Name scope to remove.
-
-  Returns:
-    Name with name scope removed, or the original name if export_scope
-    is None.
-  """
-  if export_scope:
-    if export_scope[-1] == "/":
-      export_scope = export_scope[:-1]
-
-    try:
-      # Strips export_scope/, export_scope///,
-      # ^export_scope/, loc:@export_scope/.
-      str_to_replace = r"([\^]|loc:@|^)" + export_scope + r"[\/]+(.*)"
-      return re.sub(str_to_replace, r"\1\2", compat.as_str(name), count=1)
-    except TypeError as e:
-      # If the name is not of a type we can process, simply return it.
-      logging.warning(e)
-      return name
-  else:
-    return name
-
-
-def prepend_name_scope(name, import_scope):
-  """Prepends name scope to a name.
-
-  Args:
-    name: A `string` name.
-    import_scope: Optional `string`. Name scope to add.
-
-  Returns:
-    Name with name scope added, or the original name if import_scope
-    is None.
-  """
-  if import_scope:
-    if import_scope[-1] == "/":
-      import_scope = import_scope[:-1]
-
-    try:
-      str_to_replace = r"([\^]|loc:@|^)(.*)"
-      return re.sub(str_to_replace, r"\1" + import_scope + r"/\2",
-                    compat.as_str(name))
-    except TypeError as e:
-      # If the name is not of a type we can process, simply return it.
-      logging.warning(e)
-      return name
-  else:
-    return name
-
-
-# pylint: disable=g-doc-return-or-yield
-# pylint: disable=not-context-manager
-@tf_export("op_scope")
-@tf_contextlib.contextmanager
-def op_scope(values, name, default_name=None):
-  """DEPRECATED. Same as name_scope above, just different argument order."""
-  logging.warn("tf.op_scope(values, name, default_name) is deprecated,"
-               " use tf.name_scope(name, default_name, values)")
-  with name_scope(name, default_name=default_name, values=values) as scope:
-    yield scope
-
-
 _proto_function_registry = registry.Registry("proto functions")
-
 
 def register_proto_function(collection_name,
                             proto_type=None,
                             to_proto=None,
                             from_proto=None):
-  """Registers `to_proto` and `from_proto` functions for collection_name.
-
-  `to_proto` function converts a Python object to the corresponding protocol
-  buffer, and returns the protocol buffer.
-
-  `from_proto` function converts protocol buffer into a Python object, and
-  returns the object..
-
-  Args:
-    collection_name: Name of the collection.
-    proto_type: Protobuf type, such as `saver_pb2.SaverDef`,
-      `variable_pb2.VariableDef`, `queue_runner_pb2.QueueRunnerDef`..
-    to_proto: Function that implements Python object to protobuf conversion.
-    from_proto: Function that implements protobuf to Python object conversion.
-  """
   if to_proto and not callable(to_proto):
     raise TypeError("to_proto must be callable.")
   if from_proto and not callable(from_proto):
@@ -6127,36 +5562,3 @@ def register_proto_function(collection_name,
   _proto_function_registry.register((proto_type, to_proto, from_proto),
                                     collection_name)
 
-
-def get_collection_proto_type(collection_name):
-  """Returns the proto_type for collection_name."""
-  try:
-    return _proto_function_registry.lookup(collection_name)[0]
-  except LookupError:
-    return None
-
-
-def get_to_proto_function(collection_name):
-  """Returns the to_proto function for collection_name."""
-  try:
-    return _proto_function_registry.lookup(collection_name)[1]
-  except LookupError:
-    return None
-
-
-def get_from_proto_function(collection_name):
-  """Returns the from_proto function for collection_name."""
-  try:
-    return _proto_function_registry.lookup(collection_name)[2]
-  except LookupError:
-    return None
-
-
-def _operation_conversion_error(op, dtype=None, name=None, as_ref=False):
-  """Produce a nice error if someone converts an Operation to a Tensor."""
-  raise TypeError(("Can't convert Operation '%s' to Tensor "
-                   "(target dtype=%r, name=%r, as_ref=%r)") % (op.name, dtype,
-                                                               name, as_ref))
-
-
-register_tensor_conversion_function(Operation, _operation_conversion_error)
