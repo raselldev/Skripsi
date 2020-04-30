@@ -23,7 +23,7 @@ from tensorflow.python.ops import io_ops
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.util import compat
-from tensorflow.python import tf_logging as logging
+#from tensorflow.python import tf_logging as logging
 from tensorflow.python.util.tf_export import tf_export
 
 
@@ -1482,7 +1482,7 @@ class Saver(object):
       raise ValueError("The passed save_path is not a valid checkpoint: "
                        + compat.as_text(save_path))
 
-    logging.info("Restoring parameters from %s", compat.as_text(save_path))
+#    logging.info("Restoring parameters from %s", compat.as_text(save_path))
     try:
       if context.executing_eagerly():
         self._build_eager(save_path, build_save=False, build_restore=True)

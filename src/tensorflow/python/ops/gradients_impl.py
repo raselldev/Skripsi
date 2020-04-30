@@ -25,7 +25,7 @@ from tensorflow.python.ops import array_grad
 from tensorflow.python.ops import math_grad
 from tensorflow.python.ops import control_flow_util
 from tensorflow.python.ops import control_flow_grad
-from tensorflow.python import tf_logging as logging
+#from tensorflow.python import tf_logging as logging
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.ops import math_ops
 

@@ -32,7 +32,7 @@ from six import iteritems
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
 from tensorflow.python.util import function_utils
-from tensorflow.python import tf_logging as logging
+#from tensorflow.python import tf_logging as logging
 from tensorflow.python.ops import init_ops
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python import context
@@ -930,8 +930,7 @@ class _VariableStore(object):
       # In eager mode we do not want to keep default references to Variable
       # objects as this will prevent their memory from being released.
       self._vars[name] = v
-    logging.vlog(1, "Created variable %s with shape %s and init %s", v.name,
-                 format(shape), initializer)
+
 
     # Run the regularizer if requested and save the resulting loss.
     if regularizer:
