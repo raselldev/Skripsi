@@ -17,20 +17,24 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 from tensorflow.python.framework import device as pydev
 from tensorflow.python.util import function_utils
 from tensorflow.python.framework import tensor_shape
-#from tensorflow.python import tape
 from tensorflow.python.ops import control_flow_util
 from tensorflow.core.framework import op_def_pb2
 from tensorflow.python.framework import errors_impl as errors
-#from tensorflow.python.framework import errors
 from tensorflow.core.framework import attr_value_pb2
 from tensorflow.python.framework import dtypes
 from tensorflow.python.util import tf_stack
 from tensorflow.core.framework import node_def_pb2
-from tensorflow.python.util import compat
-from tensorflow.python.framework import c_api_util
-from tensorflow.python.framework import op_def_registry
-#from tensorflow.python.framework import versions
+
+
+
 from tensorflow.core.framework import versions_pb2
+
+
+
+from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
+from tensorflow.python.util import compat
+#from tensorflow.python.framework import c_api_util
+from tensorflow.python.framework import op_def_registry
 from tensorflow.python.framework import traceable_stack
 from tensorflow.python.util import lock_util
 from tensorflow.python import context
@@ -38,10 +42,9 @@ from tensorflow.python.util import deprecation
 from tensorflow.python.util import decorator_utils
 from tensorflow.python.util.deprecation import deprecated_args
 from tensorflow.python.util import tf_contextlib
-from tensorflow.python.framework import registry
+#from tensorflow.python.framework import registry
 from tensorflow.python import pywrap_tensorflow_internal as c_api
 from tensorflow.python.util.tf_export import tf_export
-from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
 
 # Temporary global switches determining if we should enable the work-in-progress
 # calls to the C API. These will be removed once all functionality is supported.
@@ -49,21 +52,141 @@ _USE_C_API = True
 _USE_C_SHAPES = True
 
 
+class ScopedTFStatus(object):
+  """Wrapper around TF_Status that handles deletion."""
+
+  def __init__(self):
+    self.status = c_api.TF_NewStatus()
+
+  def __del__(self):
+    # Note: when we're destructing the global context (i.e when the process is
+    # terminating) we can have already deleted other modules.
+    if c_api is not None and c_api.TF_DeleteStatus is not None:
+      c_api.TF_DeleteStatus(self.status)
+
+
+class ScopedTFGraph(object):
+  """Wrapper around TF_Graph that handles deletion."""
+
+  def __init__(self):
+    self.graph = c_api.TF_NewGraph()
+
+  def __del__(self):
+    # Note: when we're destructing the global context (i.e when the process is
+    # terminating) we can have already deleted other modules.
+    if c_api is not None and c_api.TF_DeleteGraph is not None:
+      c_api.TF_DeleteGraph(self.graph)
+
+
+class ApiDefMap(object):
+  """Wrapper around Tf_ApiDefMap that handles querying and deletion.
+
+  The OpDef protos are also stored in this class so that they could
+  be queried by op name.
+  """
+
+  def __init__(self):
+    op_def_proto = op_def_pb2.OpList()
+    buf = c_api.TF_GetAllOpList()
+    try:
+      op_def_proto.ParseFromString(c_api.TF_GetBuffer(buf))
+      self._api_def_map = c_api.TF_NewApiDefMap(buf)
+    finally:
+      c_api.TF_DeleteBuffer(buf)
+
+    self._op_per_name = {}
+    for op in op_def_proto.op:
+      self._op_per_name[op.name] = op
+
+  def __del__(self):
+    # Note: when we're destructing the global context (i.e when the process is
+    # terminating) we can have already deleted other modules.
+    if c_api is not None and c_api.TF_DeleteApiDefMap is not None:
+      c_api.TF_DeleteApiDefMap(self._api_def_map)
+
+  def put_api_def(self, text):
+    c_api.TF_ApiDefMapPut(self._api_def_map, text, len(text))
+
+  def get_api_def(self, op_name):
+    api_def_proto = api_def_pb2.ApiDef()
+    buf = c_api.TF_ApiDefMapGet(self._api_def_map, op_name, len(op_name))
+    try:
+      api_def_proto.ParseFromString(c_api.TF_GetBuffer(buf))
+    finally:
+      c_api.TF_DeleteBuffer(buf)
+    return api_def_proto
+
+  def get_op_def(self, op_name):
+    if op_name in self._op_per_name:
+      return self._op_per_name[op_name]
+    raise ValueError("No entry found for " + op_name + ".")
+
+  def op_names(self):
+    return self._op_per_name.keys()
+
+
+@tf_contextlib.contextmanager
+def tf_buffer(data=None):
+  if data:
+    buf = c_api.TF_NewBufferFromString(compat.as_bytes(data))
+  else:
+    buf = c_api.TF_NewBuffer()
+  try:
+    yield buf
+  finally:
+    c_api.TF_DeleteBuffer(buf)
+
+
+def tf_output(c_op, index):
+  ret = c_api.TF_Output()
+  ret.oper = c_op
+  ret.index = index
+  return ret
+
+
+
+class Registry(object):
+  def __init__(self, name):
+    """Creates a new registry."""
+    self._name = name
+    self._registry = dict()
+
+  def register(self, candidate, name=None):
+    """Registers a Python object "candidate" for the given "name".
+
+    Args:
+      candidate: The candidate object to add to the registry.
+      name: An optional string specifying the registry key for the candidate.
+            If None, candidate.__name__ will be used.
+    Raises:
+      KeyError: If same name is used twice.
+    """
+    if not name:
+      name = candidate.__name__
+    if name in self._registry:
+      (filename, line_number, function_name, _) = (
+          self._registry[name][_LOCATION_TAG])
+      raise KeyError("Registering two %s with name '%s' !"
+                     "(Previous registration was in %s %s:%d)" %
+                     (self._name, name, function_name, filename, line_number))
+
+
+def tf_output(c_op, index):
+  ret = c_api.TF_Output()
+  ret.oper = c_op
+  ret.index = index
+  return ret
 
 @contextlib.contextmanager
 def stop_recording():
   try:
-    pywrap_tensorflow.TFE_Py_TapeSetStopOnThread()
+    c_api.TFE_Py_TapeSetStopOnThread()
     yield
   finally:
-    pywrap_tensorflow.TFE_Py_TapeSetRestartOnThread()
-
-
+    c_api.TFE_Py_TapeSetRestartOnThread()
 
 
 class _UserDeviceSpec(object):
-  """Store user-specified device and provide computation of merged device."""
-
   def __init__(self, device_name_or_function):
     self._device_name_or_function = device_name_or_function
 
@@ -85,64 +208,16 @@ class _UserDeviceSpec(object):
             callable(self._device_name_or_function)):
       self.function = pydev.merge_device(self._device_name_or_function)
 
-
-
 def _override_helper(clazz_object, operator, func):
-  """Overrides (string) operator on Tensors to call func.
-
-  Args:
-    clazz_object: the class to override for; either Tensor or SparseTensor.
-    operator: the string name of the operator to override.
-    func: the function that replaces the overridden operator.
-
-  Raises:
-    ValueError: If operator has already been overwritten,
-      or if operator is not allowed to be overwritten.
-  """
   existing = getattr(clazz_object, operator, None)
-  if existing is not None:
-    # Check to see if this is a default method-wrapper or slot wrapper which
-    # will be true for the comparison operators.
-    if not isinstance(existing, type(object.__lt__)):
-      raise ValueError("operator %s cannot be overwritten again on class %s." %
-                       (operator, clazz_object))
   if operator not in Tensor.OVERLOADABLE_OPERATORS:
     raise ValueError("Overriding %s is disallowed" % operator)
   setattr(clazz_object, operator, func)
 
-
 def _as_graph_element(obj):
-  """Convert `obj` to a graph element if possible, otherwise return `None`.
-
-  Args:
-    obj: Object to convert.
-
-  Returns:
-    The result of `obj._as_graph_element()` if that method is available;
-        otherwise `None`.
-  """
   conv_fn = getattr(obj, "_as_graph_element", None)
-  if conv_fn and callable(conv_fn):
-    return conv_fn()
-  return None
-
 
 _TENSOR_LIKE_TYPES = tuple()
-
-
-def is_dense_tensor_like(t):
-  """EXPERIMENTAL: Returns true if `t` implements the tensor interface.
-
-  See `register_dense_tensor_like_type()` for the current definition of a
-  "tensor-like type".
-
-  Args:
-    t: An object.
-
-  Returns:
-    True iff `t` is an instance of one of the registered "tensor-like" types.
-  """
-  return isinstance(t, _TENSOR_LIKE_TYPES)
 
 
 def register_dense_tensor_like_type(tensor_type):
@@ -182,25 +257,11 @@ def uid():
   """A unique (within this program execution) integer."""
   return c_api.TFE_Py_UID()
 
-
-def numpy_text(tensor, is_repr=False):
-  """Human readable representation of a tensor's numpy value."""
-  if tensor.dtype.is_numpy_compatible:
-    text = repr(tensor.numpy()) if is_repr else str(tensor.numpy())
-  else:
-    text = "<unprintable>"
-  if "\n" in text:
-    text = "\n" + text
-  return text
-
-
 # NOTE(ebrevdo): Do not subclass this.  If you do, I will break you on purpose.
 class _TensorLike(object):
-  """Internal cls for grouping Tensor, SparseTensor, ..., for is_instance."""
   pass
 
 
-@tf_export("Tensor")
 class Tensor(_TensorLike):
   """Represents one of the outputs of an `Operation`.
 
@@ -578,7 +639,7 @@ class Tensor(_TensorLike):
 
   def _as_tf_output(self):
     # pylint: disable=protected-access
-    return c_api_util.tf_output(self.op._c_op, self.value_index)
+    return tf_output(self.op._c_op, self.value_index)
     # pylint: enable=protected-access
 
   def __str__(self):
@@ -689,8 +750,6 @@ class Tensor(_TensorLike):
     """
     return _eval_using_default_session(self, feed_dict, self.graph, session)
 
-
-# TODO(agarwal): consider getting rid of this.
 class _EagerTensorBase(Tensor):
   """Base class for EagerTensor."""
 
@@ -947,8 +1006,6 @@ class _EagerTensorBase(Tensor):
     )
 
 
-# This call creates an EagerTensor class, as a subclass of _EagerTensorBase, and
-# registers it with the current module.
 EagerTensor = c_api.TFE_Py_InitEagerTensor(_EagerTensorBase)
 
 
@@ -1025,10 +1082,6 @@ def convert_to_tensor(value, dtype=None, name=None, preferred_dtype=None):
       name=name,
       preferred_dtype=preferred_dtype,
       as_ref=False)
-
-
-def _error_prefix(name):
-  return "" if name is None else "%s: " % name
 
 
 def internal_convert_to_tensor(value,
@@ -1771,7 +1824,7 @@ class Operation(object):
     # Initialize self._outputs.
     num_outputs = c_api.TF_OperationNumOutputs(self._c_op)
     output_types = [
-        c_api.TF_OperationOutputType(c_api_util.tf_output(self._c_op, i))
+        c_api.TF_OperationOutputType(tf_output(self._c_op, i))
         for i in range(num_outputs)]
     self._outputs = [
         Tensor(self, i, output_type)
@@ -2139,9 +2192,6 @@ class Operation(object):
     ]
     return input_types
 
-  @_input_types.setter
-  def _input_types(self, value):
-    raise ValueError("Cannot assign _input_types")
 
   @property
   def control_inputs(self):
@@ -2224,7 +2274,7 @@ class Operation(object):
       protocol buffer.
     """
     # pylint: enable=line-too-long
-    with c_api_util.tf_buffer() as buf:
+    with tf_buffer() as buf:
       c_api.TF_OperationToNodeDef(self._c_op, buf)
       data = c_api.TF_GetBuffer(buf)
     node_def = node_def_pb2.NodeDef()
@@ -2296,7 +2346,7 @@ class Operation(object):
     """
     fields = ["s", "i", "f", "b", "type", "shape", "tensor", "func"]
     try:
-      with c_api_util.tf_buffer() as buf:
+      with tf_buffer() as buf:
         c_api.TF_OperationGetAttrValueProto(self._c_op, name, buf)
         data = c_api.TF_GetBuffer(buf)
     except errors.InvalidArgumentError as e:
@@ -2325,26 +2375,8 @@ class Operation(object):
             return getattr(x, f)
       assert False, "Unsupported field type in " + str(x)
 
-  def run(self, feed_dict=None, session=None):
-    """Runs this operation in a `Session`.
-
-    Calling this method will execute all preceding operations that
-    produce the inputs needed for this operation.
-
-    *N.B.* Before invoking `Operation.run()`, its graph must have been
-    launched in a session, and either a default session must be
-    available, or `session` must be specified explicitly.
-
-    Args:
-      feed_dict: A dictionary that maps `Tensor` objects to feed values.
-        See `tf.Session.run`
-        for a description of the valid feed values.
-      session: (Optional.) The `Session` to be used to run to this operation. If
-        none, the default session will be used.
-    """
-    _run_using_default_session(self, feed_dict, self.graph, session)
-
-_gradient_registry = registry.Registry("gradient")
+  
+_gradient_registry = Registry("gradient")
 
 
 @tf_export("RegisterGradient")
@@ -2439,8 +2471,8 @@ def get_gradient_function(op):
   return _gradient_registry.lookup(op_type)
 
 
-_shape_registry = registry.Registry("shape functions")
-_default_shape_function_registry = registry.Registry("default shape functions")
+_shape_registry = Registry("shape functions")
+_default_shape_function_registry = Registry("default shape functions")
 
 # These are set to common_shapes.call_cpp_shape_fn by op generated code
 # (generated by python_op_gen.cc).
@@ -2616,7 +2648,7 @@ class OpStats(object):
     return self
 
 
-_stats_registry = registry.Registry("statistical functions")
+_stats_registry = Registry("statistical functions")
 
 
 class RegisterStatistics(object):
@@ -2855,7 +2887,7 @@ class Graph(object):
 
     # TODO(skyewm): fold as much of the above as possible into the C
     # implementation
-    self._scoped_c_graph = c_api_util.ScopedTFGraph()
+    self._scoped_c_graph = ScopedTFGraph()
     # The C API requires all ops to have shape functions. Disable this
     # requirement (many custom ops do not have shape functions, and we don't
     # want to break these existing cases).
@@ -2955,7 +2987,7 @@ class Graph(object):
       A `VersionDef`.
     """
     # pylint: enable=line-too-long
-    with c_api_util.tf_buffer() as buf:
+    with tf_buffer() as buf:
       c_api.TF_GraphVersions(self._c_graph, buf)
       data = c_api.TF_GetBuffer(buf)
     version_def = versions_pb2.VersionDef()
@@ -3055,7 +3087,7 @@ class Graph(object):
     """
     # pylint: enable=line-too-long
     with self._lock:
-      with c_api_util.tf_buffer() as buf:
+      with tf_buffer() as buf:
         c_api.TF_GraphToGraphDef(self._c_graph, buf)
         data = c_api.TF_GetBuffer(buf)
       graph = graph_pb2.GraphDef()
@@ -3149,7 +3181,7 @@ class Graph(object):
     if not function._c_func:
       serialized = function.definition.SerializeToString()
       c_func = c_api.TF_FunctionImportFunctionDef(serialized)
-      function._c_func = c_api_util.ScopedTFFunction(c_func)
+      function._c_func = ScopedTFFunction(c_func)
     gradient = (function._grad_func._c_func.func if function._grad_func
                 else None)
     c_api.TF_GraphCopyFunction(self._c_graph, function._c_func.func, gradient)
@@ -3414,7 +3446,7 @@ class Graph(object):
     # be created before its inputs.
     new_ops = [
         self._create_op_from_tf_operation(c_op, compute_device=compute_devices)
-        for c_op in c_api_util.new_tf_operations(self)
+        for c_op in new_tf_operations(self)
     ]
 
     # pylint: disable=protected-access
@@ -3671,7 +3703,7 @@ class Graph(object):
 
   def _get_op_def(self, type):  # pylint: disable=redefined-builtin
     """Returns the `OpDef` proto for `type`. `type` is a string."""
-    with c_api_util.tf_buffer() as buf:
+    with tf_buffer() as buf:
       # pylint: disable=protected-access
       c_api.TF_GraphGetOpDef(self._c_graph, compat.as_bytes(type), buf)
       # pylint: enable=protected-access
@@ -3843,31 +3875,6 @@ class Graph(object):
     with self._lock:
       if name in self._collections:
         del self._collections[name]
-
-  @tf_contextlib.contextmanager
-  def _original_op(self, op):
-    """Python 'with' handler to help annotate ops with their originator.
-
-    An op may have an 'original_op' property that indicates the op on which
-    it was based. For example a replica op is based on the op that was
-    replicated and a gradient op is based on the op that was differentiated.
-
-    All ops created in the scope of this 'with' handler will have
-    the given 'op' as their original op.
-
-    Args:
-      op: The Operation that all ops created in this scope will have as their
-        original op.
-
-    Yields:
-      Nothing.
-    """
-    old_original_op = self._default_original_op
-    self._default_original_op = op
-    try:
-      yield
-    finally:
-      self._default_original_op = old_original_op
 
   @property
   def _name_stack(self):
@@ -5425,7 +5432,7 @@ def add_to_collections(names, value):
   get_default_graph().add_to_collections(names, value)
 
 
-@tf_export("get_collection_ref")
+
 def get_collection_ref(key):
   
   return get_default_graph().get_collection_ref(key)
@@ -5514,7 +5521,7 @@ class name_scope(object):
     return False  # False values do not suppress exceptions
 
 
-_proto_function_registry = registry.Registry("proto functions")
+_proto_function_registry = Registry("proto functions")
 
 def register_proto_function(collection_name,
                             proto_type=None,

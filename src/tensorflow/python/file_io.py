@@ -28,7 +28,7 @@ import uuid
 import six
 
 from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
-from tensorflow.python.framework import c_api_util
+#from tensorflow.python.framework import c_api_util
 from tensorflow.python.framework import errors_impl as errors
 from tensorflow.python.util import compat
 from tensorflow.python.util import deprecation
@@ -37,6 +37,19 @@ from tensorflow.python.util.tf_export import tf_export
 # A good default block size depends on the system in question.
 # A somewhat conservative default chosen here.
 _DEFAULT_BLOCK_SIZE = 16 * 1024 * 1024
+
+
+class ScopedTFStatus(object):
+  """Wrapper around TF_Status that handles deletion."""
+
+  def __init__(self):
+    self.status = c_api.TF_NewStatus()
+
+  def __del__(self):
+    # Note: when we're destructing the global context (i.e when the process is
+    # terminating) we can have already deleted other modules.
+    if c_api is not None and c_api.TF_DeleteStatus is not None:
+      c_api.TF_DeleteStatus(self.status)
 
 
 class FileIO(object):
@@ -463,7 +476,7 @@ def is_directory(dirname):
   Returns:
     True, if the path is a directory; False otherwise
   """
-  status = c_api_util.ScopedTFStatus()
+  #status = c_api_util.ScopedTFStatus()
   return pywrap_tensorflow.IsDirectory(compat.as_bytes(dirname), status)
 
 
