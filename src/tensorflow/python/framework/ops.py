@@ -1797,7 +1797,7 @@ class Operation(object):
     # pylint: disable=protected-access
     self._id_value = self._graph._next_id()
     self._original_op = original_op
-    self._traceback = tf_stack.extract_stack()
+#    self._traceback = tf_stack.extract_stack()
 
     # List of _UserDevSpecs holding code location of device context manager
     # invocations and the users original argument to them.

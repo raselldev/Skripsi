@@ -29,7 +29,7 @@ import numpy as np
 #from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import pywrap_tensorflow_internal as tf_session
 from tensorflow.python.framework import device
-from tensorflow.python.framework import error_interpolation
+#from tensorflow.python.framework import error_interpolation
 from tensorflow.python.framework import errors_impl as errors
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import sparse_tensor
@@ -533,7 +533,7 @@ class _FetchHandler(object):
         containing tensors or None (for fetched ops).
     """
     full_values = []
-    assert len(self._final_fetches) == len(tensor_values)
+
     i = 0
     j = 0
     for is_op in self._ops:
@@ -1344,8 +1344,8 @@ class BaseSession(SessionInterface):
           node_def = op.node_def
         except KeyError:
           pass
-      message = error_interpolation.interpolate(message, self._graph)
-      raise type(e)(node_def, op, message)
+#      message = error_interpolation.interpolate(message, self._graph)
+#      raise type(e)(node_def, op, message)
 
   def _extend_graph(self):
     with self._graph._session_run_lock():  # pylint: disable=protected-access
