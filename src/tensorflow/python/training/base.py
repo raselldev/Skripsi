@@ -11,29 +11,26 @@ import weakref
 import six
 
 from tensorflow.python.framework import ops
-from tensorflow.python.training import saveable_object
 from tensorflow.python.util import tf_decorator
 from tensorflow.python.framework import dtypes
-from tensorflow.python import context
 
 CheckpointableReference = collections.namedtuple(
     "CheckpointableReference",
     [
-        # The local name for this dependency.
         "name",
-        # The Checkpointable object being referenced.
         "ref"
     ])
+
 
 def no_automatic_dependency_tracking(method):
 
   def _method_wrapper(self, *args, **kwargs):
     previous_value = getattr(self, "_setattr_tracking", True)
-    self._setattr_tracking = False  # pylint: disable=protected-access
+    self._setattr_tracking = False
     try:
       method(self, *args, **kwargs)
     finally:
-      self._setattr_tracking = previous_value  # pylint: disable=protected-access
+      self._setattr_tracking = previous_value
 
   return tf_decorator.make_decorator(
       target=method, decorator_func=_method_wrapper)
@@ -55,13 +52,12 @@ class CheckpointInitialValue(ops.Tensor):
     except AttributeError:
       return self.__getattribute__(attr)
 
-  @property
+  
   def checkpoint_position(self):
     return self._checkpoint_position
 
 
 class CheckpointableBase(object):
-  @no_automatic_dependency_tracking
   def _maybe_initialize_checkpointable(self):
     if hasattr(self, "_unconditional_checkpoint_dependencies"):
       return
@@ -79,17 +75,14 @@ class CheckpointableBase(object):
     self._name_based_restores = set()
 
   def _no_dependency(self, value):
-    """If automatic dependency tracking is enabled, ignores `value`."""
     return value
 
   def _name_based_attribute_restore(self, checkpoint):
-    """Restore the object's attributes from a name-based checkpoint."""
     self._name_based_restores.add(checkpoint)
     if self._update_uid < checkpoint.restore_uid:
       checkpoint.eager_restore(self)
       self._update_uid = checkpoint.restore_uid
 
-  @property
   def _checkpoint_dependencies(self):
     return self._unconditional_checkpoint_dependencies
 
@@ -106,11 +99,9 @@ class CheckpointableBase(object):
       **kwargs_for_getter):
     self._maybe_initialize_checkpointable()
     with ops.init_scope():
-      if context.executing_eagerly():
-        checkpoint_initializer = self._preload_simple_restoration(
+      checkpoint_initializer = self._preload_simple_restoration(
             name=name, shape=shape)
-      else:
-        checkpoint_initializer = None
+      
       if (checkpoint_initializer is not None
           and not (
               isinstance(initializer, CheckpointInitialValue)
@@ -126,14 +117,11 @@ class CheckpointableBase(object):
       return self._track_checkpointable(new_variable, name=name,
                                         overwrite=overwrite)
     else:
-      # TODO(allenl): Some variable types are not yet supported. Remove this
-      # fallback once all get_variable() return types are Checkpointable.
       return new_variable
 
   def _preload_simple_restoration(self, name, shape):
     deferred_dependencies_list = self._deferred_dependencies.get(name, ())
     if not deferred_dependencies_list:
-      # Nothing to do; we don't have a restore for this dependency queued up.
       return
     for checkpoint_position in deferred_dependencies_list:
       if not checkpoint_position.is_simple_variable():
@@ -159,8 +147,6 @@ class CheckpointableBase(object):
             ("Called Checkpointable._track_checkpointable() with name='%s', "
              "but a Checkpointable with this name is already declared as a "
              "dependency. Names must be unique (or overwrite=True).") % (name,))
-      # This is a weird thing to do, but we're not going to stop people from
-      # using __setattr__.
       for index, (old_name, _) in enumerate(
           self._unconditional_checkpoint_dependencies):
         if name == old_name:
@@ -174,7 +160,7 @@ class CheckpointableBase(object):
 
   def _handle_deferred_dependencies(self, name, checkpointable):
     self._maybe_initialize_checkpointable()
-    checkpointable._maybe_initialize_checkpointable()  # pylint: disable=protected-access
+    checkpointable._maybe_initialize_checkpointable()
     deferred_dependencies_list = self._deferred_dependencies.pop(name, ())
     for checkpoint_position in sorted(
         deferred_dependencies_list,
@@ -182,25 +168,19 @@ class CheckpointableBase(object):
         reverse=True):
       checkpoint_position.restore(checkpointable)
 
-    # Pass on any name-based restores queued in this object.
     for name_based_restore in sorted(
         self._name_based_restores,
         key=lambda checkpoint: checkpoint.restore_uid,
         reverse=True):
-      checkpointable._name_based_attribute_restore(name_based_restore)  # pylint: disable=protected-access
+      checkpointable._name_based_attribute_restore(name_based_restore)
 
   def _restore_from_checkpoint_position(self, checkpoint_position):
-    """Restore this object and its dependencies (may be deferred)."""
-    # Attempt a breadth-first traversal, since presumably the user has more
-    # control over shorter paths. If we don't have all of the dependencies at
-    # this point, the end result is not breadth-first (since other deferred
-    # traversals will happen later).
     visit_queue = collections.deque([checkpoint_position])
     restore_ops = []
     while visit_queue:
       current_position = visit_queue.popleft()
       restore_ops.extend(nest.flatten(
-          current_position.checkpointable  # pylint: disable=protected-access
+          current_position.checkpointable
           ._single_restoration_from_checkpoint_position(
               checkpoint_position=current_position,
               visit_queue=visit_queue)))
@@ -208,7 +188,6 @@ class CheckpointableBase(object):
 
   def _single_restoration_from_checkpoint_position(
       self, checkpoint_position, visit_queue):
-    """Restore this object, and either queue its dependencies or defer them."""
     self._maybe_initialize_checkpointable()
     checkpoint = checkpoint_position.checkpoint
     if checkpoint.restore_uid > self._update_uid:
