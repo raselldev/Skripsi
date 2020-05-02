@@ -30,6 +30,7 @@ from tensorflow.python.util import tf_contextlib
 
 # Allow deprecation warnings to be silenced temporarily with a context manager.
 _PRINT_DEPRECATION_WARNINGS = True
+IS_IN_GRAPH_MODE = lambda: True
 
 # Remember which deprecation warnings have been printed already.
 _PRINTED_WARNING = {}
@@ -212,7 +213,7 @@ def deprecated_args(date, instructions, *deprecated_arg_names_or_tuples,
       """Deprecation wrapper."""
       # TODO(apassos) figure out a way to have reasonable performance with
       # deprecation warnings and eager mode.
-      if is_in_graph_mode.IS_IN_GRAPH_MODE() and _PRINT_DEPRECATION_WARNINGS:
+      if IS_IN_GRAPH_MODE() and _PRINT_DEPRECATION_WARNINGS:
         invalid_args = []
         named_args = tf_inspect.getcallargs(func, *args, **kwargs)
         for arg_name, spec in iter(deprecated_positions.items()):
