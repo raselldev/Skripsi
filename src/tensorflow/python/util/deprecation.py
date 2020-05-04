@@ -288,13 +288,3 @@ def deprecated_argument_lookup(new_name, new_value, old_name, old_value):
                        (old_name, new_name))
     return old_value
   return new_value
-
-
-@tf_contextlib.contextmanager
-def silence():
-  """Temporarily silence deprecation warnings."""
-  global _PRINT_DEPRECATION_WARNINGS
-  print_deprecation_warnings = _PRINT_DEPRECATION_WARNINGS
-  _PRINT_DEPRECATION_WARNINGS = False
-  yield
-  _PRINT_DEPRECATION_WARNINGS = print_deprecation_warnings

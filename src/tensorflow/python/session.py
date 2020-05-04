@@ -28,7 +28,7 @@ import numpy as np
 
 #from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import pywrap_tensorflow_internal as tf_session
-from tensorflow.python.framework import device
+#from tensorflow.python.framework import device
 #from tensorflow.python.framework import error_interpolation
 from tensorflow.python.framework import errors_impl as errors
 from tensorflow.python.framework import ops
@@ -560,17 +560,6 @@ class _FetchHandler(object):
     assert j == len(tensor_values)
     return self._fetch_mapper.build_results(full_values)
 
-
-def _name_list(tensor_list):
-  """Utility function for transitioning to the new session API.
-
-  Args:
-    tensor_list: a list of `Tensor`s.
-
-  Returns:
-    A list of each `Tensor`s name (as byte arrays).
-  """
-  return [compat.as_bytes(t.name) for t in tensor_list]
 
 
 class _DeviceAttributes(object):

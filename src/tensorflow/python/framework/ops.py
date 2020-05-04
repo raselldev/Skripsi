@@ -11,7 +11,7 @@ import contextlib
 import numpy as np
 import six
 from six.moves import xrange  
-from tensorflow.python.framework import device as pydev
+#from tensorflow.python.framework import device as pydev
 from tensorflow.python.util import function_utils
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.ops import control_flow_util
@@ -112,9 +112,7 @@ class _UserDeviceSpec(object):
       self.display_name = "%s<%s, %d>" % (func_name, fname, lineno)
 
     self.function = self._device_name_or_function
-    if not (self._device_name_or_function is None or
-            callable(self._device_name_or_function)):
-      self.function = pydev.merge_device(self._device_name_or_function)
+    
 
 def _override_helper(clazz_object, operator, func):
   existing = getattr(clazz_object, operator, None)
@@ -375,246 +373,15 @@ class Tensor(_TensorLike):
   
     return tf_output(self.op._c_op, self.value_index)
     
-
-  def __str__(self):
-    return "Tensor(\"%s\"%s%s%s)" % (
-        self.name, (", shape=%s" % self.get_shape())
-        if self.get_shape().ndims is not None else "",
-        (", dtype=%s" % self._dtype.name)
-        if self._dtype else "", (", device=%s" % self.device)
-        if self.device else "")
-
-  def __repr__(self):
-    return "<tf.Tensor '%s' shape=%s dtype=%s>" % (self.name, self.get_shape(),
-                                                   self._dtype.name)
-
-  def __hash__(self):
-    # Necessary to support Python's collection membership operators
-    return id(self)
-
-  def __eq__(self, other):
-    # Necessary to support Python's collection membership operators
-    return id(self) == id(other)
-
-  def __copy__(self):
-    # Make sure _shape_val is computed before we copy.
-    # TODO(b/77597810): get rid of Tensor copies.
-    if self._shape_val is None:
-      set_shape_and_handle_data_for_outputs(self.op)
-    cls = self.__class__
-    result = cls.__new__(cls)
-    result.__dict__.update(self.__dict__)
-    return result
-
-  # NOTE(mrry): This enables the Tensor's overloaded "right" binary
-  # operators to run when the left operand is an ndarray, because it
-  # accords the Tensor class higher priority than an ndarray, or a
-  # numpy matrix.
-  # TODO(mrry): Convert this to using numpy's __numpy_ufunc__
-  # mechanism, which allows more control over how Tensors interact
-  # with ndarrays.
   __array_priority__ = 100
 
   @staticmethod
   def _override_operator(operator, func):
     _override_helper(Tensor, operator, func)
-
-  def __bool__(self):
-    raise TypeError("Using a `tf.Tensor` as a Python `bool` is not allowed. "
-                    "Use `if t is not None:` instead of `if t:` to test if a "
-                    "tensor is defined, and use TensorFlow ops such as "
-                    "tf.cond to execute subgraphs conditioned on the value of "
-                    "a tensor.")
-
-  def __nonzero__(self):
-    raise TypeError("Using a `tf.Tensor` as a Python `bool` is not allowed. "
-                    "Use `if t is not None:` instead of `if t:` to test if a "
-                    "tensor is defined, and use TensorFlow ops such as "
-                    "tf.cond to execute subgraphs conditioned on the value of "
-                    "a tensor.")
-
-  def eval(self, feed_dict=None, session=None):
-    return _eval_using_default_session(self, feed_dict, self.graph, session)
-
-class _EagerTensorBase(Tensor):
-  @property
-  def dtype(self):
-    return dtypes._INTERN_TABLE[self._datatype_enum()]
-
-  def numpy(self):
-    if self.dtype == dtypes.resource:
-      raise ValueError("Resource handles are not convertible to numpy.")
-    return self._cpu_nograd()._numpy()
-
-  def __int__(self):
-    return int(self.numpy())
-
-  def __float__(self):
-    return float(self.numpy())
-
-  def __index__(self):
-    return int(self.numpy())
-
-  def __array__(self, dtype=None):
-    return np.array(self.numpy(), dtype=dtype)
-
-  def __format__(self, format_spec):
-    return self.numpy().__format__(format_spec)
-
-  def __reduce__(self):
-    return (convert_to_tensor, (self.numpy(),))
-
-  def _numpy(self):
-    raise NotImplementedError()
-
-  def __copy__(self):
-    # Eager Tensors are immutable so it's safe to return themselves as a copy.
-    return self
-
-  def __deepcopy__(self, memo):
-    # Eager Tensors are immutable so it's safe to return themselves as a copy.
-    del memo
-    return self
-
-  def _datatype_enum(self):
-    raise NotImplementedError()
-
-  def _shape_tuple(self):
-    raise NotImplementedError()
-
-  def _rank(self):
-    raise NotImplementedError()
-
-  def _num_elements(self):
-    raise NotImplementedError()
-
-  def _copy_to_device(self, context, device):  
-    raise NotImplementedError()
-
-  def __str__(self):
-    return "tf.Tensor(%s, shape=%s, dtype=%s)" % (numpy_text(self),
-                                                  self.shape,
-                                                  self.dtype.name)
-
-  def __repr__(self):
-    return "<tf.Tensor: id=%s, shape=%s, dtype=%s, numpy=%s>" % (
-        self._id, self.shape, self.dtype.name, numpy_text(self, is_repr=True))
-
-  @staticmethod
-  def _override_operator(name, func):
-    setattr(_EagerTensorBase, name, func)
-
-  def _copy_nograd(self, ctx=None, device_name=None):
-    if ctx is None:
-      ctx = context.context()
-    if device_name is None:
-      device_name = ctx.device_name
   
-    try:
-      new_tensor = self._copy_to_device(context=ctx._handle, device=device_name)
-    except core._NotOkStatusException as e:
-      six.raise_from(core._status_to_exception(e.code, e.message), None)
-    return new_tensor
-
-  def _copy(self, ctx=None, device_name=None):
-    new_tensor = self._copy_nograd(ctx, device_name)
-    if context.executing_eagerly():
-      self_device = self.device
-      def grad_fun(dresult):
-        return [dresult._copy(device_name=self_device)]
-      record_operation("_copy", [new_tensor], [self], grad_fun)
-    return new_tensor
-    
-
-  @property
-  def shape(self):
-    if self._tensor_shape is None:  # pylint: disable=access-member-before-definition
-      # `_tensor_shape` is declared and defined in the definition of
-      # `EagerTensor`, in C.
-      self._tensor_shape = tensor_shape.TensorShape(self._shape_tuple())
-    return self._tensor_shape
-
-  def get_shape(self):
-    return self.shape
-
-  def _shape_as_list(self):
-    return list(self._shape_tuple())
-
-  @property
-  def ndim(self):
-    return self.shape.ndims
-
-  def _cpu_nograd(self):
-    return self._copy_nograd(context.context(), "CPU:0")
-
-  def cpu(self):
-    return self._copy(context.context(), "CPU:0")
-
-  def gpu(self, gpu_index=0):
-    return self._copy(context.context(), "GPU:" + str(gpu_index))
-
-  def __bool__(self):
-    if self._shape_tuple() != ():  # pylint: disable=g-explicit-bool-comparison
-      raise ValueError(
-          "Non-scalar tensor %s cannot be converted to boolean." % repr(self))
-    if self.dtype != dtypes.bool:
-      raise ValueError(
-          "Non-boolean tensor %s cannot be converted to boolean." % repr(self))
-    return bool(self.cpu().numpy())
-
-  def __nonzero__(self):
-    return self.__bool__()
-
-  def set_shape(self, shape):
-    if not self.shape.is_compatible_with(shape):
-      raise ValueError(
-          "Tensor's shape %s is not compatible with supplied shape %s" %
-          (self.shape, shape))
-
-  # Methods not supported / implemented for Eager Tensors.
-  @property
-  def op(self):
-    raise AttributeError(
-        "Tensor.op is meaningless when eager execution is enabled.")
-
-  @property
-  def graph(self):
-    raise AttributeError(
-        "Tensor.graph is meaningless when eager execution is enabled.")
-
-  @property
-  def name(self):
-    raise AttributeError(
-        "Tensor.name is meaningless when eager execution is enabled.")
-
-  @property
-  def value_index(self):
-    raise AttributeError(
-        "Tensor.value_index is meaningless when eager execution is enabled.")
-
-  def consumers(self):
-    raise NotImplementedError(
-        "Tensor.consumers is meaningless when eager execution is enabled.")
-
-  def _add_consumer(self, consumer):
-    raise NotImplementedError(
-        "_add_consumer not supported when eager execution is enabled.")
-
-  def _as_node_def_input(self):
-    raise NotImplementedError(
-        "_as_node_def_input not supported when eager execution is enabled.")
-
-  def _as_tf_output(self):
-    raise NotImplementedError(
-        "_as_tf_output not supported when eager execution is enabled.")
-
-  def eval(self, feed_dict=None, session=None):
-    raise NotImplementedError(
-        "eval is not supported when eager execution is enabled, "
-        "is .numpy() what you're looking for?"
-    )
-
-
+class _EagerTensorBase(Tensor):
+ """"""
+  
 EagerTensor = c_api.TFE_Py_InitEagerTensor(_EagerTensorBase)
 
 
@@ -653,20 +420,7 @@ def internal_convert_to_tensor(value,
                                ctx=None):
   
   if ctx is None: ctx = context.context()
-  if isinstance(value, EagerTensor):
-    if ctx.executing_eagerly():
-      # Fast path for EagerTensors that don't need any conversion.
-      # Note that we don't check that value's dtype matches the dtype
-      # argument.  We expect that the C runtime will do that checking
-      # when we execute the kernel.
-      return value
-    else:
-      graph = get_default_graph()
-      if not graph.building_function:
-        raise RuntimeError("Attempting to capture an EagerTensor without "
-                           "building a function.")
-      return graph.capture(value, name=name)
-
+  
   if dtype is not None:
     dtype = dtypes.as_dtype(dtype)
   unwrapped_type = type(value)
@@ -709,19 +463,10 @@ def internal_convert_to_tensor(value,
       continue
 
     if not isinstance(ret, Tensor):
-      raise RuntimeError(
-          "%sConversion function %r for type %s returned non-Tensor: %r" %
-          (_error_prefix(name), conversion_func, base_type, ret))
-    if dtype and not dtype.is_compatible_with(ret.dtype):
-      raise RuntimeError(
-          "%sConversion function %r for type %s returned incompatible "
-          "dtype: requested = %s, actual = %s" %
-          (_error_prefix(name), conversion_func, base_type, dtype.name,
-           ret.dtype.name))
+      raise RuntimeError(" ")
     return ret
-  raise TypeError("%sCannot convert %r with type %s to Tensor: "
-                  "no conversion function registered." %
-                  (_error_prefix(name), value, unwrapped_type))
+
+  
 
 
 def internal_convert_n_to_tensor(values,
@@ -766,10 +511,7 @@ def internal_convert_to_tensor_or_indexed_slices(value,
                                                  dtype=None,
                                                  name=None,
                                                  as_ref=False):
-  if isinstance(value, EagerTensor) and not context.executing_eagerly():
-    return internal_convert_to_tensor(
-        value, dtype=dtype, name=name, as_ref=as_ref)
-  elif isinstance(value, _TensorLike):
+  if isinstance(value, _TensorLike):
     if dtype and not dtypes.as_dtype(dtype).is_compatible_with(value.dtype):
       raise ValueError(
           "Tensor conversion requested dtype %s for Tensor with dtype %s: %r" %
@@ -1198,12 +940,6 @@ class Operation(object):
   def _remove_all_control_inputs(self):
     c_api.RemoveAllControlInputs(self._graph._c_graph, self._c_op)
 
-  def __str__(self):
-    return str(self.node_def)
-
-  def __repr__(self):
-    return "<tf.Operation '%s' type=%s>" % (self.name, self.type)
-
   @property
   def outputs(self):
     return self._outputs
@@ -1512,37 +1248,6 @@ def set_shape_and_handle_data_for_outputs(op):
     output._shape_val = tensor_shape.unknown_shape()
     output._shape_val = output._shape_val.merge_with(s)
 
-
-class OpStats(object):
-  def __init__(self, statistic_type, value=None):
-    self.statistic_type = statistic_type
-    self.value = value
-
-  @property
-  def statistic_type(self):
-    return self._statistic_type
-
-  @statistic_type.setter
-  def statistic_type(self, statistic_type):
-    self._statistic_type = statistic_type
-
-  @property
-  def value(self):
-    return self._value
-
-  @value.setter
-  def value(self, value):
-    self._value = value
-
-  def __iadd__(self, other):
-    if other.statistic_type != self.statistic_type:
-      raise ValueError("Can't add an OpStat of type %s to one of %s." %
-                       (self.statistic_type, other.statistic_type))
-    if self.value is None:
-      self.value = other.value
-    elif other.value is not None:
-      self._value += other.value
-    return self
 
 
 _stats_registry = Registry("statistical functions")
@@ -1895,9 +1600,6 @@ class Graph(object):
 
     self._record_op_seen_by_control_dependencies(op)
 
-    if compute_device:
-      self._apply_device_functions(op)
-    op._colocation_code_locations = self._snapshot_colocation_stack_metadata()
     
 
     if self._colocation_stack:
@@ -2153,7 +1855,6 @@ class Graph(object):
   def _name_stack(self, name_stack):
     self._thread_local._name_stack = name_stack
 
-  # pylint: disable=g-doc-return-or-yield,line-too-long
   @tf_contextlib.contextmanager
   def name_scope(self, name):
     if name:
@@ -2183,7 +1884,6 @@ class Graph(object):
       yield "" if new_stack is None else new_stack + "/"
     finally:
       self._name_stack = old_stack
-
 
   def unique_name(self, name, mark_as_used=True):
     if self._name_stack:
@@ -2280,8 +1980,6 @@ class Graph(object):
       op._set_device(device_spec.function(op))
     op._device_code_locations = self._snapshot_device_function_stack_metadata()
     
-
-  # pylint: disable=g-doc-return-or-yield
   @tf_contextlib.contextmanager
   def container(self, container_name):
     original_container = self._container
@@ -2304,8 +2002,6 @@ class Graph(object):
       self._old_stack = None
       self._old_control_flow_context = None
 
-# pylint: disable=protected-access
-
     def __enter__(self):
       if self._new_stack:
         # Clear the control_dependencies graph.
@@ -2321,8 +2017,6 @@ class Graph(object):
       if self._new_stack:
         self._graph._control_dependencies_stack = self._old_stack
         self._graph._set_control_flow_context(self._old_control_flow_context)
-
-
 
     @property
     def control_inputs(self):
@@ -2391,8 +2085,7 @@ class Graph(object):
         control_ops.append(c)
         current.add(c)
     return self._ControlDependenciesController(self, control_ops)
-
-  # pylint: disable=g-doc-return-or-yield
+  
   @tf_contextlib.contextmanager
   def _attr_scope(self, attr_map):
     if not isinstance(attr_map, dict):
@@ -2428,9 +2121,6 @@ class Graph(object):
         except KeyError:
           del self._attr_scope_map[name]
 
-  
-
-  # pylint: disable=g-doc-return-or-yield
   @tf_contextlib.contextmanager
   def _kernel_label_map(self, op_to_kernel_label_map):
     if not isinstance(op_to_kernel_label_map, dict):
@@ -2459,10 +2149,7 @@ class Graph(object):
           self._op_to_kernel_label_map[op_type] = saved_labels[op_type]
         except KeyError:
           del self._op_to_kernel_label_map[op_type]
-
   
-
-  # pylint: disable=g-doc-return-or-yield
   @tf_contextlib.contextmanager
   def gradient_override_map(self, op_type_map):
     if not isinstance(op_type_map, dict):
@@ -2491,8 +2178,6 @@ class Graph(object):
           self._gradient_override_map[op_type] = saved_mappings[op_type]
         except KeyError:
           del self._gradient_override_map[op_type]
-
-  
 
   def prevent_feeding(self, tensor):
     self._unfeedable_tensors.add(tensor)
@@ -2636,12 +2321,7 @@ def _colocate_with_for_gradient(op, gradient_uid, ignore_existing=False):
       return _NullContextmanager()
   else:
     default_graph = get_default_graph()
-    if isinstance(op, EagerTensor):
-      if default_graph.building_function:
-        return default_graph.device(op.device)
-      else:
-        raise ValueError("Encountered an Eager-defined Tensor during graph "
-                         "construction, but a function was not being built.")
+    
     return default_graph._colocate_with_for_gradient(
         op, gradient_uid=gradient_uid, ignore_existing=ignore_existing)
 

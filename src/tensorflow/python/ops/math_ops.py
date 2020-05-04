@@ -679,12 +679,12 @@ def to_complex128(x, name="ToComplex128"):
   return cast(x, dtypes.complex128, name=name)
 
 
-ops.Tensor._override_operator("__neg__", gen_math_ops.neg)
-ops.Tensor._override_operator("__abs__", abs)
+#ops.Tensor._override_operator("__neg__", gen_math_ops.neg)
+#ops.Tensor._override_operator("__abs__", abs)
 # __invert__ corresponds to the ~ operator.  Here we follow the numpy convention
 # ~ marks an elementwise bit-wise inverse.  This is only implemented for boolean
 # tensors and will throw a TypeError if used on nonboolean arrays
-ops.Tensor._override_operator("__invert__", gen_math_ops.logical_not)
+#ops.Tensor._override_operator("__invert__", gen_math_ops.logical_not)
 
 
 def _OverrideBinaryOperatorHelper(func, op_name, clazz_object=ops.Tensor):
