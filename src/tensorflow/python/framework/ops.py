@@ -11,7 +11,6 @@ import contextlib
 import numpy as np
 import six
 from six.moves import xrange  
-
 from tensorflow.python.framework import device as pydev
 from tensorflow.python.util import function_utils
 from tensorflow.python.framework import tensor_shape
@@ -22,16 +21,9 @@ from tensorflow.core.framework import attr_value_pb2
 from tensorflow.python.framework import dtypes
 from tensorflow.python.util import tf_stack
 from tensorflow.core.framework import node_def_pb2
-
-
-
 from tensorflow.core.framework import versions_pb2
-
-
-
 from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
 from tensorflow.python.util import compat
-#from tensorflow.python.framework import c_api_util
 from tensorflow.python.framework import op_def_registry
 from tensorflow.python.framework import traceable_stack
 from tensorflow.python.util import lock_util
@@ -40,12 +32,9 @@ from tensorflow.python.util import deprecation
 from tensorflow.python.util import decorator_utils
 from tensorflow.python.util.deprecation import deprecated_args
 from tensorflow.python.util import tf_contextlib
-#from tensorflow.python.framework import registry
 from tensorflow.python import pywrap_tensorflow_internal as c_api
 from tensorflow.python.util.tf_export import tf_export
 
-# Temporary global switches determining if we should enable the work-in-progress
-# calls to the C API. These will be removed once all functionality is supported.
 _USE_C_API = True
 _USE_C_SHAPES = True
 
@@ -164,10 +153,9 @@ def register_dense_tensor_like_type(tensor_type):
 def uid():
   return c_api.TFE_Py_UID()
 
-# NOTE(ebrevdo): Do not subclass this.  If you do, I will break you on purpose.
+
 class _TensorLike(object):
   pass
-
 
 class Tensor(_TensorLike):
   OVERLOADABLE_OPERATORS = {
@@ -2196,7 +2184,6 @@ class Graph(object):
     finally:
       self._name_stack = old_stack
 
-  # pylint: enable=g-doc-return-or-yield,line-too-long
 
   def unique_name(self, name, mark_as_used=True):
     if self._name_stack:
@@ -2303,8 +2290,6 @@ class Graph(object):
       yield self._container
     finally:
       self._container = original_container
-
-  # pylint: enable=g-doc-return-or-yield
 
   class _ControlDependenciesController(object):
     def __init__(self, graph, control_inputs):
@@ -2443,7 +2428,7 @@ class Graph(object):
         except KeyError:
           del self._attr_scope_map[name]
 
-  # pylint: enable=g-doc-return-or-yield
+  
 
   # pylint: disable=g-doc-return-or-yield
   @tf_contextlib.contextmanager
@@ -2475,7 +2460,7 @@ class Graph(object):
         except KeyError:
           del self._op_to_kernel_label_map[op_type]
 
-  # pylint: enable=g-doc-return-or-yield
+  
 
   # pylint: disable=g-doc-return-or-yield
   @tf_contextlib.contextmanager
@@ -2507,7 +2492,7 @@ class Graph(object):
         except KeyError:
           del self._gradient_override_map[op_type]
 
-  # pylint: enable=g-doc-return-or-yield
+  
 
   def prevent_feeding(self, tensor):
     self._unfeedable_tensors.add(tensor)
@@ -2631,10 +2616,6 @@ class Graph(object):
     return self._group_lock.group(_SESSION_RUN_LOCK_GROUP)
 
 
-# TODO(agarwal): currently device directives in an outer eager scope will not
-# apply to inner graph mode code. Fix that.
-
-
 @tf_export("device")
 def device(device_name_or_function):
   if context.executing_eagerly():
@@ -2679,7 +2660,6 @@ def control_dependencies(control_inputs):
     return _NullContextmanager()
   else:
     return get_default_graph().control_dependencies(control_inputs)
-
 
 class _DefaultStack(threading.local):
   def __init__(self):
@@ -2785,48 +2765,32 @@ _default_graph_stack = _DefaultGraphStack()
 
 @tf_contextlib.contextmanager
 def init_scope():
-  
-  # pylint: enable=g-doc-return-or-yield,line-too-long
-
   if context.executing_eagerly():
     # Fastpath.
     with stop_recording():
       yield
   else:
-    # Retrieve the active name scope: entering an `init_scope` preserves
-    # the name scope of the current context.
     default_graph = get_default_graph()
     scope = default_graph.get_name_scope()
     if scope and scope[-1] != "/":
-      # Names that end with trailing slashes are treated by `name_scope` as
-      # absolute.
       scope = scope + "/"
     inner_device_stack = default_graph._device_function_stack
 
     outer_context = None
     if not _default_graph_stack.stack:
-      # If the default graph stack is empty, then we cannot be building a
-      # function. Install the global graph (which, in this case, is also the
-      # default graph) as the outer context.
       if default_graph.building_function:
         raise RuntimeError("The global graph is building a function.")
       outer_context = default_graph.as_default
     else:
-      # Find a context that is not building a function.
       for stack_entry in reversed(context.context().context_switches.stack):
         if not stack_entry.is_building_function:
           outer_context = stack_entry.enter_context_fn
           break
 
       if outer_context is None:
-        # As a last resort, obtain the global default graph; this graph doesn't
-        # necessarily live on the graph stack (and hence it doesn't necessarily
-        # live on the context stack), but it is stored in the graph stack's
-        # encapsulating object.
         outer_context = _default_graph_stack._GetGlobalDefaultGraph().as_default
 
     if outer_context is None:
-      # Sanity check; this shouldn't be triggered.
       raise RuntimeError("All graphs are building functions, and no "
                          "eager context was previously active.")
 
@@ -2836,17 +2800,11 @@ def init_scope():
       with outer_context(), name_scope(scope), control_dependencies(
           None), stop_recording():
         if not context.executing_eagerly():
-          # The device stack is preserved when lifting into a graph. Eager
-          # execution doesn't implement device stacks and in particular it
-          # doesn't support device functions, so in general it's not possible
-          # to do the same when lifting into the eager context.
           outer_graph = get_default_graph()
           outer_device_stack = outer_graph._device_function_stack
           outer_graph._device_function_stack = inner_device_stack
         yield
     finally:
-      # If an exception is raised here it may be hiding a related exception in
-      # try-block (just above).
       if outer_graph is not None:
         outer_graph._device_function_stack = outer_device_stack
 
