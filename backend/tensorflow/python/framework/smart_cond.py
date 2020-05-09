@@ -1,19 +1,3 @@
-# Copyright 2018 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-"""smart_cond and related utilties."""
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -62,29 +46,6 @@ def smart_constant_value(pred):
 
 
 def smart_case(pred_fn_pairs, default=None, exclusive=False, name="smart_case"):
-  """Like tf.case, except attempts to statically evaluate predicates.
-
-  If any predicate in `pred_fn_pairs` is a bool or has a constant value, the
-  associated callable will be called or omitted depending on its value.
-  Otherwise this functions like tf.case.
-
-  Args:
-    pred_fn_pairs: Dict or list of pairs of a boolean scalar tensor and a
-                   callable which returns a list of tensors.
-    default: Optional callable that returns a list of tensors.
-    exclusive: True iff at most one predicate is allowed to evaluate to `True`.
-    name: A name for this operation (optional).
-
-  Returns:
-    The tensors returned by the first pair whose predicate evaluated to True, or
-    those returned by `default` if none does.
-
-  Raises:
-    TypeError: If `pred_fn_pairs` is not a list/dictionary.
-    TypeError: If `pred_fn_pairs` is a list but does not contain 2-tuples.
-    TypeError: If `fns[i]` is not callable for any i, or `default` is not
-               callable.
-  """
   return control_flow_ops._case_helper(  # pylint: disable=protected-access
       smart_cond, pred_fn_pairs, default, exclusive, name,
       allow_python_preds=True)
