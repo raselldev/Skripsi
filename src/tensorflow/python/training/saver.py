@@ -19,7 +19,7 @@ from tensorflow.python.training import base as checkpointable
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import constant_op
-from tensorflow.python.ops import io_ops
+from tensorflow.python.ops import gen_io_ops
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.util import compat
@@ -474,7 +474,7 @@ class BaseSaverBuilder(object):
     elif self._write_version == saver_pb2.SaverDef.V2:
       # "filename_tensor" is interpreted *NOT AS A FILENAME*, but as a prefix
       # of a V2 checkpoint: e.g. "/fs/train/ckpt-<step>/tmp/worker<i>-<step>".
-      return io_ops.save_v2(filename_tensor, tensor_names, tensor_slices,
+      return gen_io_ops.save_v2(filename_tensor, tensor_names, tensor_slices,
                             tensors)
     else:
       raise RuntimeError("Unexpected write_version: " + self._write_version)
@@ -893,4 +893,4 @@ class BulkSaverBuilder(BaseSaverBuilder):
 
     names, slices, dtypes = zip(*restore_specs)
     with ops.device("cpu:0"):
-      return io_ops.restore_v2(filename_tensor, names, slices, dtypes)
+      return gen_io_ops.restore_v2(filename_tensor, names, slices, dtypes)
