@@ -23,13 +23,6 @@ from tensorflow.python.framework import constant_op
 _resource_variable_type = None
 
 
-def _set_doc(doc):
-  def _decorator(func):
-    func.__doc__ = doc
-    return func
-
-  return _decorator
-
 
 # pylint: disable=redefined-builtin
 def _bucketize(input, boundaries, name=None):
@@ -79,7 +72,6 @@ def multiply(x, y, name=None):
   return gen_math_ops.mul(x, y, name)
 
 
-multiply.__doc__ = gen_math_ops.mul.__doc__.replace("Multiply", "`tf.multiply`")
 
 
 # TODO(aselle): put deprecation in after another round of global code changes
@@ -90,8 +82,6 @@ def _mul(x, y, name=None):
   return gen_math_ops.mul(x, y, name)
 
 
-_mul.__doc__ = (
-    gen_math_ops.mul.__doc__ + ("" if _mul.__doc__ is None else _mul.__doc__))
 
 
 @tf_export("math.subtract", "subtract")
@@ -99,7 +89,6 @@ def subtract(x, y, name=None):
   return gen_math_ops.sub(x, y, name)
 
 
-subtract.__doc__ = gen_math_ops.sub.__doc__.replace("`Sub`", "`tf.subtract`")
 
 
 # TODO(aselle): put deprecation in after another round of global code changes
@@ -110,8 +99,6 @@ def _sub(x, y, name=None):
   return gen_math_ops.sub(x, y, name)
 
 
-_sub.__doc__ = (
-    gen_math_ops.sub.__doc__ + ("" if _sub.__doc__ is None else _sub.__doc__))
 
 
 # pylint: disable=g-docstring-has-escape
@@ -732,14 +719,6 @@ def _OverrideBinaryOperatorHelper(func, op_name, clazz_object=ops.Tensor):
       x = ops.convert_to_tensor(x, dtype=y.dtype.base_dtype, name="x")
       return func(x, y, name=name)
 
-  # Propagate func.__doc__ to the wrappers
-  try:
-    doc = func.__doc__
-  except AttributeError:
-    doc = None
-  binary_op_wrapper.__doc__ = doc
-  r_binary_op_wrapper.__doc__ = doc
-  binary_op_wrapper_sparse.__doc__ = doc
 
   if clazz_object is ops.Tensor:
     clazz_object._override_operator("__%s__" % op_name, binary_op_wrapper)
