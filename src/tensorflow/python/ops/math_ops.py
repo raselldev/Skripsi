@@ -14,7 +14,7 @@ from tensorflow.python.ops import gen_sparse_ops
 from tensorflow.python.framework import sparse_tensor
 from tensorflow.python.ops import gen_spectral_ops
 from tensorflow.python import context
-from tensorflow.python.framework import common_shapes
+from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import constant_op
 
 
@@ -1033,7 +1033,7 @@ def _ReductionDims(x, axis, reduction_indices):
     return axis
   else:
     # Fast path: avoid creating Rank and Range ops if ndims is known.
-    rank = common_shapes.rank(x)
+    rank = constant_op.rank(x)
     if rank is not None:
       return constant_op.constant(np.arange(rank), dtype=dtypes.int32)
     if (isinstance(x, sparse_tensor.SparseTensor) and
@@ -1046,7 +1046,7 @@ def _ReductionDims(x, axis, reduction_indices):
 
 def _may_reduce_to_scalar(keepdims, axis, reduction_indices, output):
   """Set a reduction's output shape to be a scalar if we are certain."""
-  if not common_shapes.has_fully_defined_shape(output) and (not keepdims) and (
+  if not constant_op.has_fully_defined_shape(output) and (not keepdims) and (
       axis is None) and (reduction_indices is None):
     output.set_shape(())
   return output

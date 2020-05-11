@@ -15,7 +15,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 from tensorflow.python.framework import ops
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python import context
-from tensorflow.python.framework import function as framework_function
+#from tensorflow.python.framework import function as constant_op
 from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.framework import constant_op
@@ -376,14 +376,14 @@ def _RaiseNoGradWrtInitialLoopValError(op, from_ops, xs):
 
 def _IsFunction(graph):
   return (isinstance(graph, _function.FuncGraph) or
-          isinstance(graph, framework_function._FuncGraph))  # pylint: disable=protected-access
+          isinstance(graph, constant_op._FuncGraph))  # pylint: disable=protected-access
 
 
 def _Captures(func_graph):
   if isinstance(func_graph, _function.FuncGraph):
     return func_graph.captures
   else:
-    assert isinstance(func_graph, framework_function._FuncGraph)  # pylint: disable=protected-access
+    assert isinstance(func_graph, constant_op._FuncGraph)  # pylint: disable=protected-access
     return func_graph._captured  # pylint: disable=protected-access
 
 
@@ -578,7 +578,7 @@ def _GradientsHelper(ys,
     if isinstance(curr_graph, _function.FuncGraph):
       curr_graph = curr_graph.outer_graph
     else:
-      assert isinstance(curr_graph, framework_function._FuncGraph)  # pylint: disable=protected-access
+      assert isinstance(curr_graph, constant_op._FuncGraph)  # pylint: disable=protected-access
       curr_graph = curr_graph._outer_graph  # pylint: disable=protected-access
 
   ys = _AsList(ys)
