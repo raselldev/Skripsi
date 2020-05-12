@@ -33,6 +33,7 @@ from tensorflow.python.util import decorator_utils
 from tensorflow.python.util.deprecation import deprecated_args
 from tensorflow.python.util import tf_contextlib
 from tensorflow.python import pywrap_tensorflow_internal as c_api
+from tensorflow.python.pywrap_tensorflow_internal import TFE_Py_UID as uid
 from tensorflow.python.util.tf_export import tf_export
 
 _USE_C_API = True
@@ -44,9 +45,6 @@ class ScopedTFGraph(object):
   def __init__(self):
     self.graph = c_api.TF_NewGraph()
 
-  def __del__(self):
-    if c_api is not None and c_api.TF_DeleteGraph is not None:
-      c_api.TF_DeleteGraph(self.graph)
 
 
 @tf_contextlib.contextmanager
@@ -147,9 +145,6 @@ def register_dense_tensor_like_type(tensor_type):
   global _TENSOR_LIKE_TYPES
   _TENSOR_LIKE_TYPES = tuple(list(_TENSOR_LIKE_TYPES) + [tensor_type])
 
-
-def uid():
-  return c_api.TFE_Py_UID()
 
 
 class _TensorLike(object):
