@@ -849,7 +849,7 @@ class _VariableStore(object):
     if name in self._vars:
       # Here we handle the case when returning an existing variable.
       if reuse is False:
-        tb = self._vars[name].op.traceback[::-1]
+        #tb = self._vars[name].op.traceback[::-1]
         # Throw away internal tf entries and only take a few lines.
         tb = [x for x in tb if "tensorflow/python" not in x[0]][:3]
         raise ValueError("Variable %s already exists, disallowed."

@@ -32,7 +32,25 @@ def resetBtn():
         widget.destroy()
 
 def runDetect():
-    
+    filename = filedialog.askopenfilename(initialdir="/", title="Select File", filetypes=(("images", "*.png"), ("all files", "*.*")))
+
+    apps.append(filename)
+    print(filename)
+    for app in apps:
+        label = tk.Label(frame, text=app, bg="gray").pack()
+
+    img = Image.open(filename)
+    img = img.resize((150, 150), Image.ANTIALIAS)
+    img = ImageTk.PhotoImage(img)
+    panel = tk.Label(frame, image=img)
+    panel.image = img
+    panel.pack()
+
+    print(open(FilePaths.fnAccuracy).read())
+    model = Model(open(FilePaths.fnCharList).read(), decoderType, mustRestore=True)
+    infer(model, filename)
+
+    #recog = tk.Label(frame, text=recognized[0], bg="gray").pack()
 
 canvas = tk.Canvas(root, height=500, width=500, bg="#263D42")
 canvas.pack()
@@ -51,3 +69,7 @@ resetBtn.pack(side=RIGHT, padx=5, pady=5)
 
 
 root.mainloop() 
+
+if __name__ == '__main__':
+    root.destroy()
+    root = tk.Tk()
