@@ -14,6 +14,7 @@ class FilePaths:
 	fnAccuracy = '../model/accuracy.txt'
 	fnTrain = '../data/'
 	fnInfer = '../data/test.png'
+	#fnInfer = args(["-i"])
 	#fnInfer = input("Pilih Path : ")
 	fnCorpus = '../data/corpus.txt'
 
@@ -95,10 +96,9 @@ def infer(model, fnImg):
 
 def main():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-train', help='train the NN', action='store_true')
-	parser.add_argument('-validate', help='validate the NN', action='store_true')
-	parser.add_argument('-i', help='input image', action='store_true')
-
+	parser.add_argument('--train', help='train the NN', action='store_true')
+	parser.add_argument('--validate', help='validate the NN', action='store_true')
+	parser.add_argument('--image', help='input image', action='store_true')
 	args = parser.parse_args()
 
 	decoderType = DecoderType.BestPath
@@ -120,6 +120,12 @@ def main():
 		elif args.validate:
 			model = Model(loader.charList, decoderType, mustRestore=True)
 			validate(model, loader)
+
+	elif args.image:
+		fnInfer = args(['--image'])
+		print(open(FilePaths.fnAccuracy).read())
+		model = Model(open(FilePaths.fnCharList).read(), decoderType, mustRestore=True)
+		infer(model, FilePaths.fnInfer)
 
 	#testing image
 	else:

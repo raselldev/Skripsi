@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import *
 from tkinter import filedialog, Text
 from tkinter import RIGHT, BOTH, RAISED
 from PIL import ImageTk, Image
@@ -9,6 +10,7 @@ import os
 
 root = tk.Tk()
 apps = []
+
 decoderType = DecoderType.BestPath
 
 def addFile():
@@ -28,8 +30,13 @@ def addFile():
     return filename
 
 def resetBtn():
-    for widget in frame.winfo_children():
-        widget.destroy()
+    #for widget in frame.winfo_children():
+    #    widget.destroy()
+    #frame.destroy()
+    #frame = tk.Frame(root, bg="white")
+    #frame.place(relwidth=0.8, relheight=0.8, relx=0.1, rely=0.1)
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
 
 def runDetect():
     filename = filedialog.askopenfilename(initialdir="/", title="Select File", filetypes=(("images", "*.png"), ("all files", "*.*")))
@@ -71,5 +78,4 @@ resetBtn.pack(side=RIGHT, padx=5, pady=5)
 root.mainloop() 
 
 if __name__ == '__main__':
-    root.destroy()
     root = tk.Tk()
