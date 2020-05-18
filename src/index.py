@@ -13,6 +13,7 @@ apps = []
 
 decoderType = DecoderType.BestPath
 
+
 def addFile():
     filename = filedialog.askopenfilename(initialdir="/", title="Select File", filetypes=(("images", "*.png"), ("all files", "*.*")))
 
@@ -39,6 +40,9 @@ def resetBtn():
     os.execl(python, python, * sys.argv)
 
 def runDetect():
+    for widget in frame.winfo_children():
+        widget.destroy()
+        
     filename = filedialog.askopenfilename(initialdir="/", title="Select File", filetypes=(("images", "*.png"), ("all files", "*.*")))
 
     apps.append(filename)
@@ -56,6 +60,7 @@ def runDetect():
     print(open(FilePaths.fnAccuracy).read())
     model = Model(open(FilePaths.fnCharList).read(), decoderType, mustRestore=True)
     infer(model, filename)
+
 
     #recog = tk.Label(frame, text=recognized[0], bg="gray").pack()
 
