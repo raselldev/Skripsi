@@ -2672,24 +2672,9 @@ class name_scope(object):
         raise
 
   def __exit__(self, type_arg, value_arg, traceback_arg):
-    if self._in_eager_mode:
-      self._ctx.scope_name = self._old_name
-    else:
-      self._name_scope.__exit__(type_arg, value_arg, traceback_arg)
-      self._g_manager.__exit__(type_arg, value_arg, traceback_arg)
+    self._name_scope.__exit__(type_arg, value_arg, traceback_arg)
+    self._g_manager.__exit__(type_arg, value_arg, traceback_arg)
     return False
 
-_proto_function_registry = Registry("proto functions")
-
-def register_proto_function(collection_name,
-                            proto_type=None,
-                            to_proto=None,
-                            from_proto=None):
-  if to_proto and not callable(to_proto):
-    raise TypeError("to_proto must be callable.")
-  if from_proto and not callable(from_proto):
-    raise TypeError("from_proto must be callable.")
-
-  _proto_function_registry.register((proto_type, to_proto, from_proto),
-                                    collection_name)
+#_proto_function_registry = Registry("proto functions")
 

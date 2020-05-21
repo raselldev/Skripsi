@@ -28,7 +28,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
 
 
 
-
 _ATTRVALUE_LISTVALUE = _descriptor.Descriptor(
   name='ListValue',
   full_name='tensorflow.AttrValue.ListValue',
@@ -205,129 +204,7 @@ _ATTRVALUE = _descriptor.Descriptor(
 )
 
 
-_NAMEATTRLIST_ATTRENTRY = _descriptor.Descriptor(
-  name='AttrEntry',
-  full_name='tensorflow.NameAttrList.AttrEntry',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='tensorflow.NameAttrList.AttrEntry.key', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='tensorflow.NameAttrList.AttrEntry.value', index=1,
-      number=2, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=_b('8\001'),
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=817,
-  serialized_end=883,
-)
-
-_NAMEATTRLIST = _descriptor.Descriptor(
-  name='NameAttrList',
-  full_name='tensorflow.NameAttrList',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='name', full_name='tensorflow.NameAttrList.name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='attr', full_name='tensorflow.NameAttrList.attr', index=1,
-      number=2, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[_NAMEATTRLIST_ATTRENTRY, ],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=737,
-  serialized_end=883,
-)
-
-_ATTRVALUE_LISTVALUE.fields_by_name['type'].enum_type = tensorflow_dot_core_dot_framework_dot_types__pb2._DATATYPE
-_ATTRVALUE_LISTVALUE.fields_by_name['shape'].message_type = tensorflow_dot_core_dot_framework_dot_tensor__shape__pb2._TENSORSHAPEPROTO
-_ATTRVALUE_LISTVALUE.fields_by_name['tensor'].message_type = tensorflow_dot_core_dot_framework_dot_tensor__pb2._TENSORPROTO
-_ATTRVALUE_LISTVALUE.fields_by_name['func'].message_type = _NAMEATTRLIST
-_ATTRVALUE_LISTVALUE.containing_type = _ATTRVALUE
-_ATTRVALUE.fields_by_name['type'].enum_type = tensorflow_dot_core_dot_framework_dot_types__pb2._DATATYPE
-_ATTRVALUE.fields_by_name['shape'].message_type = tensorflow_dot_core_dot_framework_dot_tensor__shape__pb2._TENSORSHAPEPROTO
-_ATTRVALUE.fields_by_name['tensor'].message_type = tensorflow_dot_core_dot_framework_dot_tensor__pb2._TENSORPROTO
-_ATTRVALUE.fields_by_name['list'].message_type = _ATTRVALUE_LISTVALUE
-_ATTRVALUE.fields_by_name['func'].message_type = _NAMEATTRLIST
-_ATTRVALUE.oneofs_by_name['value'].fields.append(
-  _ATTRVALUE.fields_by_name['s'])
-_ATTRVALUE.fields_by_name['s'].containing_oneof = _ATTRVALUE.oneofs_by_name['value']
-_ATTRVALUE.oneofs_by_name['value'].fields.append(
-  _ATTRVALUE.fields_by_name['i'])
-_ATTRVALUE.fields_by_name['i'].containing_oneof = _ATTRVALUE.oneofs_by_name['value']
-_ATTRVALUE.oneofs_by_name['value'].fields.append(
-  _ATTRVALUE.fields_by_name['f'])
-_ATTRVALUE.fields_by_name['f'].containing_oneof = _ATTRVALUE.oneofs_by_name['value']
-_ATTRVALUE.oneofs_by_name['value'].fields.append(
-  _ATTRVALUE.fields_by_name['b'])
-_ATTRVALUE.fields_by_name['b'].containing_oneof = _ATTRVALUE.oneofs_by_name['value']
-_ATTRVALUE.oneofs_by_name['value'].fields.append(
-  _ATTRVALUE.fields_by_name['type'])
-_ATTRVALUE.fields_by_name['type'].containing_oneof = _ATTRVALUE.oneofs_by_name['value']
-_ATTRVALUE.oneofs_by_name['value'].fields.append(
-  _ATTRVALUE.fields_by_name['shape'])
-_ATTRVALUE.fields_by_name['shape'].containing_oneof = _ATTRVALUE.oneofs_by_name['value']
-_ATTRVALUE.oneofs_by_name['value'].fields.append(
-  _ATTRVALUE.fields_by_name['tensor'])
-_ATTRVALUE.fields_by_name['tensor'].containing_oneof = _ATTRVALUE.oneofs_by_name['value']
-_ATTRVALUE.oneofs_by_name['value'].fields.append(
-  _ATTRVALUE.fields_by_name['list'])
-_ATTRVALUE.fields_by_name['list'].containing_oneof = _ATTRVALUE.oneofs_by_name['value']
-_ATTRVALUE.oneofs_by_name['value'].fields.append(
-  _ATTRVALUE.fields_by_name['func'])
-_ATTRVALUE.fields_by_name['func'].containing_oneof = _ATTRVALUE.oneofs_by_name['value']
-_ATTRVALUE.oneofs_by_name['value'].fields.append(
-  _ATTRVALUE.fields_by_name['placeholder'])
-_ATTRVALUE.fields_by_name['placeholder'].containing_oneof = _ATTRVALUE.oneofs_by_name['value']
-_NAMEATTRLIST_ATTRENTRY.fields_by_name['value'].message_type = _ATTRVALUE
-_NAMEATTRLIST_ATTRENTRY.containing_type = _NAMEATTRLIST
-_NAMEATTRLIST.fields_by_name['attr'].message_type = _NAMEATTRLIST_ATTRENTRY
-DESCRIPTOR.message_types_by_name['AttrValue'] = _ATTRVALUE
-DESCRIPTOR.message_types_by_name['NameAttrList'] = _NAMEATTRLIST
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
-
 AttrValue = _reflection.GeneratedProtocolMessageType('AttrValue', (_message.Message,), dict(
-
   ListValue = _reflection.GeneratedProtocolMessageType('ListValue', (_message.Message,), dict(
     DESCRIPTOR = _ATTRVALUE_LISTVALUE,
     __module__ = 'tensorflow.core.framework.attr_value_pb2'
@@ -335,32 +212,7 @@ AttrValue = _reflection.GeneratedProtocolMessageType('AttrValue', (_message.Mess
     ))
   ,
   DESCRIPTOR = _ATTRVALUE,
-  __module__ = 'tensorflow.core.framework.attr_value_pb2'
+  #__module__ = 'tensorflow.core.framework.attr_value_pb2'
   # @@protoc_insertion_point(class_scope:tensorflow.AttrValue)
   ))
-_sym_db.RegisterMessage(AttrValue)
-_sym_db.RegisterMessage(AttrValue.ListValue)
 
-NameAttrList = _reflection.GeneratedProtocolMessageType('NameAttrList', (_message.Message,), dict(
-
-  AttrEntry = _reflection.GeneratedProtocolMessageType('AttrEntry', (_message.Message,), dict(
-    DESCRIPTOR = _NAMEATTRLIST_ATTRENTRY,
-    __module__ = 'tensorflow.core.framework.attr_value_pb2'
-    # @@protoc_insertion_point(class_scope:tensorflow.NameAttrList.AttrEntry)
-    ))
-  ,
-  DESCRIPTOR = _NAMEATTRLIST,
-  __module__ = 'tensorflow.core.framework.attr_value_pb2'
-  # @@protoc_insertion_point(class_scope:tensorflow.NameAttrList)
-  ))
-_sym_db.RegisterMessage(NameAttrList)
-_sym_db.RegisterMessage(NameAttrList.AttrEntry)
-
-
-DESCRIPTOR._options = None
-_ATTRVALUE_LISTVALUE.fields_by_name['i']._options = None
-_ATTRVALUE_LISTVALUE.fields_by_name['f']._options = None
-_ATTRVALUE_LISTVALUE.fields_by_name['b']._options = None
-_ATTRVALUE_LISTVALUE.fields_by_name['type']._options = None
-_NAMEATTRLIST_ATTRENTRY._options = None
-# @@protoc_insertion_point(module_scope)

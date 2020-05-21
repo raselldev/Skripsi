@@ -394,5 +394,3 @@ OpList = _reflection.GeneratedProtocolMessageType('OpList', (_message.Message,),
 _sym_db.RegisterMessage(OpList)
 
 
-DESCRIPTOR._options = None
-# @@protoc_insertion_point(module_scope)

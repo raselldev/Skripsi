@@ -1042,7 +1042,7 @@ def _ReductionDims(x, axis, reduction_indices):
       return constant_op.constant(np.arange(rank), dtype=dtypes.int32)
 
     # Otherwise, we rely on Range and Rank to do the right thing at run-time.
-    return range(0, array_ops.rank(x))
+    #return range(0, array_ops.rank(x))
 
 def _may_reduce_to_scalar(keepdims, axis, reduction_indices, output):
   """Set a reduction's output shape to be a scalar if we are certain."""

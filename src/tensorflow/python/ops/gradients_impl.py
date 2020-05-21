@@ -210,8 +210,7 @@ def _IsPartitionedCall(op):
 
 
 def _IsFunction(graph):
-  return (isinstance(graph, _function.FuncGraph) or
-          isinstance(graph, constant_op._FuncGraph))  # pylint: disable=protected-access
+  return (isinstance(graph, _function.FuncGraph))  # pylint: disable=protected-access
 
 
 def _NonEagerInputs(op, xs):
