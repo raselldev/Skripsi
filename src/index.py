@@ -10,7 +10,8 @@ import os
 
 root = tk.Tk()
 apps = []
-
+showDetect = []
+showDetect1 = []
 decoderType = DecoderType.BestPath
 
 
@@ -39,11 +40,27 @@ def resetBtn():
     python = sys.executable
     os.execl(python, python, * sys.argv)
 
+def infer(model, fnImg):
+    img = preprocess(cv2.imread(fnImg, cv2.IMREAD_GRAYSCALE), Model.imgSize)
+    batch = Batch(None, [img])
+    (recognized, probability) = model.inferBatch(batch, True)
+
+    showDetect.append(recognized)
+    for showdetect in showDetect:
+        showD = tk.Label(frame, text=recognized, bg="gray").pack()
+    
+    showDetect1.append(probability)
+    for showdetect1 in showDetect1:
+        showD = tk.Label(frame, text=probability, bg="gray").pack()
+
+
+
+
 def runDetect():
     for widget in frame.winfo_children():
         widget.destroy()
         
-    filename = filedialog.askopenfilename(initialdir="/", title="Select File", filetypes=(("images", "*.png"), ("all files", "*.*")))
+    filename = filedialog.askopenfilename(initialdir="/", title="Select File", filetypes=(("images", "*.jpg"), ("all files", "*.*")))
 
     apps.append(filename)
     print(filename)
@@ -60,8 +77,6 @@ def runDetect():
     print(open(FilePaths.fnAccuracy).read())
     model = Model(open(FilePaths.fnCharList).read(), decoderType, mustRestore=True)
     infer(model, filename)
-
-
     #recog = tk.Label(frame, text=recognized[0], bg="gray").pack()
 
 canvas = tk.Canvas(root, height=500, width=500, bg="#263D42")
