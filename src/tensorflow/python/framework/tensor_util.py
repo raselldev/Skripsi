@@ -19,7 +19,7 @@ from __future__ import print_function
 
 import numpy as np
 import six
-
+from tensorflow.python import pywrap_tensorflow_internal as c_api
 from tensorflow.core.framework import tensor_pb2
 from tensorflow.core.framework import tensor_shape_pb2
 from tensorflow.python.framework import ops
@@ -752,7 +752,7 @@ def _ConstantValue(tensor, partial):
     return None
 
 def constant_value(tensor, partial=False):  # pylint: disable=invalid-name
-  if isinstance(tensor, ops.EagerTensor):
+  if isinstance(tensor, EagerTensor):
     return tensor.numpy()
   ret = _ConstantValue(tensor, partial)
   if ret is not None:
@@ -762,3 +762,5 @@ def constant_value(tensor, partial=False):  # pylint: disable=invalid-name
   return ret
 
 
+
+EagerTensor = c_api.TFE_Py_InitEagerTensor(ops.Tensor)

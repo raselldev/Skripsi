@@ -45,7 +45,6 @@ _MUTATION_LOCK_GROUP = 0
 _SESSION_RUN_LOCK_GROUP = 1
 
 
-
 class _UserDeviceSpec(object):
   def __init__(self, device_name_or_function):
     self._device_name_or_function = device_name_or_function
@@ -104,24 +103,11 @@ class Tensor():
   }
 
   def __init__(self, op, value_index, dtype):
-    if not isinstance(op, Operation):
-      raise TypeError("op needs to be an Operation: %s" % op)
     self._op = op
     self._value_index = value_index
     self._dtype = dtypes.as_dtype(dtype)
-
-    # This will be set by self.shape().
     self._shape_val = None
-
-    # List of operations that use this Tensor as input.  We maintain this list
-    # to easily navigate a computation graph.
     self._consumers = []
-
-    if not _USE_C_SHAPES:
-      # Attributes used for C++ shape inference. Not inspected, only forwarded.
-      # If set, will be a HandleData object from cpp_shape_inference.proto.
-      self._handle_data = None
-
     self._id = uid()
 
   @property
@@ -2390,15 +2376,7 @@ def _name_from_scope_name(name):
   return name[:-1] if (name and name[-1] == "/") else name
 
 def device(device_name_or_function):
-  if context.executing_eagerly():
-    # TODO(agarwal): support device functions in EAGER mode.
-    if callable(device_name_or_function):
-      raise RuntimeError(
-          "tf.device does not support functions when eager execution "
-          "is enabled.")
-    return context.device(device_name_or_function)
-  else:
-    return get_default_graph().device(device_name_or_function)
+  return get_default_graph().device(device_name_or_function)
 
 def _colocate_with_for_gradient(op, gradient_uid, ignore_existing=False):
   if context.executing_eagerly():

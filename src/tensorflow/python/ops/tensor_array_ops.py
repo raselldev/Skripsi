@@ -150,11 +150,8 @@ class _GraphTensorArray(object):
               clear_after_read=clear_after_read,
               tensor_array_name=tensor_array_name,
               name=scope)
-        if colocate_with_first_write_call:
-          with ops.device(None), ops.colocate_with(None, ignore_existing=True):
-            self._handle, self._flow = create()
-        else:
-          self._handle, self._flow = create()
+        self._handle, self._flow = create()
+        
 
   @property
   def flow(self):
