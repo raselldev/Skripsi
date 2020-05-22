@@ -388,34 +388,6 @@ class OpDefLibrary(object):
 
       output_types = []
       output_structure = []
-      for arg in op_def.output_arg:
-        types = []
-        if arg.number_attr:
-          n = _AttrValue(attr_protos, arg.number_attr).i
-          if arg.type_attr:
-            types = [_AttrValue(attr_protos, arg.type_attr).type] * n
-          else:
-            types = [arg.type] * n
-          output_structure.append(n)
-        elif arg.type_attr:
-          t = _AttrValue(attr_protos, arg.type_attr)
-          types = [t.type]
-          output_structure.append(None)
-        elif arg.type_list_attr:
-          t = _AttrValue(attr_protos, arg.type_list_attr)
-          types = t.list.type
-          output_structure.append(len(types))
-        else:
-          types = [arg.type]
-          output_structure.append(None)
-        if arg.is_ref:
-          types = [dtypes.as_dtype(x)._as_ref for x in types]
-        output_types.extend(types)
-
-      if keywords:
-        raise TypeError("apply_op() got unexpected keyword arguments: " +
-                        ", ".join(sorted(keywords.keys())))
-
       must_colocate_inputs = [val for arg, val in zip(op_def.input_arg, inputs)
                               if arg.is_ref]
       with _MaybeColocateWith(must_colocate_inputs):

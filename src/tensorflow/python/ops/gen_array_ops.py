@@ -3,7 +3,7 @@ import six as _six
 
 from tensorflow.python.framework import dtypes
 from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
-from tensorflow.python.framework import op_def_registry as _op_def_registry
+#from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python import context as _context
 from tensorflow.python.framework import tensor_shape
@@ -419,7 +419,7 @@ def split(axis, value, num_split, name=None):
 def _InitOpDefLibrary(op_list_proto_bytes):
   op_list = _op_def_pb2.OpList()
   op_list.ParseFromString(op_list_proto_bytes)
-  _op_def_registry.register_op_list(op_list)
+  #_op_def_registry.register_op_list(op_list)
   op_def_lib = _op_def_library.OpDefLibrary()
   op_def_lib.add_op_list(op_list)
   return op_def_lib
