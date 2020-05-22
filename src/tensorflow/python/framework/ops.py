@@ -38,28 +38,16 @@ from tensorflow.python.util.tf_export import tf_export
 
 _USE_C_API = True
 _USE_C_SHAPES = True
-
+_TENSOR_LIKE_TYPES = tuple()
+_VALID_OP_NAME_REGEX = re.compile("^[A-Za-z0-9.][A-Za-z0-9_.\\-/]*$")
+_VALID_SCOPE_NAME_REGEX = re.compile("^[A-Za-z0-9_.\\-/]*$")
+_MUTATION_LOCK_GROUP = 0
+_SESSION_RUN_LOCK_GROUP = 1
 
 
 class ScopedTFGraph(object):
   def __init__(self):
     self.graph = c_api.TF_NewGraph()
-
-
-
-@tf_contextlib.contextmanager
-def tf_buffer(data=None):
-  if data:
-    buf = c_api.TF_NewBufferFromString(compat.as_bytes(data))
-  else:
-    buf = c_api.TF_NewBuffer()
-  try:
-    yield buf
-  finally:
-    c_api.TF_DeleteBuffer(buf)
-
-
-
 
 class Registry(object):
   def __init__(self, name):
@@ -75,22 +63,6 @@ class Registry(object):
       raise KeyError("Registering two %s with name '%s' !"
                      "(Previous registration was in %s %s:%d)" %
                      (self._name, name, function_name, filename, line_number))
-
-
-def tf_output(c_op, index):
-  ret = c_api.TF_Output()
-  ret.oper = c_op
-  ret.index = index
-  return ret
-
-@contextlib.contextmanager
-def stop_recording():
-  try:
-    c_api.TFE_Py_TapeSetStopOnThread()
-    yield
-  finally:
-    c_api.TFE_Py_TapeSetRestartOnThread()
-
 
 class _UserDeviceSpec(object):
   def __init__(self, device_name_or_function):
@@ -110,47 +82,8 @@ class _UserDeviceSpec(object):
       self.display_name = "%s<%s, %d>" % (func_name, fname, lineno)
 
     self.function = self._device_name_or_function
-    
 
-def _override_helper(clazz_object, operator, func):
-  existing = getattr(clazz_object, operator, None)
-  if operator not in Tensor.OVERLOADABLE_OPERATORS:
-    raise ValueError("Overriding %s is disallowed" % operator)
-  setattr(clazz_object, operator, func)
-
-def _as_graph_element(obj):
-  conv_fn = getattr(obj, "_as_graph_element", None)
-
-_TENSOR_LIKE_TYPES = tuple()
-
-
-def register_dense_tensor_like_type(tensor_type):
-  try:
-    if not isinstance(tensor_type.name, property):
-      raise TypeError("Type %s does not define a `name` property" %
-                      tensor_type.__name__)
-  except AttributeError:
-    raise TypeError("Type %s does not define a `name` property" %
-                    tensor_type.__name__)
-  try:
-    if not isinstance(tensor_type.dtype, property):
-      raise TypeError("Type %s does not define a `dtype` property" %
-                      tensor_type.__name__)
-  except AttributeError:
-    raise TypeError("Type %s does not define a `dtype` property" %
-                    tensor_type.__name__)
-  # We expect this list to be small, so choose quadratic complexity
-  # for registration, so that we have a tuple that can be used for
-  # more efficient `isinstance` checks later.
-  global _TENSOR_LIKE_TYPES
-  _TENSOR_LIKE_TYPES = tuple(list(_TENSOR_LIKE_TYPES) + [tensor_type])
-
-
-
-class _TensorLike(object):
-  pass
-
-class Tensor(_TensorLike):
+class Tensor():
   OVERLOADABLE_OPERATORS = {
       # Binary.
       "__add__",
@@ -374,207 +307,7 @@ class Tensor(_TensorLike):
   def _override_operator(operator, func):
     _override_helper(Tensor, operator, func)
   
-class _EagerTensorBase(Tensor):
- """"""
-  
-EagerTensor = c_api.TFE_Py_InitEagerTensor(_EagerTensorBase)
-
-
-def _TensorTensorConversionFunction(t, dtype=None, name=None, as_ref=False):
-  _ = name, as_ref
-  if dtype and not dtype.is_compatible_with(t.dtype):
-    raise ValueError(
-        "Tensor conversion requested dtype %s for Tensor with dtype %s: %r" %
-        (dtype.name, t.dtype.name, str(t)))
-  return t
-
-
-_tensor_conversion_func_registry = {
-    0: [(Tensor, _TensorTensorConversionFunction)]
-}
-_tensor_conversion_func_cache = {}
-_tensor_conversion_func_lock = threading.Lock()
-register_dense_tensor_like_type(Tensor)
-
-
-@tf_export("convert_to_tensor")
-def convert_to_tensor(value, dtype=None, name=None, preferred_dtype=None):
-    return internal_convert_to_tensor(
-      value=value,
-      dtype=dtype,
-      name=name,
-      preferred_dtype=preferred_dtype,
-      as_ref=False)
-
-
-def internal_convert_to_tensor(value,
-                               dtype=None,
-                               name=None,
-                               as_ref=False,
-                               preferred_dtype=None,
-                               ctx=None):
-  
-  if ctx is None: ctx = context.context()
-  
-  if dtype is not None:
-    dtype = dtypes.as_dtype(dtype)
-  unwrapped_type = type(value)
-  conversion_func_list = _tensor_conversion_func_cache.get(unwrapped_type, None)
-  if conversion_func_list is None:
-    with _tensor_conversion_func_lock:
-      conversion_func_list = []
-      for _, funcs_at_priority in sorted(
-          _tensor_conversion_func_registry.items()):
-        for base_type, conversion_func in funcs_at_priority:
-          if isinstance(value, base_type):
-            conversion_func_list.append((base_type, conversion_func))
-      _tensor_conversion_func_cache[unwrapped_type] = conversion_func_list
-
-  for base_type, conversion_func in conversion_func_list:
-    # If dtype is None but preferred_dtype is not None, we try to
-    # cast to preferred_dtype first.
-    ret = None
-    if dtype is None and preferred_dtype is not None:
-      try:
-        ret = conversion_func(
-            value, dtype=preferred_dtype, name=name, as_ref=as_ref)
-      except (TypeError, ValueError, errors.UnimplementedError,
-              errors.InvalidArgumentError):
-        # Could not coerce the conversion to use the preferred dtype.
-        ret = None
-
-      if ret is not None and ret is not NotImplemented:
-        if (ret.dtype.base_dtype !=
-            dtypes.as_dtype(preferred_dtype).base_dtype):
-          raise TypeError("convert_to_tensor did not convert to "
-                          "the preferred dtype: %s vs %s " %
-                          (ret.dtype.base_dtype,
-                           dtypes.as_dtype(preferred_dtype).base_dtype))
-
-    if ret is None:
-      ret = conversion_func(value, dtype=dtype, name=name, as_ref=as_ref)
-
-    if ret is NotImplemented:
-      continue
-
-    if not isinstance(ret, Tensor):
-      raise RuntimeError(" ")
-    return ret
-
-  
-
-
-def internal_convert_n_to_tensor(values,
-                                 dtype=None,
-                                 name=None,
-                                 as_ref=False,
-                                 preferred_dtype=None,
-                                 ctx=None):
-  if not isinstance(values, collections.Sequence):
-    raise TypeError("values must be a list.")
-  ret = []
-  if ctx is None: ctx = context.context()
-  for i, value in enumerate(values):
-    n = None if name is None else "%s_%d" % (name, i)
-    ret.append(
-        internal_convert_to_tensor(
-            value,
-            dtype=dtype,
-            name=n,
-            as_ref=as_ref,
-            preferred_dtype=preferred_dtype,
-            ctx=ctx))
-  return ret
-
-
-def convert_n_to_tensor(values, dtype=None, name=None, preferred_dtype=None):
-  return internal_convert_n_to_tensor(
-      values=values,
-      dtype=dtype,
-      name=name,
-      preferred_dtype=preferred_dtype,
-      as_ref=False)
-
-
-@tf_export("convert_to_tensor_or_indexed_slices")
-def convert_to_tensor_or_indexed_slices(value, dtype=None, name=None):
-  return internal_convert_to_tensor_or_indexed_slices(
-      value=value, dtype=dtype, name=name, as_ref=False)
-
-
-def internal_convert_to_tensor_or_indexed_slices(value,
-                                                 dtype=None,
-                                                 name=None,
-                                                 as_ref=False):
-  if isinstance(value, _TensorLike):
-    if dtype and not dtypes.as_dtype(dtype).is_compatible_with(value.dtype):
-      raise ValueError(
-          "Tensor conversion requested dtype %s for Tensor with dtype %s: %r" %
-          (dtypes.as_dtype(dtype).name, value.dtype.name, str(value)))
-    return value
-  else:
-    return internal_convert_to_tensor(
-        value, dtype=dtype, name=name, as_ref=as_ref)
-
-
-def internal_convert_n_to_tensor_or_indexed_slices(values,
-                                                   dtype=None,
-                                                   name=None,
-                                                   as_ref=False):
-  if not isinstance(values, collections.Sequence):
-    raise TypeError("values must be a list.")
-  ret = []
-  for i, value in enumerate(values):
-    if value is None:
-      ret.append(value)
-    else:
-      n = None if name is None else "%s_%d" % (name, i)
-      ret.append(
-          internal_convert_to_tensor_or_indexed_slices(
-              value, dtype=dtype, name=n, as_ref=as_ref))
-  return ret
-
-
-def convert_n_to_tensor_or_indexed_slices(values, dtype=None, name=None):
-  return internal_convert_n_to_tensor_or_indexed_slices(
-      values=values, dtype=dtype, name=name, as_ref=False)
-
-
-
-def register_tensor_conversion_function(base_type,
-                                        conversion_func,
-                                        priority=100):
-  global _tensor_conversion_func_cache
-  with _tensor_conversion_func_lock:
-    if not (isinstance(base_type, type) or
-            (isinstance(base_type, tuple) and
-             all(isinstance(x, type) for x in base_type))):
-      raise TypeError("base_type must be a type or a tuple of types.")
-    if not callable(conversion_func):
-      raise TypeError("conversion_func must be callable.")
-
-    if context._context is not None and context.executing_eagerly(
-    ) and isinstance(base_type, six.integer_types + (
-        float,
-        np.ndarray,
-    )):
-      # TODO(nareshmodi): consider setting a context variable which disables the
-      # fastpath instead.
-      raise TypeError(
-          "Cannot register conversions for numpy arrays, python number types "
-          "when executing eagerly.")
-
-    try:
-      funcs_at_priority = _tensor_conversion_func_registry[priority]
-    except KeyError:
-      funcs_at_priority = []
-      _tensor_conversion_func_registry[priority] = funcs_at_priority
-    funcs_at_priority.append((base_type, conversion_func))
-    _tensor_conversion_func_cache = {}
-
-
-@tf_export("IndexedSlices")
-class IndexedSlices(_TensorLike):
+class IndexedSlices():
 
   def __init__(self, values, indices, dense_shape=None):
     _get_graph_from_inputs([values, indices, dense_shape])
@@ -622,71 +355,6 @@ class IndexedSlices(_TensorLike):
   def __neg__(self):
     return IndexedSlices(-self.values, self.indices, self.dense_shape)
 
-
-IndexedSlicesValue = collections.namedtuple(
-    "IndexedSlicesValue", ["values", "indices", "dense_shape"])
-
-
-def _device_string(dev_spec):
-  if isinstance(dev_spec, pydev.DeviceSpec):
-    return dev_spec.to_string()
-  else:
-    return dev_spec
-
-
-def _NodeDef(op_type, name, device=None, attrs=None):  
-  node_def = node_def_pb2.NodeDef()
-  node_def.op = compat.as_bytes(op_type)
-  node_def.name = compat.as_bytes(name)
-  if attrs is not None:
-    for k, v in six.iteritems(attrs):
-      node_def.attr[k].CopyFrom(v)
-  if device is not None:
-    if callable(device):
-      node_def.device = device(node_def)
-    else:
-      node_def.device = _device_string(device)
-  return node_def
-
-
-_VALID_OP_NAME_REGEX = re.compile("^[A-Za-z0-9.][A-Za-z0-9_.\\-/]*$")
-_VALID_SCOPE_NAME_REGEX = re.compile("^[A-Za-z0-9_.\\-/]*$")
-
-
-def _create_c_op(graph, node_def, inputs, control_inputs):
-
-  op_desc = c_api.TF_NewOperation(graph._c_graph,
-                                  compat.as_str(node_def.op),
-                                  compat.as_str(node_def.name))
-  # Add inputs
-  for op_input in inputs:
-    if isinstance(op_input, (list, tuple)):
-      c_api.TF_AddInputList(op_desc, [t._as_tf_output() for t in op_input])
-    else:
-      c_api.TF_AddInput(op_desc, op_input._as_tf_output())
-
-  # Add control inputs
-  for control_input in control_inputs:
-    c_api.TF_AddControlInput(op_desc, control_input._c_op)
-  
-
-  # Add attrs
-  for name, attr_value in node_def.attr.items():
-    serialized = attr_value.SerializeToString()
-    # TODO(skyewm): this creates and deletes a new TF_Status for every attr.
-    # It might be worth creating a convenient way to re-use the same status.
-    c_api.TF_SetAttrValueProto(op_desc, compat.as_str(name), serialized)
-
-  try:
-    c_op = c_api.TF_FinishOperation(op_desc)
-  except errors.InvalidArgumentError as e:
-    # Convert to ValueError for backwards compatibility.
-    raise ValueError(str(e))
-
-  return c_op
-
-
-@tf_export("Operation")
 class Operation(object):
 
   def __init__(self,
@@ -1114,13 +782,7 @@ class Operation(object):
             return getattr(x, f)
       assert False, "Unsupported field type in " + str(x)
 
-  
-_gradient_registry = Registry("gradient")
-
-
-@tf_export("RegisterGradient")
 class RegisterGradient(object):
-
   def __init__(self, op_type):
     if not isinstance(op_type, six.string_types):
       raise TypeError("op_type must be a string")
@@ -1129,50 +791,6 @@ class RegisterGradient(object):
   def __call__(self, f):
     _gradient_registry.register(f, self._op_type)
     return f
-
-
-@tf_export("NoGradient", "NotDifferentiable")
-def NotDifferentiable(op_type):
-  if not isinstance(op_type, six.string_types):
-    raise TypeError("op_type must be a string")
-  _gradient_registry.register(None, op_type)
-
-
-NoGradient = NotDifferentiable
-
-
-def get_gradient_function(op):
-  if not op.inputs:
-    return None
-  try:
-    op_type = op.get_attr("_gradient_op_type")
-  except ValueError:
-    op_type = op.type
-  return _gradient_registry.lookup(op_type)
-
-
-_shape_registry = Registry("shape functions")
-_default_shape_function_registry = Registry("default shape functions")
-
-_call_cpp_shape_fn = None
-_call_cpp_shape_fn_and_require_op = None
-
-
-def _set_call_cpp_shape_fn(call_cpp_shape_fn):
-  global _call_cpp_shape_fn, _call_cpp_shape_fn_and_require_op
-  if _call_cpp_shape_fn:
-    return
-
-  def call_without_requiring(op):
-    return call_cpp_shape_fn(op, require_shape_fn=False)
-
-  _call_cpp_shape_fn = call_without_requiring
-
-  def call_with_requiring(op):
-    return call_cpp_shape_fn(op, require_shape_fn=True)
-
-  _call_cpp_shape_fn_and_require_op = call_with_requiring
-
 
 class RegisterShape(object):
   def __init__(self, op_type):
@@ -1192,62 +810,6 @@ class RegisterShape(object):
       _shape_registry.register(f, self._op_type)
     return f
 
-
-def _set_shape_and_handle_data_for_outputs_c_api(op):
-  assert not _USE_C_SHAPES
-  for output in op.outputs:
-    output._shape_val = output._c_api_shape()
-    serialized = c_api.GetHandleShapeAndType(op._graph._c_graph,
-                                             output._as_tf_output())
-    if serialized:
-      output._handle_data = (
-          cpp_shape_inference_pb2.CppShapeInferenceResult.HandleData
-          .FromString(compat.as_bytes(serialized)))
-    else:
-      output._handle_data = None
-
-def set_shape_and_handle_data_for_outputs(op):
-  if _USE_C_SHAPES: return
-
-  if op.graph._is_function(op.type):
-    for output in op.outputs:
-      output._shape_val = tensor_shape.unknown_shape()
-    return
-
-  try:
-    shape_func = _shape_registry.lookup(op.type)
-  except LookupError:
-    try:
-      shape_func = _default_shape_function_registry.lookup(op.type)
-    except LookupError:
-      shape_func = _call_cpp_shape_fn_and_require_op
-
-  shapes = shape_func(op)
-  if shapes is None:
-    raise RuntimeError(
-        "Shape function for op %s did not return any shapes" % op)
-  elif isinstance(shapes, dict):
-    shapes_dict = shapes
-    shapes = shapes_dict["shapes"]
-    handle_datas = shapes_dict["handle_data"]
-    for output, handle_data in zip(op.outputs, handle_datas):
-      if output._handle_data is None:
-        output._handle_data = handle_data
-      
-
-  if len(op.outputs) != len(shapes):
-    raise RuntimeError(
-        "Shape function for op %s returned %d shapes but expected %d %s %s" %
-        (op, len(shapes), len(op.outputs), shape_func.__name__, str(shapes)))
-  for output, s in zip(op.outputs, shapes):
-    output._shape_val = tensor_shape.unknown_shape()
-    output._shape_val = output._shape_val.merge_with(s)
-
-
-
-_stats_registry = Registry("statistical functions")
-
-
 class RegisterStatistics(object):
   def __init__(self, op_type, statistic_type):
     if not isinstance(op_type, six.string_types):
@@ -1265,26 +827,7 @@ class RegisterStatistics(object):
     _stats_registry.register(f, self._op_type + "," + self._statistic_type)
     return f
 
-
-def get_stats_for_node_def(graph, node, statistic_type):
-  try:
-    stats_func = _stats_registry.lookup(node.op + "," + statistic_type)
-    result = stats_func(graph, node)
-  except LookupError:
-    result = OpStats(statistic_type)
-  return result
-
-
-def _name_from_scope_name(name):
-  return name[:-1] if (name and name[-1] == "/") else name
-
-
-_MUTATION_LOCK_GROUP = 0
-_SESSION_RUN_LOCK_GROUP = 1
-
-@tf_export("Graph")
 class Graph(object):
-
   def __init__(self):
     self._lock = threading.RLock()
     self._group_lock = lock_util.GroupLock(num_groups=2)
@@ -2295,47 +1838,6 @@ class Graph(object):
   def _session_run_lock(self):
     return self._group_lock.group(_SESSION_RUN_LOCK_GROUP)
 
-
-@tf_export("device")
-def device(device_name_or_function):
-  if context.executing_eagerly():
-    # TODO(agarwal): support device functions in EAGER mode.
-    if callable(device_name_or_function):
-      raise RuntimeError(
-          "tf.device does not support functions when eager execution "
-          "is enabled.")
-    return context.device(device_name_or_function)
-  else:
-    return get_default_graph().device(device_name_or_function)
-
-def _colocate_with_for_gradient(op, gradient_uid, ignore_existing=False):
-  if context.executing_eagerly():
-    if op is not None:
-      return device(op.device)
-    else:
-      return _NullContextmanager()
-  else:
-    default_graph = get_default_graph()
-    
-    return default_graph._colocate_with_for_gradient(
-        op, gradient_uid=gradient_uid, ignore_existing=ignore_existing)
-
-@tf_export("colocate_with")
-def colocate_with(op, ignore_existing=False):
-  return _colocate_with_for_gradient(op, None, ignore_existing=ignore_existing)
-
-@tf_export("control_dependencies")
-def control_dependencies(control_inputs):
-  if context.executing_eagerly():
-    if control_inputs:
-      # Excute any pending callables.
-      for control in control_inputs:
-        if callable(control):
-          control()
-    return _NullContextmanager()
-  else:
-    return get_default_graph().control_dependencies(control_inputs)
-
 class _DefaultStack(threading.local):
   def __init__(self):
     super(_DefaultStack, self).__init__()
@@ -2376,28 +1878,6 @@ class _DefaultStack(threading.local):
         else:
           self.stack.remove(default)
 
-_default_session_stack = _DefaultStack()
-
-def _eval_using_default_session(tensors, feed_dict, graph, session=None):
-  if session is None:
-    session = get_default_session()
-    if session is None:
-      raise ValueError("Cannot evaluate tensor using `eval()`: No default "
-                       "session is registered. Use `with "
-                       "sess.as_default()` or pass an explicit session to "
-                       "`eval(session=sess)`")
-    if session.graph is not graph:
-      raise ValueError("Cannot use the default session to evaluate tensor: "
-                       "the tensor's graph is different from the session's "
-                       "graph. Pass an explicit session to "
-                       "`eval(session=sess)`.")
-  else:
-    if session.graph is not graph:
-      raise ValueError("Cannot use the given session to evaluate tensor: "
-                       "the tensor's graph is different from the session's "
-                       "graph.")
-  return session.run(tensors, feed_dict)
-
 class _DefaultGraphStack(_DefaultStack):
 
   def __init__(self):
@@ -2435,93 +1915,6 @@ class _DefaultGraphStack(_DefaultStack):
       # If an exception is raised here it may be hiding a related exception in
       # the try-block (just above).
       context.context().context_switches.pop()
-
-_default_graph_stack = _DefaultGraphStack()
-
-@tf_contextlib.contextmanager
-def init_scope():
-  if context.executing_eagerly():
-    # Fastpath.
-    with stop_recording():
-      yield
-  else:
-    default_graph = get_default_graph()
-    scope = default_graph.get_name_scope()
-    if scope and scope[-1] != "/":
-      scope = scope + "/"
-    inner_device_stack = default_graph._device_function_stack
-
-    outer_context = None
-    if not _default_graph_stack.stack:
-      if default_graph.building_function:
-        raise RuntimeError("The global graph is building a function.")
-      outer_context = default_graph.as_default
-    else:
-      for stack_entry in reversed(context.context().context_switches.stack):
-        if not stack_entry.is_building_function:
-          outer_context = stack_entry.enter_context_fn
-          break
-
-      if outer_context is None:
-        outer_context = _default_graph_stack._GetGlobalDefaultGraph().as_default
-
-    if outer_context is None:
-      raise RuntimeError("All graphs are building functions, and no "
-                         "eager context was previously active.")
-
-    outer_graph = None
-    outer_device_stack = None
-    try:
-      with outer_context(), name_scope(scope), control_dependencies(
-          None), stop_recording():
-        if not context.executing_eagerly():
-          outer_graph = get_default_graph()
-          outer_device_stack = outer_graph._device_function_stack
-          outer_graph._device_function_stack = inner_device_stack
-        yield
-    finally:
-      if outer_graph is not None:
-        outer_graph._device_function_stack = outer_device_stack
-
-def get_default_graph():
-  return _default_graph_stack.get_default()
-
-def get_name_scope():
-  if context.executing_eagerly():
-    return context.context().scope_name.rstrip("/")
-  return get_default_graph().get_name_scope()
-
-def _assert_same_graph(original_item, item):
-  if original_item.graph is not item.graph:
-    raise ValueError("%s must be from the same graph as %s." % (item,
-                                                                original_item))
-
-def _get_graph_from_inputs(op_input_list, graph=None):
-  if get_default_graph().building_function:
-    return get_default_graph()
-
-  op_input_list = tuple(op_input_list)  # Handle generators correctly
-  if graph and not isinstance(graph, Graph):
-    raise TypeError("Input graph needs to be a Graph: %s" % graph)
-
-  original_graph_element = None
-  for op_input in op_input_list:
-    graph_element = None
-    if (isinstance(op_input, (Operation, _TensorLike)) and
-        ((not isinstance(op_input, Tensor)) or type(op_input) == Tensor)):  # pylint: disable=unidiomatic-typecheck
-      graph_element = op_input
-    else:
-      graph_element = _as_graph_element(op_input)
-
-    if graph_element is not None:
-      if not graph:
-        original_graph_element = graph_element
-        graph = graph_element.graph
-      elif original_graph_element is not None:
-        _assert_same_graph(original_graph_element, graph_element)
-      elif graph_element.graph is not graph:
-        raise ValueError("%s is not from the passed-in graph." % graph_element)
-  return graph or get_default_graph()
 
 class GraphKeys(object):
   # Key to collect Variable objects that are global (shared across machines).
@@ -2608,19 +2001,6 @@ class GraphKeys(object):
 
   _STREAMING_MODEL_PORTS = "streaming_model_ports"
 
-def add_to_collection(name, value):
-  get_default_graph().add_to_collection(name, value)
-
-def add_to_collections(names, value):
-  get_default_graph().add_to_collections(names, value)
-
-def get_collection_ref(key):
-  
-  return get_default_graph().get_collection_ref(key)
-
-def get_collection(key, scope=None):
-  return get_default_graph().get_collection(key, scope)
-
 class name_scope(object):
   def name(self):
     return self._name
@@ -2676,5 +2056,534 @@ class name_scope(object):
     self._g_manager.__exit__(type_arg, value_arg, traceback_arg)
     return False
 
-#_proto_function_registry = Registry("proto functions")
+@tf_contextlib.contextmanager
+def tf_buffer(data=None):
+  if data:
+    buf = c_api.TF_NewBufferFromString(compat.as_bytes(data))
+  else:
+    buf = c_api.TF_NewBuffer()
+  try:
+    yield buf
+  finally:
+    c_api.TF_DeleteBuffer(buf)
 
+def tf_output(c_op, index):
+  ret = c_api.TF_Output()
+  ret.oper = c_op
+  ret.index = index
+  return ret
+
+@contextlib.contextmanager
+def stop_recording():
+  try:
+    c_api.TFE_Py_TapeSetStopOnThread()
+    yield
+  finally:
+    c_api.TFE_Py_TapeSetRestartOnThread()
+
+def _override_helper(clazz_object, operator, func):
+  existing = getattr(clazz_object, operator, None)
+  if operator not in Tensor.OVERLOADABLE_OPERATORS:
+    raise ValueError("Overriding %s is disallowed" % operator)
+  setattr(clazz_object, operator, func)
+
+def _as_graph_element(obj):
+  conv_fn = getattr(obj, "_as_graph_element", None)
+
+def register_dense_tensor_like_type(tensor_type):
+  try:
+    if not isinstance(tensor_type.name, property):
+      raise TypeError("Type %s does not define a `name` property" %
+                      tensor_type.__name__)
+  except AttributeError:
+    raise TypeError("Type %s does not define a `name` property" %
+                    tensor_type.__name__)
+  try:
+    if not isinstance(tensor_type.dtype, property):
+      raise TypeError("Type %s does not define a `dtype` property" %
+                      tensor_type.__name__)
+  except AttributeError:
+    raise TypeError("Type %s does not define a `dtype` property" %
+                    tensor_type.__name__)
+  # We expect this list to be small, so choose quadratic complexity
+  # for registration, so that we have a tuple that can be used for
+  # more efficient `isinstance` checks later.
+  global _TENSOR_LIKE_TYPES
+  _TENSOR_LIKE_TYPES = tuple(list(_TENSOR_LIKE_TYPES) + [tensor_type])
+
+def _TensorTensorConversionFunction(t, dtype=None, name=None, as_ref=False):
+  _ = name, as_ref
+  if dtype and not dtype.is_compatible_with(t.dtype):
+    raise ValueError(
+        "Tensor conversion requested dtype %s for Tensor with dtype %s: %r" %
+        (dtype.name, t.dtype.name, str(t)))
+  return t
+
+def convert_to_tensor(value, dtype=None, name=None, preferred_dtype=None):
+    return internal_convert_to_tensor(
+      value=value,
+      dtype=dtype,
+      name=name,
+      preferred_dtype=preferred_dtype,
+      as_ref=False)
+
+def internal_convert_to_tensor(value,
+                               dtype=None,
+                               name=None,
+                               as_ref=False,
+                               preferred_dtype=None,
+                               ctx=None):
+  
+  if ctx is None: ctx = context.context()
+  
+  if dtype is not None:
+    dtype = dtypes.as_dtype(dtype)
+  unwrapped_type = type(value)
+  conversion_func_list = _tensor_conversion_func_cache.get(unwrapped_type, None)
+  if conversion_func_list is None:
+    with _tensor_conversion_func_lock:
+      conversion_func_list = []
+      for _, funcs_at_priority in sorted(
+          _tensor_conversion_func_registry.items()):
+        for base_type, conversion_func in funcs_at_priority:
+          if isinstance(value, base_type):
+            conversion_func_list.append((base_type, conversion_func))
+      _tensor_conversion_func_cache[unwrapped_type] = conversion_func_list
+
+  for base_type, conversion_func in conversion_func_list:
+    # If dtype is None but preferred_dtype is not None, we try to
+    # cast to preferred_dtype first.
+    ret = None
+    if dtype is None and preferred_dtype is not None:
+      try:
+        ret = conversion_func(
+            value, dtype=preferred_dtype, name=name, as_ref=as_ref)
+      except (TypeError, ValueError, errors.UnimplementedError,
+              errors.InvalidArgumentError):
+        # Could not coerce the conversion to use the preferred dtype.
+        ret = None
+
+      if ret is not None and ret is not NotImplemented:
+        if (ret.dtype.base_dtype !=
+            dtypes.as_dtype(preferred_dtype).base_dtype):
+          raise TypeError("convert_to_tensor did not convert to "
+                          "the preferred dtype: %s vs %s " %
+                          (ret.dtype.base_dtype,
+                           dtypes.as_dtype(preferred_dtype).base_dtype))
+
+    if ret is None:
+      ret = conversion_func(value, dtype=dtype, name=name, as_ref=as_ref)
+
+    if ret is NotImplemented:
+      continue
+
+    if not isinstance(ret, Tensor):
+      raise RuntimeError(" ")
+    return ret
+
+def internal_convert_n_to_tensor(values,
+                                 dtype=None,
+                                 name=None,
+                                 as_ref=False,
+                                 preferred_dtype=None,
+                                 ctx=None):
+  if not isinstance(values, collections.Sequence):
+    raise TypeError("values must be a list.")
+  ret = []
+  if ctx is None: ctx = context.context()
+  for i, value in enumerate(values):
+    n = None if name is None else "%s_%d" % (name, i)
+    ret.append(
+        internal_convert_to_tensor(
+            value,
+            dtype=dtype,
+            name=n,
+            as_ref=as_ref,
+            preferred_dtype=preferred_dtype,
+            ctx=ctx))
+  return ret
+
+def convert_n_to_tensor(values, dtype=None, name=None, preferred_dtype=None):
+  return internal_convert_n_to_tensor(
+      values=values,
+      dtype=dtype,
+      name=name,
+      preferred_dtype=preferred_dtype,
+      as_ref=False)
+
+def convert_to_tensor_or_indexed_slices(value, dtype=None, name=None):
+  return internal_convert_to_tensor_or_indexed_slices(
+      value=value, dtype=dtype, name=name, as_ref=False)
+
+def internal_convert_to_tensor_or_indexed_slices(value,
+                                                 dtype=None,
+                                                 name=None,
+                                                 as_ref=False):
+  return internal_convert_to_tensor(
+        value, dtype=dtype, name=name, as_ref=as_ref)
+
+def internal_convert_n_to_tensor_or_indexed_slices(values,
+                                                   dtype=None,
+                                                   name=None,
+                                                   as_ref=False):
+  if not isinstance(values, collections.Sequence):
+    raise TypeError("values must be a list.")
+  ret = []
+  for i, value in enumerate(values):
+    if value is None:
+      ret.append(value)
+    else:
+      n = None if name is None else "%s_%d" % (name, i)
+      ret.append(
+          internal_convert_to_tensor_or_indexed_slices(
+              value, dtype=dtype, name=n, as_ref=as_ref))
+  return ret
+
+def convert_n_to_tensor_or_indexed_slices(values, dtype=None, name=None):
+  return internal_convert_n_to_tensor_or_indexed_slices(
+      values=values, dtype=dtype, name=name, as_ref=False)
+
+def register_tensor_conversion_function(base_type,
+                                        conversion_func,
+                                        priority=100):
+  global _tensor_conversion_func_cache
+  with _tensor_conversion_func_lock:
+    if not (isinstance(base_type, type) or
+            (isinstance(base_type, tuple) and
+             all(isinstance(x, type) for x in base_type))):
+      raise TypeError("base_type must be a type or a tuple of types.")
+    if not callable(conversion_func):
+      raise TypeError("conversion_func must be callable.")
+
+    if context._context is not None and context.executing_eagerly(
+    ) and isinstance(base_type, six.integer_types + (
+        float,
+        np.ndarray,
+    )):
+      # TODO(nareshmodi): consider setting a context variable which disables the
+      # fastpath instead.
+      raise TypeError(
+          "Cannot register conversions for numpy arrays, python number types "
+          "when executing eagerly.")
+
+    try:
+      funcs_at_priority = _tensor_conversion_func_registry[priority]
+    except KeyError:
+      funcs_at_priority = []
+      _tensor_conversion_func_registry[priority] = funcs_at_priority
+    funcs_at_priority.append((base_type, conversion_func))
+    _tensor_conversion_func_cache = {}
+
+def _device_string(dev_spec):
+  if isinstance(dev_spec, pydev.DeviceSpec):
+    return dev_spec.to_string()
+  else:
+    return dev_spec
+
+def _NodeDef(op_type, name, device=None, attrs=None):  
+  node_def = node_def_pb2.NodeDef()
+  node_def.op = compat.as_bytes(op_type)
+  node_def.name = compat.as_bytes(name)
+  if attrs is not None:
+    for k, v in six.iteritems(attrs):
+      node_def.attr[k].CopyFrom(v)
+  if device is not None:
+    if callable(device):
+      node_def.device = device(node_def)
+    else:
+      node_def.device = _device_string(device)
+  return node_def
+
+def _create_c_op(graph, node_def, inputs, control_inputs):
+
+  op_desc = c_api.TF_NewOperation(graph._c_graph,
+                                  compat.as_str(node_def.op),
+                                  compat.as_str(node_def.name))
+  # Add inputs
+  for op_input in inputs:
+    if isinstance(op_input, (list, tuple)):
+      c_api.TF_AddInputList(op_desc, [t._as_tf_output() for t in op_input])
+    else:
+      c_api.TF_AddInput(op_desc, op_input._as_tf_output())
+
+  # Add control inputs
+  for control_input in control_inputs:
+    c_api.TF_AddControlInput(op_desc, control_input._c_op)
+  
+
+  # Add attrs
+  for name, attr_value in node_def.attr.items():
+    serialized = attr_value.SerializeToString()
+    # TODO(skyewm): this creates and deletes a new TF_Status for every attr.
+    # It might be worth creating a convenient way to re-use the same status.
+    c_api.TF_SetAttrValueProto(op_desc, compat.as_str(name), serialized)
+
+  try:
+    c_op = c_api.TF_FinishOperation(op_desc)
+  except errors.InvalidArgumentError as e:
+    # Convert to ValueError for backwards compatibility.
+    raise ValueError(str(e))
+
+  return c_op
+
+def NotDifferentiable(op_type):
+  if not isinstance(op_type, six.string_types):
+    raise TypeError("op_type must be a string")
+  _gradient_registry.register(None, op_type)
+
+def get_gradient_function(op):
+  if not op.inputs:
+    return None
+  try:
+    op_type = op.get_attr("_gradient_op_type")
+  except ValueError:
+    op_type = op.type
+  return _gradient_registry.lookup(op_type)
+
+def _set_call_cpp_shape_fn(call_cpp_shape_fn):
+  global _call_cpp_shape_fn, _call_cpp_shape_fn_and_require_op
+  if _call_cpp_shape_fn:
+    return
+
+  def call_without_requiring(op):
+    return call_cpp_shape_fn(op, require_shape_fn=False)
+
+  _call_cpp_shape_fn = call_without_requiring
+
+  def call_with_requiring(op):
+    return call_cpp_shape_fn(op, require_shape_fn=True)
+
+  _call_cpp_shape_fn_and_require_op = call_with_requiring
+
+def _set_shape_and_handle_data_for_outputs_c_api(op):
+  assert not _USE_C_SHAPES
+  for output in op.outputs:
+    output._shape_val = output._c_api_shape()
+    serialized = c_api.GetHandleShapeAndType(op._graph._c_graph,
+                                             output._as_tf_output())
+    if serialized:
+      output._handle_data = (
+          cpp_shape_inference_pb2.CppShapeInferenceResult.HandleData
+          .FromString(compat.as_bytes(serialized)))
+    else:
+      output._handle_data = None
+
+def set_shape_and_handle_data_for_outputs(op):
+  if _USE_C_SHAPES: return
+
+  if op.graph._is_function(op.type):
+    for output in op.outputs:
+      output._shape_val = tensor_shape.unknown_shape()
+    return
+
+  try:
+    shape_func = _shape_registry.lookup(op.type)
+  except LookupError:
+    try:
+      shape_func = _default_shape_function_registry.lookup(op.type)
+    except LookupError:
+      shape_func = _call_cpp_shape_fn_and_require_op
+
+  shapes = shape_func(op)
+  if shapes is None:
+    raise RuntimeError(
+        "Shape function for op %s did not return any shapes" % op)
+  elif isinstance(shapes, dict):
+    shapes_dict = shapes
+    shapes = shapes_dict["shapes"]
+    handle_datas = shapes_dict["handle_data"]
+    for output, handle_data in zip(op.outputs, handle_datas):
+      if output._handle_data is None:
+        output._handle_data = handle_data
+      
+
+  if len(op.outputs) != len(shapes):
+    raise RuntimeError(
+        "Shape function for op %s returned %d shapes but expected %d %s %s" %
+        (op, len(shapes), len(op.outputs), shape_func.__name__, str(shapes)))
+  for output, s in zip(op.outputs, shapes):
+    output._shape_val = tensor_shape.unknown_shape()
+    output._shape_val = output._shape_val.merge_with(s)
+
+def get_stats_for_node_def(graph, node, statistic_type):
+  try:
+    stats_func = _stats_registry.lookup(node.op + "," + statistic_type)
+    result = stats_func(graph, node)
+  except LookupError:
+    result = OpStats(statistic_type)
+  return result
+
+def _name_from_scope_name(name):
+  return name[:-1] if (name and name[-1] == "/") else name
+
+def device(device_name_or_function):
+  if context.executing_eagerly():
+    # TODO(agarwal): support device functions in EAGER mode.
+    if callable(device_name_or_function):
+      raise RuntimeError(
+          "tf.device does not support functions when eager execution "
+          "is enabled.")
+    return context.device(device_name_or_function)
+  else:
+    return get_default_graph().device(device_name_or_function)
+
+def _colocate_with_for_gradient(op, gradient_uid, ignore_existing=False):
+  if context.executing_eagerly():
+    if op is not None:
+      return device(op.device)
+    else:
+      return _NullContextmanager()
+  else:
+    default_graph = get_default_graph()
+    
+    return default_graph._colocate_with_for_gradient(
+        op, gradient_uid=gradient_uid, ignore_existing=ignore_existing)
+
+def colocate_with(op, ignore_existing=False):
+  return _colocate_with_for_gradient(op, None, ignore_existing=ignore_existing)
+
+def control_dependencies(control_inputs):
+  if context.executing_eagerly():
+    if control_inputs:
+      # Excute any pending callables.
+      for control in control_inputs:
+        if callable(control):
+          control()
+    return _NullContextmanager()
+  else:
+    return get_default_graph().control_dependencies(control_inputs)
+
+def _eval_using_default_session(tensors, feed_dict, graph, session=None):
+  if session is None:
+    session = get_default_session()
+    if session is None:
+      raise ValueError("Cannot evaluate tensor using `eval()`: No default "
+                       "session is registered. Use `with "
+                       "sess.as_default()` or pass an explicit session to "
+                       "`eval(session=sess)`")
+    if session.graph is not graph:
+      raise ValueError("Cannot use the default session to evaluate tensor: "
+                       "the tensor's graph is different from the session's "
+                       "graph. Pass an explicit session to "
+                       "`eval(session=sess)`.")
+  else:
+    if session.graph is not graph:
+      raise ValueError("Cannot use the given session to evaluate tensor: "
+                       "the tensor's graph is different from the session's "
+                       "graph.")
+  return session.run(tensors, feed_dict)
+
+@tf_contextlib.contextmanager
+def init_scope():
+  if context.executing_eagerly():
+    # Fastpath.
+    with stop_recording():
+      yield
+  else:
+    default_graph = get_default_graph()
+    scope = default_graph.get_name_scope()
+    if scope and scope[-1] != "/":
+      scope = scope + "/"
+    inner_device_stack = default_graph._device_function_stack
+
+    outer_context = None
+    if not _default_graph_stack.stack:
+      if default_graph.building_function:
+        raise RuntimeError("The global graph is building a function.")
+      outer_context = default_graph.as_default
+    else:
+      for stack_entry in reversed(context.context().context_switches.stack):
+        if not stack_entry.is_building_function:
+          outer_context = stack_entry.enter_context_fn
+          break
+
+      if outer_context is None:
+        outer_context = _default_graph_stack._GetGlobalDefaultGraph().as_default
+
+    if outer_context is None:
+      raise RuntimeError("All graphs are building functions, and no "
+                         "eager context was previously active.")
+
+    outer_graph = None
+    outer_device_stack = None
+    try:
+      with outer_context(), name_scope(scope), control_dependencies(
+          None), stop_recording():
+        if not context.executing_eagerly():
+          outer_graph = get_default_graph()
+          outer_device_stack = outer_graph._device_function_stack
+          outer_graph._device_function_stack = inner_device_stack
+        yield
+    finally:
+      if outer_graph is not None:
+        outer_graph._device_function_stack = outer_device_stack
+
+def get_default_graph():
+  return _default_graph_stack.get_default()
+
+def get_name_scope():
+  if context.executing_eagerly():
+    return context.context().scope_name.rstrip("/")
+  return get_default_graph().get_name_scope()
+
+def _assert_same_graph(original_item, item):
+  if original_item.graph is not item.graph:
+    raise ValueError("%s must be from the same graph as %s." % (item,
+                                                                original_item))
+
+def _get_graph_from_inputs(op_input_list, graph=None):
+  op_input_list = tuple(op_input_list)  # Handle generators correctly
+  original_graph_element = None
+  for op_input in op_input_list:
+    graph_element = None
+    if (isinstance(op_input, (Operation)) and
+        ((not isinstance(op_input, Tensor)) or type(op_input) == Tensor)):  # pylint: disable=unidiomatic-typecheck
+      graph_element = op_input
+    else:
+      graph_element = _as_graph_element(op_input)
+
+    if graph_element is not None:
+      if not graph:
+        original_graph_element = graph_element
+        graph = graph_element.graph
+      elif original_graph_element is not None:
+        _assert_same_graph(original_graph_element, graph_element)
+      elif graph_element.graph is not graph:
+        raise ValueError("%s is not from the passed-in graph." % graph_element)
+  return graph or get_default_graph()
+
+def add_to_collection(name, value):
+  get_default_graph().add_to_collection(name, value)
+
+def add_to_collections(names, value):
+  get_default_graph().add_to_collections(names, value)
+
+def get_collection_ref(key):
+  return get_default_graph().get_collection_ref(key)
+
+def get_collection(key, scope=None):
+  return get_default_graph().get_collection(key, scope)
+
+
+IndexedSlicesValue = collections.namedtuple(
+    "IndexedSlicesValue", ["values", "indices", "dense_shape"])
+
+EagerTensor = c_api.TFE_Py_InitEagerTensor(Tensor)
+NoGradient = NotDifferentiable
+
+
+_tensor_conversion_func_registry = {
+    0: [(Tensor, _TensorTensorConversionFunction)]
+}
+_tensor_conversion_func_cache = {}
+_tensor_conversion_func_lock = threading.Lock()
+register_dense_tensor_like_type(Tensor)
+_gradient_registry = Registry("gradient")
+_shape_registry = Registry("shape functions")
+_default_shape_function_registry = Registry("default shape functions")
+
+_call_cpp_shape_fn = None
+_call_cpp_shape_fn_and_require_op = None
+_stats_registry = Registry("statistical functions")
+_default_session_stack = _DefaultStack()
+_default_graph_stack = _DefaultGraphStack()
