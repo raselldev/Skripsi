@@ -45,24 +45,6 @@ _MUTATION_LOCK_GROUP = 0
 _SESSION_RUN_LOCK_GROUP = 1
 
 
-class ScopedTFGraph(object):
-  def __init__(self):
-    self.graph = c_api.TF_NewGraph()
-
-class Registry(object):
-  def __init__(self, name):
-    self._name = name
-    self._registry = dict()
-
-  def register(self, candidate, name=None):
-    if not name:
-      name = candidate.__name__
-    if name in self._registry:
-      (filename, line_number, function_name, _) = (
-          self._registry[name][_LOCATION_TAG])
-      raise KeyError("Registering two %s with name '%s' !"
-                     "(Previous registration was in %s %s:%d)" %
-                     (self._name, name, function_name, filename, line_number))
 
 class _UserDeviceSpec(object):
   def __init__(self, device_name_or_function):
@@ -789,7 +771,6 @@ class RegisterGradient(object):
     self._op_type = op_type
 
   def __call__(self, f):
-    _gradient_registry.register(f, self._op_type)
     return f
 
 class RegisterShape(object):
@@ -801,13 +782,6 @@ class RegisterShape(object):
   def __call__(self, f):
     if f is None:
       assert _call_cpp_shape_fn
-      try:
-        _default_shape_function_registry.register(_call_cpp_shape_fn,
-                                                  self._op_type)
-      except KeyError:
-        pass
-    else:
-      _shape_registry.register(f, self._op_type)
     return f
 
 class RegisterStatistics(object):
@@ -824,7 +798,6 @@ class RegisterStatistics(object):
     self._statistic_type = statistic_type
 
   def __call__(self, f):
-    _stats_registry.register(f, self._op_type + "," + self._statistic_type)
     return f
 
 class Graph(object):
@@ -866,7 +839,8 @@ class Graph(object):
 
     # TODO(skyewm): fold as much of the above as possible into the C
     # implementation
-    self._scoped_c_graph = ScopedTFGraph()
+    #self._scoped_c_graph = ScopedTFGraph()
+    self._scoped_c_graph = c_api.TF_NewGraph()
     # The C API requires all ops to have shape functions. Disable this
     # requirement (many custom ops do not have shape functions, and we don't
     # want to break these existing cases).
@@ -921,7 +895,7 @@ class Graph(object):
   @property
   def _c_graph(self):
     if self._scoped_c_graph:
-      return self._scoped_c_graph.graph
+      return self._scoped_c_graph
     return None
 
   @property
@@ -2329,7 +2303,6 @@ def _create_c_op(graph, node_def, inputs, control_inputs):
 def NotDifferentiable(op_type):
   if not isinstance(op_type, six.string_types):
     raise TypeError("op_type must be a string")
-  _gradient_registry.register(None, op_type)
 
 def get_gradient_function(op):
   if not op.inputs:
@@ -2338,7 +2311,7 @@ def get_gradient_function(op):
     op_type = op.get_attr("_gradient_op_type")
   except ValueError:
     op_type = op.type
-  return _gradient_registry.lookup(op_type)
+  return lookup(op_type)
 
 def _set_call_cpp_shape_fn(call_cpp_shape_fn):
   global _call_cpp_shape_fn, _call_cpp_shape_fn_and_require_op
@@ -2377,10 +2350,10 @@ def set_shape_and_handle_data_for_outputs(op):
     return
 
   try:
-    shape_func = _shape_registry.lookup(op.type)
+    shape_func = lookup(op.type)
   except LookupError:
     try:
-      shape_func = _default_shape_function_registry.lookup(op.type)
+      shape_func = lookup(op.type)
     except LookupError:
       shape_func = _call_cpp_shape_fn_and_require_op
 
@@ -2407,7 +2380,7 @@ def set_shape_and_handle_data_for_outputs(op):
 
 def get_stats_for_node_def(graph, node, statistic_type):
   try:
-    stats_func = _stats_registry.lookup(node.op + "," + statistic_type)
+    stats_func = lookup(node.op + "," + statistic_type)
     result = stats_func(graph, node)
   except LookupError:
     result = OpStats(statistic_type)
@@ -2578,12 +2551,12 @@ _tensor_conversion_func_registry = {
 _tensor_conversion_func_cache = {}
 _tensor_conversion_func_lock = threading.Lock()
 register_dense_tensor_like_type(Tensor)
-_gradient_registry = Registry("gradient")
-_shape_registry = Registry("shape functions")
-_default_shape_function_registry = Registry("default shape functions")
+#_gradient_registry = Registry("gradient")
+#_shape_registry = Registry("shape functions")
+#_default_shape_function_registry = Registry("default shape functions")
 
 _call_cpp_shape_fn = None
 _call_cpp_shape_fn_and_require_op = None
-_stats_registry = Registry("statistical functions")
+#_stats_registry = Registry("statistical functions")
 _default_session_stack = _DefaultStack()
 _default_graph_stack = _DefaultGraphStack()
