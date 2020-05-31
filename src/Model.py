@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as b
 #import backend as b
 import os
-
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 class DecoderType:
 	BestPath = 0
@@ -65,7 +65,6 @@ class Model:
 			conv_norm = b.batch_normalization(conv, training=self.is_train)
 			relu = b.relu(conv_norm)
 			pool = b.max_pool(relu, (1, poolVals[i][0], poolVals[i][1], 1), (1, strideVals[i][0], strideVals[i][1], 1), 'VALID')
-
 		self.cnnOut4d = pool
 
 

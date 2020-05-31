@@ -18,7 +18,6 @@ class Batch:
 		self.imgs = np.stack(imgs, axis=0)
 		self.gtTexts = gtTexts
 
-
 class DataLoader:
 	def __init__(self, filePath, batchSize, imgSize, maxTextLen):
 		assert filePath[-1]=='/'

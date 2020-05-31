@@ -9,6 +9,7 @@ from Model import Model, DecoderType
 import os
 
 root = tk.Tk()
+root.title("Deteksi Tulisan")
 apps = []
 showDetect = []
 showDetect1 = []
@@ -60,7 +61,7 @@ def runDetect():
     for widget in frame.winfo_children():
         widget.destroy()
         
-    filename = filedialog.askopenfilename(initialdir="/", title="Select File", filetypes=(("images", "*.jpg"), ("all files", "*.*")))
+    filename = filedialog.askopenfilename(initialdir="/", title="Select File", filetypes=(("images", "*.png"), ("all files", "*.*")))
 
     apps.append(filename)
     print(filename)
@@ -85,8 +86,8 @@ canvas.pack()
 frame = tk.Frame(root, bg="white")
 frame.place(relwidth=0.8, relheight=0.8, relx=0.1, rely=0.1)
 
-openFile = tk.Button(root, text="Open File", padx=10, pady=5, command=addFile)
-openFile.pack(side=RIGHT, padx=5, pady=5)
+"""openFile = tk.Button(root, text="Open File", padx=10, pady=5, command=addFile)
+openFile.pack(side=RIGHT, padx=5, pady=5)"""
 
 runDetect = tk.Button(root, text="Detect", padx=10, pady=5, command=runDetect)
 runDetect.pack(side=RIGHT, padx=5, pady=5)
