@@ -44,6 +44,11 @@ class SessionInterface(object):
   """Base class for implementations of TensorFlow client sessions."""
 
   @property
+  def graph(self):
+    """The underlying TensorFlow graph, to be used in building Operations."""
+    raise NotImplementedError('graph')
+
+  @property
   def sess_str(self):
     """The TensorFlow process to which this session will connect."""
     raise NotImplementedError('sess_str')
@@ -600,7 +605,26 @@ class _DeviceAttributes(object):
 
 
 class BaseSession(SessionInterface):
+  """A class for interacting with a TensorFlow computation.
+
+  The BaseSession enables incremental graph building with inline
+  execution of Operations and evaluation of Tensors.
+  """
+
   def __init__(self, target='', graph=None, config=None):
+    """Constructs a new TensorFlow session.
+
+    Args:
+      target: (Optional) The TensorFlow execution engine to connect to.
+      graph: (Optional) The graph to be used. If this argument is None,
+        the default graph will be used.
+      config: (Optional) ConfigProto proto used to configure the session.
+
+    Raises:
+      tf.errors.OpError: Or one of its subclasses if an error occurs while
+        creating the TensorFlow session.
+      TypeError: If one of the arguments has the wrong type.
+    """
     if graph is None:
       self._graph = ops.get_default_graph()
     else:
@@ -642,6 +666,55 @@ class BaseSession(SessionInterface):
       # pylint: enable=protected-access
     finally:
       tf_session.TF_DeleteSessionOptions(opts)
+
+  def list_devices(self):
+    """Lists available devices in this session.
+
+    ```python
+    devices = sess.list_devices()
+    for d in devices:
+      print(d.name)
+    ```
+
+    Each element in the list has the following properties:
+     - `name`: A string with the full name of the device. ex:
+          `/job:worker/replica:0/task:3/device:CPU:0`
+     - `device_type`: The type of the device (e.g. `CPU`, `GPU`, `TPU`.)
+     - `memory_limit`: The maximum amount of memory available on the device.
+          Note: depending on the device, it is possible the usable memory could
+          be substantially less.
+    Raises:
+      tf.errors.OpError: If it encounters an error (e.g. session is in an
+      invalid state, or network errors occur).
+
+    Returns:
+      A list of devices in the session.
+    """
+    raw_device_list = tf_session.TF_SessionListDevices(self._session)
+    device_list = []
+    size = tf_session.TF_DeviceListCount(raw_device_list)
+    for i in range(size):
+      name = tf_session.TF_DeviceListName(raw_device_list, i)
+      device_type = tf_session.TF_DeviceListType(raw_device_list, i)
+      memory = tf_session.TF_DeviceListMemoryBytes(raw_device_list, i)
+      incarnation = tf_session.TF_DeviceListIncarnation(raw_device_list, i)
+      device_list.append(
+          _DeviceAttributes(name, device_type, memory, incarnation))
+    tf_session.TF_DeleteDeviceList(raw_device_list)
+    return device_list
+
+  def close(self):
+    """Closes this session.
+
+    Calling this method frees all resources associated with the session.
+
+    Raises:
+      tf.errors.OpError: Or one of its subclasses if an error occurs while
+        closing the TensorFlow session.
+    """
+    if self._session and not self._closed:
+      self._closed = True
+      tf_session.TF_CloseSession(self._session)
 
   def __del__(self):
     # cleanly ignore all exceptions
@@ -1260,7 +1333,8 @@ class BaseSession(SessionInterface):
           node_def = op.node_def
         except KeyError:
           pass
-
+#      message = error_interpolation.interpolate(message, self._graph)
+#      raise type(e)(node_def, op, message)
 
   def _extend_graph(self):
     with self._graph._session_run_lock():  # pylint: disable=protected-access
@@ -1326,12 +1400,143 @@ class BaseSession(SessionInterface):
         self._session, handle, feed_dict, fetch_list)
 
   # pylint: disable=protected-access
-  
+  class _Callable(object):
+    """Experimental wrapper for the C++ `Session::MakeCallable()` API."""
+
+    def __init__(self, session, callable_options):
+      self._session = session
+      self._handle = None
+      options_ptr = tf_session.TF_NewBufferFromString(
+          compat.as_bytes(callable_options.SerializeToString()))
+      try:
+        with errors.raise_exception_on_not_ok_status() as status:
+          self._handle = tf_session.TF_SessionMakeCallable(
+              session._session, options_ptr, status)
+      finally:
+        tf_session.TF_DeleteBuffer(options_ptr)
+
+    def __call__(self, *args, **kwargs):
+      # TODO(b/74355905): Support argument and return value nested structures,
+      # and tensor-like objects such as SparseTensors.
+      run_metadata = kwargs.get('run_metadata', None)
+      try:
+        run_metadata_ptr = tf_session.TF_NewBuffer() if run_metadata else None
+        # TODO(mrry): Switch to raising an exception from the SWIG wrapper.
+        with errors.raise_exception_on_not_ok_status() as status:
+          ret = tf_session.TF_SessionRunCallable(
+              self._session._session, self._handle, args, status,
+              run_metadata_ptr)
+        if run_metadata:
+          proto_data = tf_session.TF_GetBuffer(run_metadata_ptr)
+          run_metadata.ParseFromString(compat.as_bytes(proto_data))
+      finally:
+        if run_metadata_ptr:
+          tf_session.TF_DeleteBuffer(run_metadata_ptr)
+      return ret
+
+    def __del__(self):
+      # NOTE(mrry): It is possible that `self._session.__del__()` could be
+      # called before this destructor, in which case `self._session._session`
+      # will be `None`.
+      if self._handle is not None and self._session._session is not None:
+        with errors.raise_exception_on_not_ok_status() as status:
+          tf_session.TF_SessionReleaseCallable(
+              self._session._session, self._handle, status)
+  # pylint: enable=protected-access
+
+  # TODO(b/74355905): Reimplement `Session.make_callable()` using this method
+  # where possible.
+  def _make_callable_from_options(self, callable_options):
+    """Returns a handle to a "callable" with the given options.
+
+    Args:
+      callable_options: A `CallableOptions` protocol buffer message describing
+        the computation that will be performed by the callable.
+
+    Returns:
+      A handle to the new callable.
+    """
+    self._extend_graph()
+    return BaseSession._Callable(self, callable_options)
+
 
 @tf_export('Session')
 class Session(BaseSession):
+  """A class for running TensorFlow operations.
+
+  A `Session` object encapsulates the environment in which `Operation`
+  objects are executed, and `Tensor` objects are evaluated. For
+  example:
+
+  ```python
+  # Build a graph.
+  a = tf.constant(5.0)
+  b = tf.constant(6.0)
+  c = a * b
+
+  # Launch the graph in a session.
+  sess = tf.Session()
+
+  # Evaluate the tensor `c`.
+  print(sess.run(c))
+  ```
+
+  A session may own resources, such as
+  `tf.Variable`, `tf.QueueBase`,
+  and `tf.ReaderBase`. It is important to release
+  these resources when they are no longer required. To do this, either
+  invoke the `tf.Session.close` method on the session, or use
+  the session as a context manager. The following two examples are
+  equivalent:
+
+  ```python
+  # Using the `close()` method.
+  sess = tf.Session()
+  sess.run(...)
+  sess.close()
+
+  # Using the context manager.
+  with tf.Session() as sess:
+    sess.run(...)
+  ```
+
+  The
+  [`ConfigProto`](https://www.tensorflow.org/code/tensorflow/core/protobuf/config.proto)
+  protocol buffer exposes various configuration options for a
+  session. For example, to create a session that uses soft constraints
+  for device placement, and log the resulting placement decisions,
+  create a session as follows:
+
+  ```python
+  # Launch the graph in a session that allows soft device placement and
+  # logs the placement decisions.
+  sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
+                                          log_device_placement=True))
+  ```
+  """
 
   def __init__(self, target='', graph=None, config=None):
+    """Creates a new TensorFlow session.
+
+    If no `graph` argument is specified when constructing the session,
+    the default graph will be launched in the session. If you are
+    using more than one graph (created with `tf.Graph()` in the same
+    process, you will have to use different sessions for each graph,
+    but each graph can be used in multiple sessions. In this case, it
+    is often clearer to pass the graph to be launched explicitly to
+    the session constructor.
+
+    Args:
+      target: (Optional.) The execution engine to connect to.
+        Defaults to using an in-process engine. See
+        [Distributed TensorFlow](https://tensorflow.org/deploy/distributed)
+        for more examples.
+      graph: (Optional.) The `Graph` to be launched (described above).
+      config: (Optional.) A
+        [`ConfigProto`](https://www.tensorflow.org/code/tensorflow/core/protobuf/config.proto)
+        protocol buffer with configuration options for the session.
+
+    """
     super(Session, self).__init__(target, graph, config=config)
     # NOTE(mrry): Create these on first `__enter__` to avoid a reference cycle.
     self._default_graph_context_manager = None
@@ -1357,6 +1562,14 @@ class Session(BaseSession):
                                                      exec_tb)
     except RuntimeError as error:
       if error == exec_value:
+        # NOTE(skyewm): for some reason, in Python3,
+        # _default_session_context_manager.__exit__ will re-raise the "not
+        # re-entrant" exception raised in __enter__ above (note that if we're
+        # here, we're in the outer session context manager, since __exit__ is
+        # not called when __enter__ raises an exception). We still want to
+        # continue cleaning up this context manager before the exception is
+        # further propagated, so we ignore it here (note that it'll continue
+        # being propagated after this method completes).
         pass
       else:
         raise
@@ -1369,6 +1582,30 @@ class Session(BaseSession):
 
   @staticmethod
   def reset(target, containers=None, config=None):
+    """Resets resource containers on `target`, and close all connected sessions.
+
+    A resource container is distributed across all workers in the
+    same cluster as `target`.  When a resource container on `target`
+    is reset, resources associated with that container will be cleared.
+    In particular, all Variables in the container will become undefined:
+    they lose their values and shapes.
+
+    NOTE:
+    (i) reset() is currently only implemented for distributed sessions.
+    (ii) Any sessions on the master named by `target` will be closed.
+
+    If no resource containers are provided, all containers are reset.
+
+    Args:
+      target: The execution engine to connect to.
+      containers: A list of resource container name strings, or `None` if all of
+        all the containers are to be reset.
+      config: (Optional.) Protocol buffer with configuration options.
+
+    Raises:
+      tf.errors.OpError: Or one of its subclasses if an error occurs while
+        resetting containers.
+    """
     if target is not None:
       target = compat.as_bytes(target)
     if containers is not None:
@@ -1377,3 +1614,111 @@ class Session(BaseSession):
       containers = []
     tf_session.TF_Reset(target, containers, config)
 
+
+@tf_export('InteractiveSession')
+class InteractiveSession(BaseSession):
+  """A TensorFlow `Session` for use in interactive contexts, such as a shell.
+
+  The only difference with a regular `Session` is that an `InteractiveSession`
+  installs itself as the default session on construction.
+  The methods `tf.Tensor.eval`
+  and `tf.Operation.run`
+  will use that session to run ops.
+
+  This is convenient in interactive shells and [IPython
+  notebooks](http://ipython.org), as it avoids having to pass an explicit
+  `Session` object to run ops.
+
+  For example:
+
+  ```python
+  sess = tf.InteractiveSession()
+  a = tf.constant(5.0)
+  b = tf.constant(6.0)
+  c = a * b
+  # We can just use 'c.eval()' without passing 'sess'
+  print(c.eval())
+  sess.close()
+  ```
+
+  Note that a regular session installs itself as the default session when it
+  is created in a `with` statement.  The common usage in non-interactive
+  programs is to follow that pattern:
+
+  ```python
+  a = tf.constant(5.0)
+  b = tf.constant(6.0)
+  c = a * b
+  with tf.Session():
+    # We can also use 'c.eval()' here.
+    print(c.eval())
+  ```
+  """
+
+  _count_lock = threading.Lock()
+  _active_session_count = 0  # GUARDED_BY(_count_lock)
+
+  def __init__(self, target='', graph=None, config=None):
+    """Creates a new interactive TensorFlow session.
+
+    If no `graph` argument is specified when constructing the session,
+    the default graph will be launched in the session. If you are
+    using more than one graph (created with `tf.Graph()` in the same
+    process, you will have to use different sessions for each graph,
+    but each graph can be used in multiple sessions. In this case, it
+    is often clearer to pass the graph to be launched explicitly to
+    the session constructor.
+
+    Args:
+      target: (Optional.) The execution engine to connect to.
+        Defaults to using an in-process engine.
+      graph: (Optional.) The `Graph` to be launched (described above).
+      config: (Optional) `ConfigProto` proto used to configure the session.
+    """
+    if not config:
+      # If config is not provided, choose some reasonable defaults for
+      # interactive use:
+      #
+      #   - Grow GPU memory as needed at the cost of fragmentation.
+      gpu_options = config_pb2.GPUOptions(allow_growth=True)
+      config = config_pb2.ConfigProto(gpu_options=gpu_options)
+    # Interactive sessions always place pruned graphs.
+    config.graph_options.place_pruned_graph = True
+
+    super(InteractiveSession, self).__init__(target, graph, config)
+    with InteractiveSession._count_lock:
+      if InteractiveSession._active_session_count > 0:
+        warnings.warn('An interactive session is already active. This can '
+                      'cause out-of-memory errors in some cases. You must '
+                      'explicitly call `InteractiveSession.close()` to release '
+                      'resources held by the other session(s).')
+      InteractiveSession._active_session_count += 1
+    # NOTE(mrry): We do not use `Session._closed` here because it has unhelpful
+    # semantics (in particular, it is not set to true if `Session.close()` is
+    # called on a session that has not been "opened" by running a step) and we
+    # cannot change those semantics without breaking existing code.
+    self._explicitly_closed = False
+
+    self._default_session = self.as_default()
+    self._default_session.enforce_nesting = False
+    self._default_session.__enter__()
+    self._explicit_graph = graph
+    if self._explicit_graph is not None:
+      self._default_graph = graph.as_default()
+      self._default_graph.enforce_nesting = False
+      self._default_graph.__enter__()
+
+  def close(self):
+    """Closes an `InteractiveSession`."""
+    super(InteractiveSession, self).close()
+    with InteractiveSession._count_lock:
+      if not self._explicitly_closed:
+        InteractiveSession._active_session_count -= 1
+        self._explicitly_closed = True
+      else:
+        return
+    if self._explicit_graph is not None:
+      self._default_graph.__exit__(None, None, None)
+      self._default_graph = None
+    self._default_session.__exit__(None, None, None)
+    self._default_session = None
