@@ -1,143 +1,171 @@
+
 from __future__ import division
 from __future__ import print_function
 
 import sys
 import numpy as np
 import tensorflow as b
-#import backend as b
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 class DecoderType:
 	BestPath = 0
+	BeamSearch = 1
+	WordBeamSearch = 2
 
 
-class Model:
-	#model
+class Model: 
+	"minimalistic TF model for HTR"
+
+	# model constants
 	batchSize = 50
 	imgSize = (128, 32)
 	maxTextLen = 32
 
 	def __init__(self, charList, decoderType=DecoderType.BestPath, mustRestore=False, dump=False):
+		"init model: add CNN, RNN and CTC and initialize TF"
 		self.dump = dump
 		self.charList = charList
 		self.decoderType = decoderType
 		self.mustRestore = mustRestore
 		self.snapID = 0
 
-		#normalisasi dari batch
+		# Whether to use normalization over a batch or a population
 		self.is_train = b.placeholder(b.bool, name='is_train')
 
-		#input image batch
+		# input image batch
 		self.inputImgs = b.placeholder(b.float32, shape=(None, Model.imgSize[0], Model.imgSize[1]))
 
-		#setup CNN, RNN and CTC
+		# setup CNN, RNN and CTC
 		self.setupCNN()
 		self.setupRNN()
 		self.setupCTC()
 
-		#setup optimizer to train NN
+		# setup optimizer to train NN
 		self.batchesTrained = 0
 		self.learningRate = b.placeholder(b.float32, shape=[])
 		self.update_ops = b.get_collection(b.GraphKeys.UPDATE_OPS) 
 		with b.control_dependencies(self.update_ops):
 			self.optimizer = b.RMSPropOptimizer(self.learningRate).minimize(self.loss)
 
-		#inisialisasi backend
-		(self.sess, self.saver) = self.setupb()
+		# initialize TF
+		(self.sess, self.saver) = self.setupTF()
 
 			
 	def setupCNN(self):
+		"create CNN layers and return output of these layers"
 		cnnIn4d = b.expand_dims(input=self.inputImgs, axis=3)
 
-		#parameter
+		# list of parameters for the layers
 		kernelVals = [5, 5, 3, 3, 3]
 		featureVals = [1, 32, 64, 128, 128, 256]
 		strideVals = poolVals = [(2,2), (2,2), (1,2), (1,2), (1,2)]
 		numLayers = len(strideVals)
 
-		#create layers
-		#layer pertama
-		pool = cnnIn4d
+		# create layers
+		pool = cnnIn4d # input to first CNN layer
 		for i in range(numLayers):
 			kernel = b.Variable(b.truncated_normal([kernelVals[i], kernelVals[i], featureVals[i], featureVals[i + 1]], stddev=0.1))
-			conv = b.conv2d(pool, kernel, padding='SAME',  strides=(1,1,1,1))
+			conv = b.nn.conv2d(pool, kernel, padding='SAME',  strides=(1,1,1,1))
 			conv_norm = b.batch_normalization(conv, training=self.is_train)
-			relu = b.relu(conv_norm)
-			pool = b.max_pool(relu, (1, poolVals[i][0], poolVals[i][1], 1), (1, strideVals[i][0], strideVals[i][1], 1), 'VALID')
+			relu = b.nn.relu(conv_norm)
+			pool = b.nn.max_pool(relu, (1, poolVals[i][0], poolVals[i][1], 1), (1, strideVals[i][0], strideVals[i][1], 1), 'VALID')
+
 		self.cnnOut4d = pool
 
 
 	def setupRNN(self):
+		"create RNN layers and return output of these layers"
 		rnnIn3d = b.squeeze(self.cnnOut4d, axis=[2])
 
+		# basic cells which is used to build RNN
 		numHidden = 256
 		cells = [b.rnn.LSTMCell(num_units=numHidden, state_is_tuple=True) for _ in range(2)] # 2 layers
 
-		#stack cell
+		# stack basic cells
 		stacked = b.rnn.MultiRNNCell(cells, state_is_tuple=True)
 
-		#bidirectional RNN
-		#BxTxF -> BxTx2H
-		((fw, bw), _) = b.bidirectional_dynamic_rnn(cell_fw=stacked, cell_bw=stacked, inputs=rnnIn3d, dtype=rnnIn3d.dtype)
+		# bidirectional RNN
+		# BxTxF -> BxTx2H
+		((fw, bw), _) = b.nn.bidirectional_dynamic_rnn(cell_fw=stacked, cell_bw=stacked, inputs=rnnIn3d, dtype=rnnIn3d.dtype)
 									
-		#BxTxH + BxTxH -> BxTx2H -> BxTx1X2H
+		# BxTxH + BxTxH -> BxTx2H -> BxTx1X2H
 		concat = b.expand_dims(b.concat([fw, bw], 2), 2)
 									
-		#output to char inc blank BxTx1x2H -> BxTx1xC -> BxTxC
+		# project output to chars (including blank): BxTx1x2H -> BxTx1xC -> BxTxC
 		kernel = b.Variable(b.truncated_normal([1, 1, numHidden * 2, len(self.charList) + 1], stddev=0.1))
-		self.rnnOut3d = b.squeeze(b.atrous_conv2d(value=concat, filters=kernel, rate=1, padding='SAME'), axis=[2])
+		self.rnnOut3d = b.squeeze(b.nn.atrous_conv2d(value=concat, filters=kernel, rate=1, padding='SAME'), axis=[2])
 		
 
 	def setupCTC(self):
-		#BxTxC -> TxBxC
+		"create CTC loss and decoder and return them"
+		# BxTxC -> TxBxC
 		self.ctcIn3dTBC = b.transpose(self.rnnOut3d, [1, 0, 2])
-		#ground truth text as sparse tensor
+		# ground truth text as sparse tensor
 		self.gtTexts = b.SparseTensor(b.placeholder(b.int64, shape=[None, 2]) , b.placeholder(b.int32, [None]), b.placeholder(b.int64, [2]))
 
-		#calc loss batch
+		# calc loss for batch
 		self.seqLen = b.placeholder(b.int32, [None])
-		self.loss = b.reduce_mean(b.ctc_loss(labels=self.gtTexts, inputs=self.ctcIn3dTBC, sequence_length=self.seqLen, ctc_merge_repeated=True))
+		self.loss = b.reduce_mean(b.nn.ctc_loss(labels=self.gtTexts, inputs=self.ctcIn3dTBC, sequence_length=self.seqLen, ctc_merge_repeated=True))
 
-		#calc loss prob
+		# calc loss for each element to compute label probability
 		self.savedCtcInput = b.placeholder(b.float32, shape=[Model.maxTextLen, None, len(self.charList) + 1])
-		self.lossPerElement = b.ctc_loss(labels=self.gtTexts, inputs=self.savedCtcInput, sequence_length=self.seqLen, ctc_merge_repeated=True)
+		self.lossPerElement = b.nn.ctc_loss(labels=self.gtTexts, inputs=self.savedCtcInput, sequence_length=self.seqLen, ctc_merge_repeated=True)
 
 		# decoder: either best path decoding or beam search decoding
 		if self.decoderType == DecoderType.BestPath:
-			self.decoder = b.ctc_greedy_decoder(inputs=self.ctcIn3dTBC, sequence_length=self.seqLen)
+			self.decoder = b.nn.ctc_greedy_decoder(inputs=self.ctcIn3dTBC, sequence_length=self.seqLen)
+		elif self.decoderType == DecoderType.BeamSearch:
+			self.decoder = b.nn.ctc_beam_search_decoder(inputs=self.ctcIn3dTBC, sequence_length=self.seqLen, beam_width=50, merge_repeated=False)
+		elif self.decoderType == DecoderType.WordBeamSearch:
+			# import compiled word beam search operation (see https://github.com/githubharald/CTCWordBeamSearch)
+			word_beam_search_module = b.load_op_library('TFWordBeamSearch.so')
+
+			# prepare information about language (dictionary, characters in dataset, characters forming words) 
 			chars = str().join(self.charList)
 			wordChars = open('../model/wordCharList.txt').read().splitlines()[0]
 			corpus = open('../data/corpus.txt').read()
 
+			# decode using the "Words" mode of word beam search
+			self.decoder = word_beam_search_module.word_beam_search(b.nn.softmax(self.ctcIn3dTBC, dim=2), 50, 'Words', 0.0, corpus.encode('utf8'), chars.encode('utf8'), wordChars.encode('utf8'))
 
-	def setupb(self):
-		sess=b.Session()
+
+	def setupTF(self):
+		sess=b.Session() # TF session
 
 		saver = b.Saver(max_to_keep=1) # saver saves model to file
 		modelDir = '../model/'
-		latestSnapshot = b.latest_checkpoint(modelDir)
+		latestSnapshot = b.latest_checkpoint(modelDir) # is there a saved model?
+
+		# if model must be restored (for inference), there must be a snapshot
+		if self.mustRestore and not latestSnapshot:
+			raise Exception('No saved model found in: ' + modelDir)
+
+		# load saved model if available
 		if latestSnapshot:
-			print('Snap Terakhir: ' + latestSnapshot)
+			print('Init with stored values from ' + latestSnapshot)
 			saver.restore(sess, latestSnapshot)
 		else:
-			print('Snap Baru')
+			print('Init with new values')
 			sess.run(b.global_variables_initializer())
+
 		return (sess,saver)
 
 
 	def toSparse(self, texts):
+		"put ground truth texts into sparse tensor for ctc_loss"
 		indices = []
 		values = []
 		shape = [len(texts), 0] # last entry must be max(labelList[i])
 
-		#go over all texts
+		# go over all texts
 		for (batchElement, text) in enumerate(texts):
-			#convert to string of label (i.e. class-ids)
+			# convert to string of label (i.e. class-ids)
 			labelStr = [self.charList.index(c) for c in text]
+			# sparse tensor must have size of max. label-string
 			if len(labelStr) > shape[1]:
 				shape[1] = len(labelStr)
-			#put each label into sparse tensor
+			# put each label into sparse tensor
 			for (i, label) in enumerate(labelStr):
 				indices.append([batchElement, i])
 				values.append(label)
@@ -146,23 +174,38 @@ class Model:
 
 
 	def decoderOutputToText(self, ctcOutput, batchSize):
-		#label dari batch
+		"extract texts from output of CTC decoder"
+		
+		# contains string of labels for each batch element
 		encodedLabelStrs = [[] for i in range(batchSize)]
 
-		if self.decoderType == DecoderType.BestPath:
+		# word beam search: label strings terminated by blank
+		if self.decoderType == DecoderType.WordBeamSearch:
+			blank=len(self.charList)
+			for b in range(batchSize):
+				for label in ctcOutput[b]:
+					if label==blank:
+						break
+					encodedLabelStrs[b].append(label)
+
+		# TF decoders: label strings are contained in sparse tensor
+		else:
+			# ctc returns tuple, first element is SparseTensor 
 			decoded=ctcOutput[0][0] 
 
-			#batch -> values
+			# go over all indices and save mapping: batch -> values
 			idxDict = { b : [] for b in range(batchSize) }
 			for (idx, idx2d) in enumerate(decoded.indices):
 				label = decoded.values[idx]
-				#index b t
-				batchElement = idx2d[0]
+				batchElement = idx2d[0] # index according to [b,t]
 				encodedLabelStrs[batchElement].append(label)
+
+		# map labels to chars for all batch elements
 		return [str().join([self.charList[c] for c in labelStr]) for labelStr in encodedLabelStrs]
 
 
 	def trainBatch(self, batch):
+		"feed a batch into the NN to train it"
 		numBatchElements = len(batch.imgs)
 		sparse = self.toSparse(batch.gtTexts)
 		rate = 0.01 if self.batchesTrained < 10 else (0.001 if self.batchesTrained < 10000 else 0.0001) # decay learning rate
@@ -173,7 +216,7 @@ class Model:
 		return lossVal
 
 
-	
+	def dumpNNOutput(self, rnnOutput):
 		"dump the output of the NN to CSV file(s)"
 		dumpDir = '../dump/'
 		if not os.path.isdir(dumpDir):
@@ -194,7 +237,9 @@ class Model:
 
 
 	def inferBatch(self, batch, calcProbability=False, probabilityOfGT=False):
-		#decode
+		"feed a batch into the NN to recognize the texts"
+		
+		# decode, optionally save RNN output
 		numBatchElements = len(batch.imgs)
 		evalRnnOutput = self.dump or calcProbability
 		evalList = [self.decoder] + ([self.ctcIn3dTBC] if evalRnnOutput else [])
@@ -203,6 +248,7 @@ class Model:
 		decoded = evalRes[0]
 		texts = self.decoderOutputToText(decoded, numBatchElements)
 		
+		# feed RNN output and recognized text into CTC loss to compute labeling probability
 		probs = None
 		if calcProbability:
 			sparse = self.toSparse(batch.gtTexts) if probabilityOfGT else self.toSparse(texts)
@@ -211,10 +257,15 @@ class Model:
 			feedDict = {self.savedCtcInput : ctcInput, self.gtTexts : sparse, self.seqLen : [Model.maxTextLen] * numBatchElements, self.is_train: False}
 			lossVals = self.sess.run(evalList, feedDict)
 			probs = np.exp(-lossVals)
+
+		# dump the output of the NN to CSV file(s)
+		if self.dump:
+			self.dumpNNOutput(evalRes[1])
+
 		return (texts, probs)
 	
 
 	def save(self):
+		"save model to file"
 		self.snapID += 1
 		self.saver.save(self.sess, '../model/snapshot', global_step=self.snapID)
- 

@@ -31,18 +31,20 @@ import six
 from six import iteritems
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
-from tensorflow.python.util import function_utils
-#from tensorflow.python import tf_logging as logging
-from tensorflow.python.ops import init_ops
-from tensorflow.python.framework import tensor_shape
 from tensorflow.python import context
-from tensorflow.python.framework import ops
-from tensorflow.python.util import tf_contextlib
 from tensorflow.python.framework import dtypes
-from tensorflow.python.util import deprecation
-from tensorflow.python.util.tf_export import tf_export
+from tensorflow.python.framework import ops
+from tensorflow.python.framework import tensor_shape
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import init_ops
+from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import variables
-
+from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python.util import deprecation
+from tensorflow.python.util import function_utils
+from tensorflow.python.util import tf_contextlib
+from tensorflow.python.util import tf_inspect
+from tensorflow.python.util.tf_export import tf_export
 
 __all__ = [
     "AUTO_REUSE", "VariableScope", "get_variable_scope", "get_variable",
@@ -848,6 +850,15 @@ class _VariableStore(object):
 
     if name in self._vars:
       # Here we handle the case when returning an existing variable.
+      if reuse is False:
+        tb = self._vars[name].op.traceback[::-1]
+        # Throw away internal tf entries and only take a few lines.
+        tb = [x for x in tb if "tensorflow/python" not in x[0]][:3]
+        raise ValueError("Variable %s already exists, disallowed."
+                         " Did you mean to set reuse=True or "
+                         "reuse=tf.AUTO_REUSE in VarScope? "
+                         "Originally defined at:\n\n%s" % (
+                             name, "".join(traceback.format_list(tb))))
       found_var = self._vars[name]
       if not shape.is_compatible_with(found_var.get_shape()):
         raise ValueError("Trying to share variable %s, but specified shape %s"
@@ -921,7 +932,8 @@ class _VariableStore(object):
       # In eager mode we do not want to keep default references to Variable
       # objects as this will prevent their memory from being released.
       self._vars[name] = v
-
+    logging.vlog(1, "Created variable %s with shape %s and init %s", v.name,
+                 format(shape), initializer)
 
     # Run the regularizer if requested and save the resulting loss.
     if regularizer:

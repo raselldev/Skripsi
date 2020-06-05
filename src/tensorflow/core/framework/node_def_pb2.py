@@ -140,7 +140,10 @@ NodeDef = _reflection.GeneratedProtocolMessageType('NodeDef', (_message.Message,
   __module__ = 'tensorflow.core.framework.node_def_pb2'
   # @@protoc_insertion_point(class_scope:tensorflow.NodeDef)
   ))
-#_sym_db.RegisterMessage(NodeDef)
-#_sym_db.RegisterMessage(NodeDef.AttrEntry)
+_sym_db.RegisterMessage(NodeDef)
+_sym_db.RegisterMessage(NodeDef.AttrEntry)
 
 
+DESCRIPTOR._options = None
+_NODEDEF_ATTRENTRY._options = None
+# @@protoc_insertion_point(module_scope)

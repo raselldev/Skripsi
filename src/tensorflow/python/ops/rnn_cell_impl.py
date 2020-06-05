@@ -27,23 +27,28 @@ from __future__ import print_function
 import collections
 import hashlib
 import numbers
-import six
 
-from tensorflow.python.framework import dtypes
+from tensorflow.python import context
 from tensorflow.python.framework import constant_op
+from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.framework import tensor_util
-from tensorflow.python.framework import ops
-#from tensorflow.python import initializers
-from tensorflow.python import context
-#from tensorflow.python import tf_utils
+#from tensorflow.python.keras import activations
+from tensorflow.python.keras import initializers
+from tensorflow.python.keras import tf_utils
 from tensorflow.python import base as base_layer
-from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import clip_ops
+from tensorflow.python.ops import init_ops
+from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import nn_ops
+from tensorflow.python.ops import partitioned_variables
+from tensorflow.python.ops import random_ops
+from tensorflow.python.ops import tensor_array_ops
 from tensorflow.python.ops import variable_scope as vs
 from tensorflow.python.ops import variables as tf_variables
-from tensorflow.python.ops import init_ops
-from tensorflow.python.ops import nn as nn_ops
+from tensorflow.python.platform import tf_logging as logging
 from tensorflow.python.training import base as checkpointable
 from tensorflow.python.util import nest
 from tensorflow.python.util.deprecation import deprecated
@@ -55,24 +60,6 @@ _WEIGHTS_VARIABLE_NAME = "kernel"
 
 # This can be used with self.assertRaisesRegexp for assert_like_rnncell.
 ASSERT_LIKE_RNNCELL_ERROR_REGEXP = "is not an RNNCell"
-
-
-
-def get(identifier):
-  if identifier is None:
-    return None
-  if isinstance(identifier, dict):
-    return deserialize(identifier)
-  elif isinstance(identifier, six.string_types):
-    config = {'class_name': str(identifier), 'config': {}}
-    return deserialize(config)
-  elif callable(identifier):
-    return identifier
-  else:
-    raise ValueError('Could not interpret initializer identifier: ' +
-                     str(identifier))
-
-
 
 
 def assert_like_rnncell(cell_name, cell):
@@ -439,7 +426,7 @@ class BasicRNNCell(LayerRNNCell):
   def output_size(self):
     return self._num_units
 
-
+  @tf_utils.shape_type_conversion
   def build(self, inputs_shape):
     if inputs_shape[-1] is None:
       raise ValueError("Expected inputs.shape[-1] to be known, saw shape: %s"
@@ -525,8 +512,8 @@ class GRUCell(LayerRNNCell):
       self._activation = activations.get(activation)
     else:
       self._activation = math_ops.tanh
-    self._kernel_initializer = get(kernel_initializer)
-    self._bias_initializer = get(bias_initializer)
+    self._kernel_initializer = initializers.get(kernel_initializer)
+    self._bias_initializer = initializers.get(bias_initializer)
 
   @property
   def state_size(self):
@@ -536,7 +523,7 @@ class GRUCell(LayerRNNCell):
   def output_size(self):
     return self._num_units
 
-
+  @tf_utils.shape_type_conversion
   def build(self, inputs_shape):
     if inputs_shape[-1] is None:
       raise ValueError("Expected inputs.shape[-1] to be known, saw shape: %s"
@@ -591,8 +578,8 @@ class GRUCell(LayerRNNCell):
   def get_config(self):
     config = {
         "num_units": self._num_units,
-        "kernel_initializer": serialize(self._kernel_initializer),
-        "bias_initializer": serialize(self._bias_initializer),
+        "kernel_initializer": initializers.serialize(self._kernel_initializer),
+        "bias_initializer": initializers.serialize(self._bias_initializer),
         "activation": activations.serialize(self._activation),
         "reuse": self._reuse,
     }
@@ -716,7 +703,7 @@ class BasicLSTMCell(LayerRNNCell):
   def output_size(self):
     return self._num_units
 
-
+  @tf_utils.shape_type_conversion
   def build(self, inputs_shape):
     if inputs_shape[-1] is None:
       raise ValueError("Expected inputs.shape[-1] to be known, saw shape: %s"
@@ -888,7 +875,7 @@ class LSTMCell(LayerRNNCell):
     self._num_units = num_units
     self._use_peepholes = use_peepholes
     self._cell_clip = cell_clip
-    self._initializer = get(initializer)
+    self._initializer = initializers.get(initializer)
     self._num_proj = num_proj
     self._proj_clip = proj_clip
     self._num_unit_shards = num_unit_shards
@@ -919,7 +906,7 @@ class LSTMCell(LayerRNNCell):
   def output_size(self):
     return self._output_size
 
-  
+  @tf_utils.shape_type_conversion
   def build(self, inputs_shape):
     if inputs_shape[-1] is None:
       raise ValueError("Expected inputs.shape[-1] to be known, saw shape: %s"
@@ -1044,7 +1031,7 @@ class LSTMCell(LayerRNNCell):
         "num_units": self._num_units,
         "use_peepholes": self._use_peepholes,
         "cell_clip": self._cell_clip,
-        #"initializer": serialize(self._initializer),
+        "initializer": initializers.serialize(self._initializer),
         "num_proj": self._num_proj,
         "proj_clip": self._proj_clip,
         "num_unit_shards": self._num_unit_shards,

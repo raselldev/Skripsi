@@ -19,7 +19,7 @@ from __future__ import print_function
 
 import numpy as np
 import six
-from tensorflow.python import pywrap_tensorflow_internal as c_api
+
 from tensorflow.core.framework import tensor_pb2
 from tensorflow.core.framework import tensor_shape_pb2
 from tensorflow.python.framework import ops
@@ -191,6 +191,10 @@ def GetFromNumpyDTypeDict(dtype_dict, dtype):
 
 
 def GetNumpyAppendFn(dtype):
+  # numpy dtype for strings are variable length. We can not compare
+  # dtype with a single constant (np.string does not exist) to decide
+  # dtype is a "string" type. We need to compare the dtype.type to be
+  # sure it's a string type.
   if dtype.type == np.string_ or dtype.type == np.unicode_:
     if _FAST_TENSOR_UTIL_AVAILABLE:
       return fast_tensor_util.AppendObjectArrayToTensorProto
@@ -542,6 +546,20 @@ def make_tensor_proto(values, dtype=None, shape=None, verify_shape=False):
 
 @tf_export("make_ndarray")
 def MakeNdarray(tensor):
+  """Create a numpy ndarray from a tensor.
+
+  Create a numpy ndarray with the same shape and data as the tensor.
+
+  Args:
+    tensor: A TensorProto.
+
+  Returns:
+    A numpy array with the tensor contents.
+
+  Raises:
+    TypeError: if tensor has unsupported type.
+
+  """
   shape = [d.size for d in tensor.tensor_shape.dim]
   num_elements = np.prod(shape, dtype=np.int64)
   tensor_dtype = dtypes.as_dtype(tensor.dtype)
@@ -632,6 +650,19 @@ def MakeNdarray(tensor):
 
 
 def ShapeEquals(tensor_proto, shape):
+  """Returns True if "tensor_proto" has the given "shape".
+
+  Args:
+    tensor_proto: A TensorProto.
+    shape: A tensor shape, expressed as a TensorShape, list, or tuple.
+
+  Returns:
+    True if "tensor_proto" has the given "shape", otherwise False.
+
+  Raises:
+    TypeError: If "tensor_proto" is not a TensorProto, or shape is not a
+      TensorShape, list, or tuple.
+  """
   if not isinstance(tensor_proto, tensor_pb2.TensorProto):
     raise TypeError("tensor_proto is not a tensor_pb2.TensorProto object")
   if isinstance(shape, tensor_shape_pb2.TensorShapeProto):
@@ -640,6 +671,7 @@ def ShapeEquals(tensor_proto, shape):
     raise TypeError("shape is not a list or tuple")
   tensor_shape_list = [d.size for d in tensor_proto.tensor_shape.dim]
   return all(x == y for x, y in zip(tensor_shape_list, shape))
+
 
 def _ConstantValue(tensor, partial):
   # TODO(touts): Support Variables?
@@ -751,8 +783,35 @@ def _ConstantValue(tensor, partial):
   else:
     return None
 
+
 def constant_value(tensor, partial=False):  # pylint: disable=invalid-name
-  if isinstance(tensor, EagerTensor):
+  """Returns the constant value of the given tensor, if efficiently calculable.
+
+  This function attempts to partially evaluate the given tensor, and
+  returns its value as a numpy ndarray if this succeeds.
+
+  TODO(mrry): Consider whether this function should use a registration
+  mechanism like gradients and ShapeFunctions, so that it is easily
+  extensible.
+
+  NOTE: If `constant_value(tensor)` returns a non-`None` result, it will no
+  longer be possible to feed a different value for `tensor`. This allows the
+  result of this function to influence the graph that is constructed, and
+  permits static shape optimizations.
+
+  Args:
+    tensor: The Tensor to be evaluated.
+    partial: If True, the returned numpy array is allowed to have partially
+      evaluated values. Values that can't be evaluated will be None.
+
+  Returns:
+    A numpy ndarray containing the constant value of the given `tensor`,
+    or None if it cannot be calculated.
+
+  Raises:
+    TypeError: if tensor is not an ops.Tensor.
+  """
+  if isinstance(tensor, ops.EagerTensor):
     return tensor.numpy()
   ret = _ConstantValue(tensor, partial)
   if ret is not None:
@@ -762,5 +821,136 @@ def constant_value(tensor, partial=False):  # pylint: disable=invalid-name
   return ret
 
 
+def constant_value_as_shape(tensor):  # pylint: disable=invalid-name
+  """A version of `constant_value()` that returns a `TensorShape`.
 
-EagerTensor = c_api.TFE_Py_InitEagerTensor(ops.Tensor)
+  This version should be used when a constant tensor value is
+  interpreted as a (possibly partial) shape, e.g. in the shape
+  function for `tf.reshape()`. By explicitly requesting a
+  `TensorShape` as the return value, it is possible to represent
+  unknown dimensions; by contrast, `constant_value()` is
+  all-or-nothing.
+
+  Args:
+    tensor: The rank-0 or rank-1 Tensor to be evaluated.
+
+  Returns:
+    A `TensorShape` based on the constant value of the given `tensor`.
+
+  Raises:
+    ValueError: If the shape is rank-0 and is not statically known to be -1.
+  """
+  if isinstance(tensor, ops.EagerTensor):
+    return tensor_shape.as_shape(
+        [dim if dim != -1 else None for dim in tensor.numpy()])
+
+  if tensor.get_shape().ndims == 0:
+    value = constant_value(tensor)
+    if value is None:
+      raise ValueError(
+          "Received a scalar with unknown value as shape; require a statically "
+          "known scalar with value '-1' to describe an unknown shape.")
+    if value != -1:
+      raise ValueError(
+          "Received a scalar value '%s' as shape; require a statically known "
+          "scalar with value '-1' to describe an unknown shape." % value)
+    return tensor_shape.unknown_shape()
+
+  shape = tensor.get_shape().with_rank(1)
+  if shape == [0]:
+    return tensor_shape.scalar()
+  elif tensor.op.type == "Shape":
+    return tensor.op.inputs[0].get_shape()
+  elif tensor.op.type == "Pack":
+    ret = tensor_shape.scalar()  # Empty list.
+    # Since we expect rank 1 inputs, Pack's axis must be zero, otherwise it
+    # would not be rank 1.
+    assert tensor.op.get_attr("axis") == 0
+    for pack_input in tensor.op.inputs:
+      # `pack_input` must be a scalar. Attempt to evaluate it, and append it
+      # to `ret`.
+      pack_input_val = constant_value(pack_input)
+      if pack_input_val is None or pack_input_val < 0:
+        new_dim = tensor_shape.Dimension(None)
+      else:
+        new_dim = tensor_shape.Dimension(pack_input_val)
+      ret = ret.concatenate([new_dim])
+    return ret
+  elif tensor.op.type == "Concat":
+    # We assume that `tensor.op.inputs[0]` evaluates to 0, as this is
+    # the only legal value when concatenating vectors, and it will
+    # have been checked by a previous shape function.
+    ret = tensor_shape.scalar()  # Empty list.
+    for concat_input in tensor.op.inputs[1:]:
+      # `concat_input` must be a vector. Attempt to evaluate it as a shape,
+      # and concatenate it with `ret`.
+      ret = ret.concatenate(constant_value_as_shape(concat_input))
+    return ret
+  elif tensor.op.type == "ConcatV2":
+    # We assume that `tensor.op.inputs[-1]` evaluates to 0, as this is
+    # the only legal value when concatenating vectors, and it will
+    # have been checked by a previous shape function.
+    ret = tensor_shape.scalar()  # Empty list.
+    for concat_input in tensor.op.inputs[:-1]:
+      # `concat_input` must be a vector. Attempt to evaluate it as a shape,
+      # and concatenate it with `ret`.
+      ret = ret.concatenate(constant_value_as_shape(concat_input))
+    return ret
+  elif tensor.op.type == "StridedSlice":
+    try:
+      begin = constant_value(tensor.op.inputs[1])
+      end = constant_value(tensor.op.inputs[2])
+      strides = constant_value(tensor.op.inputs[3])
+      if begin is not None and end is not None and strides is not None:
+        begin = begin[0]
+        end = end[0]
+        strides = strides[0]
+        begin_mask = tensor.op.get_attr("begin_mask")
+        if begin_mask == 1:
+          begin = None
+        end_mask = tensor.op.get_attr("end_mask")
+        if end_mask == 1:
+          end = None
+
+        ellipsis_mask = tensor.op.get_attr("ellipsis_mask")
+        new_axis_mask = tensor.op.get_attr("new_axis_mask")
+        shrink_axis_mask = tensor.op.get_attr("shrink_axis_mask")
+        valid_attributes = (not ellipsis_mask and not new_axis_mask and
+                            not shrink_axis_mask and (not begin_mask or
+                                                      (begin_mask == 1)) and
+                            (not end_mask or (end_mask == 1)))
+        if valid_attributes:  # additional inputs not supported
+          prev = constant_value_as_shape(tensor.op.inputs[0])
+          prev = prev[begin:end:strides]
+          ret = tensor_shape.TensorShape(prev)
+          return ret
+
+    except ValueError:  # Could come from get_attr or slicing prev.
+      pass
+    except TypeError:  # Could come from slicing prev.
+      pass
+
+  ret = tensor_shape.unknown_shape(shape[0].value)
+  value = constant_value(tensor)
+  if value is not None:
+    ret = ret.merge_with(
+        tensor_shape.TensorShape([d if d >= 0 else None for d in value]))
+  return ret
+
+
+def is_tensor(x):  # pylint: disable=invalid-name
+  """Check whether `x` is of tensor type.
+
+  Check whether an object is a tensor. This check is equivalent to calling
+  `isinstance(x, (tf.Tensor, tf.SparseTensor, tf.Variable))` and also checks
+  if all the component variables of a MirroredVariable or a TowerLocalVariable
+  are tensors.
+
+  Args:
+    x: A python object to check.
+
+  Returns:
+    `True` if `x` is a tensor, `False` if not.
+  """
+  return (isinstance(x, ops._TensorLike) or ops.is_dense_tensor_like(x) or  # pylint: disable=protected-access
+          (hasattr(x, "is_tensor_like") and x.is_tensor_like))

@@ -23,6 +23,7 @@ import traceback
 
 import six  # pylint: disable=unused-import
 
+from tensorflow.python.platform import tf_logging
 from tensorflow.python.util import tf_decorator
 # pylint: enable=g-bad-import-order,g-import-not-at-top
 
@@ -47,6 +48,24 @@ class _TFShouldUseHelper(object):
     self._repr = None
     self._stack_frame = None
     self._logging_module = None
+
+  def __del__(self):
+    if self._sated:
+      return
+    if self._fatal_error_if_unsated:
+      logger = tf_logging.fatal
+    else:
+      logger = tf_logging.error
+    creation_stack = ''.join(
+        [line.rstrip() for line in traceback.format_stack(self._stack_frame)])
+    logger(
+        '==================================\n'
+        'Object was never used (type %s):\n%s\nIf you want to mark it as '
+        'used call its "mark_used()" method.\nIt was originally created '
+        'here:\n%s\n'
+        '==================================' %
+        (self._type, self._repr, creation_stack))
+
 
 def _new__init__(self, true_value, tf_should_use_helper):
   # pylint: disable=protected-access

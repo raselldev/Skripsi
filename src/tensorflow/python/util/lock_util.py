@@ -1,3 +1,19 @@
+# Copyright 2018 The TensorFlow Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""Locking related utils."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -6,7 +22,48 @@ import threading
 
 
 class GroupLock(object):
+  """A lock to allow many members of a group to access a resource exclusively.
+
+  This lock provides a way to allow access to a resource by multiple threads
+  belonging to a logical group at the same time, while restricting access to
+  threads from all other groups. You can think of this as an extension of a
+  reader-writer lock, where you allow multiple writers at the same time. We
+  made it generic to support multiple groups instead of just two - readers and
+  writers.
+
+  Simple usage example with two groups accessing the same resource:
+
+  ```python
+  lock = GroupLock(num_groups=2)
+
+  # In a member of group 0:
+  with lock.group(0):
+    # do stuff, access the resource
+    # ...
+
+  # In a member of group 1:
+  with lock.group(1):
+    # do stuff, access the resource
+    # ...
+  ```
+
+  Using as a context manager with `.group(group_id)` is the easiest way. You
+  can also use the `acquire` and `release` method directly.
+  """
+
   def __init__(self, num_groups=2):
+    """Initialize a group lock.
+
+    Args:
+      num_groups: The number of groups that will be accessing the resource under
+        consideration. Should be a positive number.
+
+    Returns:
+      A group lock that can then be used to synchronize code.
+
+    Raises:
+      ValueError: If num_groups is less than 1.
+    """
     if num_groups < 1:
       raise ValueError("num_groups must be a positive integer, got {}".format(
           num_groups))
@@ -15,6 +72,14 @@ class GroupLock(object):
     self._group_member_counts = [0] * self._num_groups
 
   def group(self, group_id):
+    """Enter a context where the lock is with group `group_id`.
+
+    Args:
+      group_id: The group for which to acquire and release the lock.
+
+    Returns:
+      A context manager which will acquire the lock for `group_id`.
+    """
     self._validate_group_id(group_id)
     return self._Context(self, group_id)
 

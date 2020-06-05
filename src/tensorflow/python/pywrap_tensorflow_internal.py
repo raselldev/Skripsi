@@ -4,8 +4,6 @@
 # Do not make changes to this file unless you know what you are doing--modify
 # the SWIG interface file instead.
 
-from tensorflow.python.util import deprecation
-from tensorflow.python.util.tf_export import tf_export
 
 
 
@@ -60,6 +58,17 @@ def _swig_setattr_nondynamic(self, class_type, name, value, static=1):
 def _swig_setattr(self, class_type, name, value):
     return _swig_setattr_nondynamic(self, class_type, name, value, 0)
 
+
+def _swig_getattr_nondynamic(self, class_type, name, static=1):
+    if (name == "thisown"):
+        return self.this.own()
+    method = class_type.__swig_getmethods__.get(name, None)
+    if method:
+        return method(self)
+    if (not static):
+        return object.__getattr__(self, name)
+    else:
+        raise AttributeError(name)
 
 def _swig_getattr(self, class_type, name):
     return _swig_getattr_nondynamic(self, class_type, name, 0)
@@ -1754,9 +1763,17 @@ def TF_GraphToFunction_wrapper(fn_body, fn_name, append_hash_to_fn_name, opers, 
     return _pywrap_tensorflow_internal.TF_GraphToFunction_wrapper(fn_body, fn_name, append_hash_to_fn_name, opers, inputs, outputs, output_names, opts, description)
 TF_GraphToFunction_wrapper = _pywrap_tensorflow_internal.TF_GraphToFunction_wrapper
 
+def TF_GraphSetOutputHandleShapesAndTypes_wrapper(graph, output, shapes, ranks, types):
+    return _pywrap_tensorflow_internal.TF_GraphSetOutputHandleShapesAndTypes_wrapper(graph, output, shapes, ranks, types)
+TF_GraphSetOutputHandleShapesAndTypes_wrapper = _pywrap_tensorflow_internal.TF_GraphSetOutputHandleShapesAndTypes_wrapper
+
 def TF_GraphSetTensorShape_wrapper(graph, output, dims, unknown_shape):
     return _pywrap_tensorflow_internal.TF_GraphSetTensorShape_wrapper(graph, output, dims, unknown_shape)
 TF_GraphSetTensorShape_wrapper = _pywrap_tensorflow_internal.TF_GraphSetTensorShape_wrapper
+
+def TF_ImportGraphDefResultsMissingUnusedInputMappings_wrapper(results):
+    return _pywrap_tensorflow_internal.TF_ImportGraphDefResultsMissingUnusedInputMappings_wrapper(results)
+TF_ImportGraphDefResultsMissingUnusedInputMappings_wrapper = _pywrap_tensorflow_internal.TF_ImportGraphDefResultsMissingUnusedInputMappings_wrapper
 
 def TF_TryEvaluateConstant_wrapper(graph, output):
     return _pywrap_tensorflow_internal.TF_TryEvaluateConstant_wrapper(graph, output)
@@ -1841,6 +1858,14 @@ def CreateBufferedInputStream(filename, buffer_size, out_status):
     return _pywrap_tensorflow_internal.CreateBufferedInputStream(filename, buffer_size, out_status)
 CreateBufferedInputStream = _pywrap_tensorflow_internal.CreateBufferedInputStream
 
+def CreateWritableFile(filename, mode, out_status):
+    return _pywrap_tensorflow_internal.CreateWritableFile(filename, mode, out_status)
+CreateWritableFile = _pywrap_tensorflow_internal.CreateWritableFile
+
+def AppendToFile(file_content, file, out_status):
+    return _pywrap_tensorflow_internal.AppendToFile(file_content, file, out_status)
+AppendToFile = _pywrap_tensorflow_internal.AppendToFile
+
 def ReadFromStream(stream, bytes, out_status):
     return _pywrap_tensorflow_internal.ReadFromStream(stream, bytes, out_status)
 ReadFromStream = _pywrap_tensorflow_internal.ReadFromStream
@@ -1888,6 +1913,45 @@ BufferedInputStream_swigregister = _pywrap_tensorflow_internal.BufferedInputStre
 BufferedInputStream_swigregister(BufferedInputStream)
 
 
+def Set_TF_Status_from_Status(tf_status, status):
+    return _pywrap_tensorflow_internal.Set_TF_Status_from_Status(tf_status, status)
+Set_TF_Status_from_Status = _pywrap_tensorflow_internal.Set_TF_Status_from_Status
+
+def StatusFromTF_Status(tf_status):
+    return _pywrap_tensorflow_internal.StatusFromTF_Status(tf_status)
+StatusFromTF_Status = _pywrap_tensorflow_internal.StatusFromTF_Status
+
+def IsAbsolutePath(path):
+    return _pywrap_tensorflow_internal.IsAbsolutePath(path)
+IsAbsolutePath = _pywrap_tensorflow_internal.IsAbsolutePath
+
+def Dirname(path):
+    return _pywrap_tensorflow_internal.Dirname(path)
+Dirname = _pywrap_tensorflow_internal.Dirname
+
+def Basename(path):
+    return _pywrap_tensorflow_internal.Basename(path)
+Basename = _pywrap_tensorflow_internal.Basename
+
+def Extension(path):
+    return _pywrap_tensorflow_internal.Extension(path)
+Extension = _pywrap_tensorflow_internal.Extension
+
+def CleanPath(path):
+    return _pywrap_tensorflow_internal.CleanPath(path)
+CleanPath = _pywrap_tensorflow_internal.CleanPath
+
+def ParseURI(uri, scheme, host, path):
+    return _pywrap_tensorflow_internal.ParseURI(uri, scheme, host, path)
+ParseURI = _pywrap_tensorflow_internal.ParseURI
+
+def CreateURI(scheme, host, path):
+    return _pywrap_tensorflow_internal.CreateURI(scheme, host, path)
+CreateURI = _pywrap_tensorflow_internal.CreateURI
+
+def GetTempFilename(extension):
+    return _pywrap_tensorflow_internal.GetTempFilename(extension)
+GetTempFilename = _pywrap_tensorflow_internal.GetTempFilename
 class FileStatistics(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, FileStatistics, name, value)
@@ -1918,6 +1982,93 @@ class FileStatistics(_object):
 FileStatistics_swigregister = _pywrap_tensorflow_internal.FileStatistics_swigregister
 FileStatistics_swigregister(FileStatistics)
 
+
+def DoQuantizeTrainingOnGraphDefHelper(input_graph, num_bits, out_status):
+    return _pywrap_tensorflow_internal.DoQuantizeTrainingOnGraphDefHelper(input_graph, num_bits, out_status)
+DoQuantizeTrainingOnGraphDefHelper = _pywrap_tensorflow_internal.DoQuantizeTrainingOnGraphDefHelper
+
+from tensorflow.python.util import deprecation
+from tensorflow.python.util.tf_export import tf_export
+
+@deprecation.deprecated(
+    None,
+    "GraphDef quantized training rewriter is deprecated in the long term")
+@tf_export(v1=["train.do_quantize_training_on_graphdef"])
+def do_quantize_training_on_graphdef(input_graph, num_bits):
+  """A general quantization scheme is being developed in `tf.contrib.quantize`.
+
+  Consider using that instead, though since it is in the tf.contrib namespace,
+  it is not subject to backward compatibility guarantees.
+  """
+  from tensorflow.core.framework.graph_pb2 import GraphDef
+  from tensorflow.python.framework import errors
+  with errors.raise_exception_on_not_ok_status() as status:
+    graph = GraphDef()
+    result_graph_string = DoQuantizeTrainingOnGraphDefHelper(
+        input_graph.SerializeToString(), num_bits, status)
+
+  graph.ParseFromString(result_graph_string)
+  return graph
+
+do_quantize_training_on_graphdef._tf_api_names = [
+    'train.do_quantize_training_on_graphdef']
+do_quantize_training_on_graphdef._tf_api_names_v1 = [
+    'train.do_quantize_training_on_graphdef']
+
+
+def PyServer_New(server_def, out_status):
+    return _pywrap_tensorflow_internal.PyServer_New(server_def, out_status)
+PyServer_New = _pywrap_tensorflow_internal.PyServer_New
+
+def PyServer_Start(in_server, out_status):
+    return _pywrap_tensorflow_internal.PyServer_Start(in_server, out_status)
+PyServer_Start = _pywrap_tensorflow_internal.PyServer_Start
+
+def PyServer_Stop(in_server, out_status):
+    return _pywrap_tensorflow_internal.PyServer_Stop(in_server, out_status)
+PyServer_Stop = _pywrap_tensorflow_internal.PyServer_Stop
+
+def PyServer_Join(in_server, out_status):
+    return _pywrap_tensorflow_internal.PyServer_Join(in_server, out_status)
+PyServer_Join = _pywrap_tensorflow_internal.PyServer_Join
+class ServerInterface(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, ServerInterface, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, ServerInterface, name)
+
+    def __init__(self, *args, **kwargs):
+        raise AttributeError("No constructor defined - class is abstract")
+    __repr__ = _swig_repr
+    __swig_destroy__ = _pywrap_tensorflow_internal.delete_ServerInterface
+    __del__ = lambda self: None
+
+    def target(self):
+        return _pywrap_tensorflow_internal.ServerInterface_target(self)
+ServerInterface_swigregister = _pywrap_tensorflow_internal.ServerInterface_swigregister
+ServerInterface_swigregister(ServerInterface)
+
+
+def GetPythonWrappers(op_list_buf):
+    return _pywrap_tensorflow_internal.GetPythonWrappers(op_list_buf)
+GetPythonWrappers = _pywrap_tensorflow_internal.GetPythonWrappers
+
+def RunCppShapeInference(graph_def_version, serialized_node_def, input_serialized_shapes, input_constant_tensor_values, input_constant_tensor_as_shape_values, out_status):
+    return _pywrap_tensorflow_internal.RunCppShapeInference(graph_def_version, serialized_node_def, input_serialized_shapes, input_constant_tensor_values, input_constant_tensor_as_shape_values, out_status)
+RunCppShapeInference = _pywrap_tensorflow_internal.RunCppShapeInference
+
+def InstallStacktraceHandler():
+    return _pywrap_tensorflow_internal.InstallStacktraceHandler()
+InstallStacktraceHandler = _pywrap_tensorflow_internal.InstallStacktraceHandler
+
+def TryFindKernelClass(serialized_node_def):
+    return _pywrap_tensorflow_internal.TryFindKernelClass(serialized_node_def)
+TryFindKernelClass = _pywrap_tensorflow_internal.TryFindKernelClass
+
+def TransformGraphWithStringInputs(graph_def_string, inputs_string, outputs_string, transforms_string, out_status):
+    return _pywrap_tensorflow_internal.TransformGraphWithStringInputs(graph_def_string, inputs_string, outputs_string, transforms_string, out_status)
+TransformGraphWithStringInputs = _pywrap_tensorflow_internal.TransformGraphWithStringInputs
+
 def IsSequence(o):
     """
     Returns a true if its input is a collections.Sequence (except strings).
@@ -1937,12 +2088,33 @@ def IsNamedtuple(o, strict):
 IsNamedtuple = _pywrap_tensorflow_internal.IsNamedtuple
 
 def IsMapping(o):
+    """
+    Returns True iff `instance` is a `collections.Mapping`.
+
+    Args:
+      instance: An instance of a Python object.
+
+    Returns:
+      True if `instance` is a `collections.Mapping`.
+
+    """
     return _pywrap_tensorflow_internal.IsMapping(o)
 
 def IsAttrs(o):
+    """
+    Returns True iff `instance` is an instance of an `attr.s` decorated class.
+
+    Args:
+      instance: An instance of a Python object.
+
+    Returns:
+      True if `instance` is an instance of an `attr.s` decorated class.
+
+    """
     return _pywrap_tensorflow_internal.IsAttrs(o)
 
 def SameNamedtuples(o1, o2):
+    """Returns True if the two namedtuples have the same name and fields."""
     return _pywrap_tensorflow_internal.SameNamedtuples(o1, o2)
 
 def AssertSameStructure(o1, o2, check_types):
@@ -1950,8 +2122,194 @@ def AssertSameStructure(o1, o2, check_types):
 AssertSameStructure = _pywrap_tensorflow_internal.AssertSameStructure
 
 def Flatten(nested):
+    """
+    Returns a flat list from a given nested structure.
+
+    If `nest` is not a sequence, tuple, or dict, then returns a single-element
+    list: `[nest]`.
+
+    In the case of dict instances, the sequence consists of the values, sorted by
+    key to ensure deterministic behavior. This is true also for `OrderedDict`
+    instances: their sequence order is ignored, the sorting order of keys is
+    used instead. The same convention is followed in `pack_sequence_as`. This
+    correctly repacks dicts and `OrderedDict`s after they have been flattened,
+    and also allows flattening an `OrderedDict` and then repacking it back using
+    a corresponding plain dict, or vice-versa.
+    Dictionaries with non-sortable keys cannot be flattened.
+
+    Users must not modify any collections used in `nest` while this function is
+    running.
+
+    Args:
+      nest: an arbitrarily nested structure or a scalar object. Note, numpy
+          arrays are considered scalars.
+
+    Returns:
+      A Python list, the flattened version of the input.
+
+    Raises:
+      TypeError: The nest is or contains a dict with non-sortable keys.
+
+    """
     return _pywrap_tensorflow_internal.Flatten(nested)
+
+def IsSequenceForData(o):
+    """
+    Returns a true if `seq` is a Sequence or dict (except strings/lists).
+
+    NOTE(mrry): This differs from `tensorflow.python.util.nest.is_sequence()`,
+    which *does* treat a Python list as a sequence. For ergonomic
+    reasons, `tf.data` users would prefer to treat lists as
+    implicit `tf.Tensor` objects, and dicts as (nested) sequences.
+
+    Args:
+      seq: an input sequence.
+
+    Returns:
+      True if the sequence is a not a string or list and is a
+      collections.Sequence.
+
+    """
+    return _pywrap_tensorflow_internal.IsSequenceForData(o)
+
+def FlattenForData(nested):
+    """
+    Returns a flat sequence from a given nested structure.
+
+    If `nest` is not a sequence, this returns a single-element list: `[nest]`.
+
+    Args:
+      nest: an arbitrarily nested structure or a scalar object.
+        Note, numpy arrays are considered scalars.
+
+    Returns:
+      A Python list, the flattened version of the input.
+
+    """
+    return _pywrap_tensorflow_internal.FlattenForData(nested)
+
+def AssertSameStructureForData(o1, o2, check_types):
+    return _pywrap_tensorflow_internal.AssertSameStructureForData(o1, o2, check_types)
+AssertSameStructureForData = _pywrap_tensorflow_internal.AssertSameStructureForData
 
 def RegisterType(type_name, type):
     return _pywrap_tensorflow_internal.RegisterType(type_name, type)
 RegisterType = _pywrap_tensorflow_internal.RegisterType
+
+_pywrap_tensorflow_internal.SHARED_PTR_DISOWN_swigconstant(_pywrap_tensorflow_internal)
+SHARED_PTR_DISOWN = _pywrap_tensorflow_internal.SHARED_PTR_DISOWN
+class GItem(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GItem, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, GItem, name)
+    __repr__ = _swig_repr
+    __swig_setmethods__["item_"] = _pywrap_tensorflow_internal.GItem_item__set
+    __swig_getmethods__["item_"] = _pywrap_tensorflow_internal.GItem_item__get
+    if _newclass:
+        item_ = _swig_property(_pywrap_tensorflow_internal.GItem_item__get, _pywrap_tensorflow_internal.GItem_item__set)
+
+    def __init__(self):
+        this = _pywrap_tensorflow_internal.new_GItem()
+        try:
+            self.this.append(this)
+        except Exception:
+            self.this = this
+    __swig_destroy__ = _pywrap_tensorflow_internal.delete_GItem
+    __del__ = lambda self: None
+GItem_swigregister = _pywrap_tensorflow_internal.GItem_swigregister
+GItem_swigregister(GItem)
+
+
+def TF_NewItem(meta_graph, ignore_colocation, ignore_user_placement, out_status):
+    return _pywrap_tensorflow_internal.TF_NewItem(meta_graph, ignore_colocation, ignore_user_placement, out_status)
+TF_NewItem = _pywrap_tensorflow_internal.TF_NewItem
+
+def TF_IdentifyImportantOps(item, sort_topologically):
+    return _pywrap_tensorflow_internal.TF_IdentifyImportantOps(item, sort_topologically)
+TF_IdentifyImportantOps = _pywrap_tensorflow_internal.TF_IdentifyImportantOps
+
+def TF_GetOpProperties(item):
+    return _pywrap_tensorflow_internal.TF_GetOpProperties(item)
+TF_GetOpProperties = _pywrap_tensorflow_internal.TF_GetOpProperties
+
+def TF_GetColocationGroups(item):
+    return _pywrap_tensorflow_internal.TF_GetColocationGroups(item)
+TF_GetColocationGroups = _pywrap_tensorflow_internal.TF_GetColocationGroups
+class GCluster(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, GCluster, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, GCluster, name)
+    __repr__ = _swig_repr
+    __swig_setmethods__["cluster_"] = _pywrap_tensorflow_internal.GCluster_cluster__set
+    __swig_getmethods__["cluster_"] = _pywrap_tensorflow_internal.GCluster_cluster__get
+    if _newclass:
+        cluster_ = _swig_property(_pywrap_tensorflow_internal.GCluster_cluster__get, _pywrap_tensorflow_internal.GCluster_cluster__set)
+
+    def __init__(self):
+        this = _pywrap_tensorflow_internal.new_GCluster()
+        try:
+            self.this.append(this)
+        except Exception:
+            self.this = this
+    __swig_destroy__ = _pywrap_tensorflow_internal.delete_GCluster
+    __del__ = lambda self: None
+GCluster_swigregister = _pywrap_tensorflow_internal.GCluster_swigregister
+GCluster_swigregister(GCluster)
+
+
+def TF_NewCluster(allow_soft_placement, disable_detailed_stats, out_status):
+    return _pywrap_tensorflow_internal.TF_NewCluster(allow_soft_placement, disable_detailed_stats, out_status)
+TF_NewCluster = _pywrap_tensorflow_internal.TF_NewCluster
+
+def TF_NewVirtualCluster(named_devices, out_status):
+    return _pywrap_tensorflow_internal.TF_NewVirtualCluster(named_devices, out_status)
+TF_NewVirtualCluster = _pywrap_tensorflow_internal.TF_NewVirtualCluster
+
+def TF_ShutdownCluster(cluster):
+    return _pywrap_tensorflow_internal.TF_ShutdownCluster(cluster)
+TF_ShutdownCluster = _pywrap_tensorflow_internal.TF_ShutdownCluster
+
+def TF_ListDevices(cluster):
+    return _pywrap_tensorflow_internal.TF_ListDevices(cluster)
+TF_ListDevices = _pywrap_tensorflow_internal.TF_ListDevices
+
+def TF_ListAvailableOps():
+    return _pywrap_tensorflow_internal.TF_ListAvailableOps()
+TF_ListAvailableOps = _pywrap_tensorflow_internal.TF_ListAvailableOps
+
+def TF_GetSupportedDevices(cluster, item):
+    return _pywrap_tensorflow_internal.TF_GetSupportedDevices(cluster, item)
+TF_GetSupportedDevices = _pywrap_tensorflow_internal.TF_GetSupportedDevices
+
+def TF_EstimatePerformance(device):
+    return _pywrap_tensorflow_internal.TF_EstimatePerformance(device)
+TF_EstimatePerformance = _pywrap_tensorflow_internal.TF_EstimatePerformance
+
+def TF_MeasureCosts(item, cluster, generate_timeline, out_status):
+    return _pywrap_tensorflow_internal.TF_MeasureCosts(item, cluster, generate_timeline, out_status)
+TF_MeasureCosts = _pywrap_tensorflow_internal.TF_MeasureCosts
+
+def TF_DeterminePeakMemoryUsage(item, cluster, out_status):
+    return _pywrap_tensorflow_internal.TF_DeterminePeakMemoryUsage(item, cluster, out_status)
+TF_DeterminePeakMemoryUsage = _pywrap_tensorflow_internal.TF_DeterminePeakMemoryUsage
+
+def TF_OptimizeGraph(cluster, rewriter_config, metagraph, verbose, graph_id, out_status):
+    return _pywrap_tensorflow_internal.TF_OptimizeGraph(cluster, rewriter_config, metagraph, verbose, graph_id, out_status)
+TF_OptimizeGraph = _pywrap_tensorflow_internal.TF_OptimizeGraph
+
+def GenerateCostReport(metagraph, per_node_report, verbose, cluster):
+    return _pywrap_tensorflow_internal.GenerateCostReport(metagraph, per_node_report, verbose, cluster)
+GenerateCostReport = _pywrap_tensorflow_internal.GenerateCostReport
+
+def GraphAnalyzer(file_path, n):
+    return _pywrap_tensorflow_internal.GraphAnalyzer(file_path, n)
+GraphAnalyzer = _pywrap_tensorflow_internal.GraphAnalyzer
+
+def GenerateModelReport(metagraph, assume_valid_feeds, debug):
+    return _pywrap_tensorflow_internal.GenerateModelReport(metagraph, assume_valid_feeds, debug)
+GenerateModelReport = _pywrap_tensorflow_internal.GenerateModelReport
+# This file is compatible with both classic and new-style classes.
+
+

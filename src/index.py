@@ -74,10 +74,6 @@ def runDetect():
     print(open(FilePaths.fnAccuracy).read())
     model = Model(open(FilePaths.fnCharList).read(), decoderType, mustRestore=True)
     infer(model, filename)
-<<<<<<< HEAD
-=======
-
->>>>>>> parent of 71c0d448e... update
     #recog = tk.Label(frame, text=recognized[0], bg="gray").pack()
 
 canvas = tk.Canvas(root, height=500, width=500, bg="#263D42")

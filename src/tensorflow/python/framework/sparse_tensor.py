@@ -20,21 +20,21 @@ from __future__ import print_function
 
 import collections
 
-from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
+from tensorflow.python import pywrap_tensorflow
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_util
 from tensorflow.python.util.tf_export import tf_export
 
 # pylint: disable=protected-access
-#_TensorLike = ops._TensorLike
+_TensorLike = ops._TensorLike
 _eval_using_default_session = ops._eval_using_default_session
 _override_helper = ops._override_helper
 # pylint: enable=protected-access
 
 
 @tf_export("sparse.SparseTensor", "SparseTensor")
-class SparseTensor():
+class SparseTensor(_TensorLike):
   """Represents a sparse tensor.
 
   TensorFlow represents a sparse tensor as three separate dense tensors:

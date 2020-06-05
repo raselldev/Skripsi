@@ -1,3 +1,18 @@
+# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""Library of dtypes (Tensor element types)."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -5,7 +20,7 @@ from __future__ import print_function
 import numpy as np
 
 from tensorflow.core.framework import types_pb2
-from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
+from tensorflow.python import pywrap_tensorflow
 from tensorflow.python.util.tf_export import tf_export
 
 _np_bfloat16 = pywrap_tensorflow.TF_bfloat16_type()
@@ -13,19 +28,63 @@ _np_bfloat16 = pywrap_tensorflow.TF_bfloat16_type()
 
 @tf_export("dtypes.DType", "DType")
 class DType(object):
+  """Represents the type of the elements in a `Tensor`.
+
+  The following `DType` objects are defined:
+
+  * `tf.float16`: 16-bit half-precision floating-point.
+  * `tf.float32`: 32-bit single-precision floating-point.
+  * `tf.float64`: 64-bit double-precision floating-point.
+  * `tf.bfloat16`: 16-bit truncated floating-point.
+  * `tf.complex64`: 64-bit single-precision complex.
+  * `tf.complex128`: 128-bit double-precision complex.
+  * `tf.int8`: 8-bit signed integer.
+  * `tf.uint8`: 8-bit unsigned integer.
+  * `tf.uint16`: 16-bit unsigned integer.
+  * `tf.uint32`: 32-bit unsigned integer.
+  * `tf.uint64`: 64-bit unsigned integer.
+  * `tf.int16`: 16-bit signed integer.
+  * `tf.int32`: 32-bit signed integer.
+  * `tf.int64`: 64-bit signed integer.
+  * `tf.bool`: Boolean.
+  * `tf.string`: String.
+  * `tf.qint8`: Quantized 8-bit signed integer.
+  * `tf.quint8`: Quantized 8-bit unsigned integer.
+  * `tf.qint16`: Quantized 16-bit signed integer.
+  * `tf.quint16`: Quantized 16-bit unsigned integer.
+  * `tf.qint32`: Quantized 32-bit signed integer.
+  * `tf.resource`: Handle to a mutable resource.
+  * `tf.variant`: Values of arbitrary types.
+
+  In addition, variants of these types with the `_ref` suffix are
+  defined for reference-typed tensors.
+
+  The `tf.as_dtype()` function converts numpy types and string type
+  names to a `DType` object.
+  """
 
   def __init__(self, type_enum):
+    """Creates a new `DataType`.
+
+    NOTE(mrry): In normal circumstances, you should not need to
+    construct a `DataType` object directly. Instead, use the
+    `tf.as_dtype()` function.
+
+    Args:
+      type_enum: A `types_pb2.DataType` enum value.
+
+    Raises:
+      TypeError: If `type_enum` is not a value `types_pb2.DataType`.
+
+    """
+    # TODO(mrry): Make the necessary changes (using __new__) to ensure
+    # that calling this returns one of the interned values.
     type_enum = int(type_enum)
     if (type_enum not in types_pb2.DataType.values() or
         type_enum == types_pb2.DT_INVALID):
       raise TypeError(
           "type_enum is not a valid types_pb2.DataType: %s" % type_enum)
     self._type_enum = type_enum
-
-  @property
-  def is_bool(self):
-    """Returns whether this is a boolean data type"""
-    return self.base_dtype == bool
 
   @property
   def _is_ref_dtype(self):
@@ -48,7 +107,16 @@ class DType(object):
     else:
       return self
 
-  
+  @property
+  def real_dtype(self):
+    """Returns the dtype correspond to this dtype's real part."""
+    base = self.base_dtype
+    if base == complex64:
+      return float32
+    elif base == complex128:
+      return float64
+    else:
+      return self
 
   @property
   def is_numpy_compatible(self):
@@ -64,7 +132,10 @@ class DType(object):
     """Returns a `types_pb2.DataType` enum value based on this `DType`."""
     return self._type_enum
 
-  
+  @property
+  def is_bool(self):
+    """Returns whether this is a boolean data type"""
+    return self.base_dtype == bool
 
   @property
   def is_integer(self):

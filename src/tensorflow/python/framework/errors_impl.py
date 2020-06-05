@@ -21,24 +21,13 @@ from __future__ import print_function
 import traceback
 import warnings
 
-#from tensorflow.python.framework import c_api_util
-from tensorflow.python import pywrap_tensorflow_internal as c_api
-from tensorflow.core import error_codes_pb2
+from tensorflow.core.lib.core import error_codes_pb2
+from tensorflow.python import pywrap_tensorflow as c_api
+from tensorflow.python.framework import c_api_util
+from tensorflow.python.util import compat
 from tensorflow.python.util import deprecation
+from tensorflow.python.util import tf_inspect
 from tensorflow.python.util.tf_export import tf_export
-
-
-class ScopedTFStatus(object):
-  """Wrapper around TF_Status that handles deletion."""
-
-  def __init__(self):
-    self.status = c_api.TF_NewStatus()
-
-  def __del__(self):
-    # Note: when we're destructing the global context (i.e when the process is
-    # terminating) we can have already deleted other modules.
-    if c_api is not None and c_api.TF_DeleteStatus is not None:
-      c_api.TF_DeleteStatus(self.status)
 
 
 @tf_export("errors.OpError", "OpError")
@@ -499,6 +488,24 @@ _EXCEPTION_CLASS_TO_CODE = {
     class_: code for code, class_ in _CODE_TO_EXCEPTION_CLASS.items()}
 
 
+@tf_export("errors.exception_type_from_error_code")
+def exception_type_from_error_code(error_code):
+  return _CODE_TO_EXCEPTION_CLASS[error_code]
+
+
+@tf_export("errors.error_code_from_exception_type")
+def error_code_from_exception_type(cls):
+  return _EXCEPTION_CLASS_TO_CODE[cls]
+
+
+def _make_specific_exception(node_def, op, message, error_code):
+  try:
+    exc_type = exception_type_from_error_code(error_code)
+    return exc_type(node_def, op, message)
+  except KeyError:
+    warnings.warn("Unknown error code: %d" % error_code)
+    return UnknownError(node_def, op, message, error_code)
+
 
 # Named like a function for backwards compatibility with the
 # @tf_contextlib.contextmanager version, which was switched to a class to avoid
@@ -509,7 +516,7 @@ class raise_exception_on_not_ok_status(object):
   """Context manager to check for C API status."""
 
   def __enter__(self):
-    self.status = ScopedTFStatus()
+    self.status = c_api_util.ScopedTFStatus()
     return self.status.status
 
   def __exit__(self, type_arg, value_arg, traceback_arg):

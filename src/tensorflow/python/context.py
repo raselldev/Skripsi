@@ -24,11 +24,14 @@ import copy
 import random
 import threading
 
-from tensorflow.python import pywrap_tensorflow_internal as pywrap_tensorflow
+from tensorflow.core.protobuf import config_pb2
+from tensorflow.python import pywrap_tensorflow
+from tensorflow.python.framework import c_api_util
+from tensorflow.python.framework import device as pydev
+from tensorflow.python.util import compat
+from tensorflow.python.util import is_in_graph_mode
 from tensorflow.python.util import tf_contextlib
 from tensorflow.python.util.tf_export import tf_export
-#from tensorflow.python.util import is_in_graph_mode
-#from tensorflow.python.framework import device as pydev
 
 GRAPH_MODE = 0
 EAGER_MODE = 1
@@ -83,8 +86,8 @@ class _EagerContext(threading.local):
 
   def __init__(self):
     super(_EagerContext, self).__init__()
-#    self.device_spec = pydev.DeviceSpec.from_string("")
-#    self.device_name = self.device_spec.to_string()
+    self.device_spec = pydev.DeviceSpec.from_string("")
+    self.device_name = self.device_spec.to_string()
     self.mode = default_execution_mode
     self.is_eager = default_execution_mode == EAGER_MODE
     self.scope_name = ""
@@ -792,4 +795,4 @@ def _tmp_in_graph_mode():
   return not executing_eagerly()
 
 
-#is_in_graph_mode.IS_IN_GRAPH_MODE = _tmp_in_graph_mode
+is_in_graph_mode.IS_IN_GRAPH_MODE = _tmp_in_graph_mode

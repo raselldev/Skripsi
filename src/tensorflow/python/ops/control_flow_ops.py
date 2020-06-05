@@ -1,3 +1,23 @@
+# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""Control Flow Operations.
+
+See the [Control
+Flow](https://tensorflow.org/api_guides/python/control_flow_ops) guide.
+"""
+# pylint: disable=g-bad-name
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -9,22 +29,34 @@ import os
 
 import six
 
-from tensorflow.python.ops import gen_data_flow_ops
-from tensorflow.python.framework import tensor_util
-from tensorflow.python.framework import dtypes
-from tensorflow.python.ops.gen_control_flow_ops import *
-from tensorflow.python.ops import math_ops
-from tensorflow.python.framework import constant_op
-from tensorflow.python.ops import tensor_array_ops
-from tensorflow.python.framework import sparse_tensor
-from tensorflow.python.util import nest
-from tensorflow.python.ops import control_flow_util as util
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import gen_control_flow_ops
+from tensorflow.core.framework import attr_value_pb2
+from tensorflow.core.protobuf import control_flow_pb2
 from tensorflow.python import context
-#from tensorflow.core.protobuf import control_flow_pb2
+from tensorflow.python.framework import constant_op
+from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import errors
 from tensorflow.python.framework import ops
+from tensorflow.python.framework import sparse_tensor
+from tensorflow.python.framework import tensor_shape
+from tensorflow.python.framework import tensor_util
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import cond_v2_impl
+from tensorflow.python.ops import control_flow_util as util
+from tensorflow.python.ops import gen_array_ops
+from tensorflow.python.ops import gen_control_flow_ops
+from tensorflow.python.ops import gen_data_flow_ops
+from tensorflow.python.ops import gen_logging_ops
+from tensorflow.python.ops import gen_resource_variable_ops
+from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import tensor_array_ops
+# go/tf-wildcard-import
+# pylint: disable=wildcard-import,undefined-variable
+from tensorflow.python.ops.gen_control_flow_ops import *
+# pylint: enable=wildcard-import
+from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python.util import compat
 from tensorflow.python.util import deprecation
+from tensorflow.python.util import nest
 from tensorflow.python.util import tf_should_use
 from tensorflow.python.util.tf_export import tf_export
 
@@ -32,6 +64,12 @@ from tensorflow.python.util.tf_export import tf_export
 _while_v2 = None
 
 ENABLE_COND_V2 = os.getenv("TF_ENABLE_COND_V2", "0") != "0"
+# Note: Setting this to True is not sufficient to switch to the v2 while_loop.
+# Users must also import the while_v2 module to set the _while_v2 module
+# variable above. We do this to avoid a circular dependency:
+# control_flow_ops -> while_v2 -> gradients_impl -> control_flow_ops
+# A ValueError is raised in tf.while_loop if this is set to True and the
+# `_while_v2` module is not set.
 ENABLE_WHILE_V2 = os.getenv("TF_ENABLE_WHILE_V2", "0") != "0"
 
 
@@ -345,6 +383,25 @@ def switch(data, pred, dtype=None, name=None):
 
 
 def _SwitchRefOrTensor(data, pred, name="Switch"):
+  """Forwards `data` to an output determined by `pred`.
+
+  If `pred` is false, the `data` input is forwarded to the first output.
+  Otherwise, the data goes to the second output.
+
+  This op handles `Tensor`s and `IndexedSlices`.
+
+  Args:
+    data: The tensor to be forwarded to the appropriate output.
+    pred: A scalar that specifies which output port will receive data.
+    name: A name for this operation (optional).
+
+  Returns:
+    `(output_false, output_true)`: If `pred` is true, data will be forwarded to
+    `output_true`, otherwise it goes to `output_false`.
+
+  Raises:
+    TypeError: if data is not a Tensor or IndexedSlices
+  """
   data = ops.convert_to_tensor_or_indexed_slices(data, name="data")
   # NOTE(vrv): ops.colocate_with(data, ignore_existing=True) below
   # addresses the following scenario.
@@ -432,7 +489,7 @@ def merge(inputs, name=None):
       return ops.IndexedSlices(values, indices, dense_shape), chosen_index
 
 
-
+# pylint: enable=protected-access
 
 
 def _convert_tensorarray_to_flow(tensor_or_tensor_array):
@@ -452,7 +509,7 @@ def _make_tensor_array(ta, t_or_flow):
       colocate_with_first_write_call=ta._colocate_with_first_write_call)
   new_ta._colocate_with = ta._colocate_with
   new_ta._element_shape = ta._element_shape
-  
+  # pylint: enable=protected-access
   return new_ta
 
 
@@ -625,7 +682,7 @@ def _AddNextAndBackEdge(m, v, enforce_shape_invariant=True):
     v = _NextIteration(v)
     m.values.op._update_input(1, v.values)
     m.indices.op._update_input(1, v.indices)
-    
+    # pylint: enable=protected-access
     if m.dense_shape is not None:
       if v.dense_shape is None:
         raise ValueError("Must have dense shape: %s" % v.name)
@@ -638,7 +695,7 @@ def _AddNextAndBackEdge(m, v, enforce_shape_invariant=True):
     m.values.op._update_input(1, v.values)
     m.indices.op._update_input(1, v.indices)
     m.dense_shape.op._update_input(1, v.dense_shape)
-    
+    # pylint: enable=protected-access
   else:
     raise TypeError("Type %s not supported" % type(m))
   return v
@@ -685,7 +742,7 @@ def GetMaxSizeFromNestedMaximumIterations(value, while_ctxt):
 
     # pylint: disable=protected-access
     max_iter_ctxt = max_iter.op._get_control_flow_context()
-    
+    # pylint: enable=protected-access
 
     # If max_iter_ctxt (non-strictly) contains curr_ctxt, then it's OK to use.
     if util.IsContainingContext(curr_ctxt, max_iter_ctxt):
@@ -1363,7 +1420,7 @@ class ControlFlowState(object):
             next_grad_val = _NextIteration(grad_val)
             grad_state.grad_context.Exit()
           b_merge.op._update_input(1, next_grad_val)
-          
+          # pylint: enable=protected-access
 
 
 def MaybeCreateControlFlowState(between_op_list, between_ops,
@@ -1420,6 +1477,22 @@ def ZerosLikeOutsideLoop(op, index):
 
 
 class ControlFlowContext(object):
+  """The base class for control flow context.
+
+  The usage pattern is a sequence of (Enter, Exit) followed by a final
+  ExitResult.
+
+  We maintain the following state for control flow contexts during graph
+  construction:
+   1. graph has _control_flow_context: the current context used to
+      construct new nodes. Changed by ctxt.Enter() and ctxt.Exit()
+   2. op has _control_flow_context: the context to which the op belongs.
+      Set at the time the op is created. Immutable.
+   3. A ControlFlowContext has _outer_context: the context in which this
+      context is created. Set at the time a context is created. Immutable.
+   4. A ControlFlowContext has _context_stack.
+      Pushed and popped by ctxt.Enter() and ctxt.Exit()
+  """
 
   def __init__(self, values_def=None, import_scope=None):
     self._nested_contexts = []
@@ -1461,7 +1534,7 @@ class ControlFlowContext(object):
     for op in op_names:
       # pylint: disable=protected-access
       g.as_graph_element(op)._set_control_flow_context(self)
-      
+      # pylint: enable=protected-access
 
   @property
   def name(self):
@@ -1574,7 +1647,7 @@ class ControlFlowContext(object):
       op._add_control_inputs(internal_control_inputs)
     return internal_control_inputs, external_control_inputs
 
-  
+  # pylint: enable=protected-access
 
   def AddInnerOp(self, op):
     """Notifies a scope about an operator added to an inner scope."""
@@ -1608,6 +1681,18 @@ class CondContext(ControlFlowContext):
                name="cond_text",
                context_def=None,
                import_scope=None):
+    """Creates a `CondContext`.
+
+    Args:
+      pred: The `boolean` tensor for the conditional predicate.
+      pivot: The predicate tensor in this branch.
+      branch: 0 or 1 representing this branch.
+      name: Name of the `CondContext` python object.
+      context_def: Optional `ContextDef` protocol buffer to initialize the
+        `CondContext` object from.
+      import_scope: Optional `string`. Name scope to add. Only used when
+        initialing from protocol buffer.
+    """
     self._name = ops.get_default_graph().unique_name(name)
 
     if context_def:
@@ -1736,7 +1821,7 @@ class CondContext(ControlFlowContext):
       result.op.graph.prevent_fetching(result.op)
       # pylint: disable=protected-access
       result.op._set_control_flow_context(self)
-      
+      # pylint: enable=protected-access
 
       self._values.add(result.name)
       self._external_values[val.name] = result
@@ -1756,7 +1841,7 @@ class CondContext(ControlFlowContext):
                  for input_op in op.control_inputs):
         # pylint: disable=protected-access
         op._add_control_input(self._pivot.op)
-        
+        # pylint: enable=protected-access
     else:
       # Make each input to 'op' available in this CondContext. If an input is
       # already part of this context there's nothing to do, but if it's
@@ -1779,13 +1864,13 @@ class CondContext(ControlFlowContext):
         if real_x != x:
           # pylint: disable=protected-access
           op._update_input(index, real_x)
-          
+          # pylint: enable=protected-access
       # Remove any external control dependency on this op.
       self._RemoveExternalControlEdges(op)
       # pylint: disable=protected-access
       if op.graph._is_function(op.type) or op.type == "SymbolicGradient":
         op._add_control_input(self._pivot.op)
-      
+      # pylint: enable=protected-access
 
     # Mark op's outputs as seen by this context and any outer contexts.
     output_names = [x.name for x in op.outputs]
@@ -1794,7 +1879,7 @@ class CondContext(ControlFlowContext):
       # pylint: disable=protected-access
       ctxt._values.update(output_names)
       ctxt = ctxt._outer_context
-      
+      # pylint: enable=protected-access
 
     if self._outer_context or not util.IsLoopExit(op):
       op.graph.prevent_fetching(op)
@@ -1886,6 +1971,71 @@ def cond(pred,
          name=None,
          fn1=None,
          fn2=None):
+  """Return `true_fn()` if the predicate `pred` is true else `false_fn()`.
+
+  `true_fn` and `false_fn` both return lists of output tensors. `true_fn` and
+  `false_fn` must have the same non-zero number and type of outputs.
+
+  **WARNING**: Any Tensors or Operations created outside of `true_fn` and
+  `false_fn` will be executed regardless of which branch is selected at runtime.
+
+  Although this behavior is consistent with the dataflow model of TensorFlow,
+  it has frequently surprised users who expected a lazier semantics.
+  Consider the following simple program:
+
+  ```python
+  z = tf.multiply(a, b)
+  result = tf.cond(x < y, lambda: tf.add(x, z), lambda: tf.square(y))
+  ```
+
+  If `x < y`, the `tf.add` operation will be executed and `tf.square`
+  operation will not be executed. Since `z` is needed for at least one
+  branch of the `cond`, the `tf.multiply` operation is always executed,
+  unconditionally.
+
+  Note that `cond` calls `true_fn` and `false_fn` *exactly once* (inside the
+  call to `cond`, and not at all during `Session.run()`). `cond`
+  stitches together the graph fragments created during the `true_fn` and
+  `false_fn` calls with some additional graph nodes to ensure that the right
+  branch gets executed depending on the value of `pred`.
+
+  `tf.cond` supports nested structures as implemented in
+  `tensorflow.python.util.nest`. Both `true_fn` and `false_fn` must return the
+  same (possibly nested) value structure of lists, tuples, and/or named tuples.
+  Singleton lists and tuples form the only exceptions to this: when returned by
+  `true_fn` and/or `false_fn`, they are implicitly unpacked to single values.
+  This behavior is disabled by passing `strict=True`.
+
+  Args:
+    pred: A scalar determining whether to return the result of `true_fn` or
+      `false_fn`.
+    true_fn: The callable to be performed if pred is true.
+    false_fn: The callable to be performed if pred is false.
+    strict: A boolean that enables/disables 'strict' mode; see above.
+    name: Optional name prefix for the returned tensors.
+
+  Returns:
+    Tensors returned by the call to either `true_fn` or `false_fn`. If the
+    callables return a singleton list, the element is extracted from the list.
+
+  Raises:
+    TypeError: if `true_fn` or `false_fn` is not callable.
+    ValueError: if `true_fn` and `false_fn` do not return the same number of
+      tensors, or return tensors of different types.
+
+  Example:
+
+  ```python
+  x = tf.constant(2)
+  y = tf.constant(5)
+  def f1(): return tf.multiply(x, 17)
+  def f2(): return tf.add(y, 23)
+  r = tf.cond(tf.less(x, y), f1, f2)
+  # r is set to f1().
+  # Operations in f2 (e.g., tf.add) are not executed.
+  ```
+
+  """
   if ENABLE_COND_V2 and not context.executing_eagerly():
     return cond_v2_impl.cond_v2(pred, true_fn, false_fn, name)
 
@@ -2140,7 +2290,7 @@ class WhileContext(ControlFlowContext):
           # pylint: disable=protected-access
           op._set_attr("frame_name",
                        attr_value_pb2.AttrValue(s=compat.as_bytes(self.name)))
-          
+          # pylint: enable=protected-access
     self._graph = ops.get_default_graph()
 
   @property
@@ -2343,7 +2493,7 @@ class WhileContext(ControlFlowContext):
       if not control_inputs:
         # pylint: disable=protected-access
         op._add_control_input(self.GetControlPivot().op)
-        
+        # pylint: enable=protected-access
       for x in op.outputs:
         self._values.add(x.name)
     else:
@@ -2386,7 +2536,7 @@ class WhileContext(ControlFlowContext):
       # pylint: disable=protected-access
       if op.graph._is_function(op.type) or op.type == "SymbolicGradient":
         return True
-      
+      # pylint: enable=protected-access
       for x in op.inputs:
         if not util.IsLoopConstantEnter(x.op):
           return False
@@ -2395,7 +2545,7 @@ class WhileContext(ControlFlowContext):
     if _IsOpFree(op):
       # pylint: disable=protected-access
       op._add_control_input(self.GetControlPivot().op)
-      
+      # pylint: enable=protected-access
 
   def AddForwardLoopCounter(self, outer_grad_state):
     """Adds a loop that counts the number of iterations.
@@ -2506,7 +2656,7 @@ class WhileContext(ControlFlowContext):
       # before the pops of (i+1)-th execution of the same inner loop.
       # pylint: disable=protected-access
       outer_grad_state.grad_sync._add_control_input(final_zero.op)
-      
+      # pylint: enable=protected-access
 
     self.ExitResult([final_zero])
     self.Exit()
@@ -2747,14 +2897,14 @@ class WhileContext(ControlFlowContext):
       control_pivot = outer_context.GetControlPivot()
       # pylint: disable=protected-access
       outer_context = outer_context._outer_context
-      
+      # pylint: enable=protected-access
 
     if control_pivot is not None:
       for var in enter_vars:
         if util.IsLoopConstantEnter(var.op.inputs[0].op):
           # pylint: disable=protected-access
           var.op._add_control_input(control_pivot.op)
-          
+          # pylint: enable=protected-access
     _SetShapeInvariants(real_vars, enter_vars, shape_invariants)
 
     # Fix the control inputs and control flow context of these enter ops.
@@ -2891,9 +3041,14 @@ class WhileContext(ControlFlowContext):
         x.op._set_control_flow_context(self)
         x.op._add_control_inputs(outer_control_inputs)
         graph._record_op_seen_by_control_dependencies(x.op)
-    
+    # pylint: enable=protected-access
+
+  def IsWhileContext(self):
+    return True
 
 
+# pylint: disable=redefined-outer-name
+@tf_export("while_loop")
 def while_loop(cond,
                body,
                loop_vars,
@@ -2904,7 +3059,167 @@ def while_loop(cond,
                name=None,
                maximum_iterations=None,
                return_same_structure=False):
-  
+  """Repeat `body` while the condition `cond` is true.
+
+  `cond` is a callable returning a boolean scalar tensor. `body` is a callable
+  returning a (possibly nested) tuple, namedtuple or list of tensors of the same
+  arity (length and structure) and types as `loop_vars`. `loop_vars` is a
+  (possibly nested) tuple, namedtuple or list of tensors that is passed to both
+  `cond` and `body`. `cond` and `body` both take as many arguments as there are
+  `loop_vars`.
+
+  In addition to regular Tensors or IndexedSlices, the body may accept and
+  return TensorArray objects.  The flows of the TensorArray objects will
+  be appropriately forwarded between loops and during gradient calculations.
+
+  Note that `while_loop` calls `cond` and `body` *exactly once* (inside the
+  call to `while_loop`, and not at all during `Session.run()`). `while_loop`
+  stitches together the graph fragments created during the `cond` and `body`
+  calls with some additional graph nodes to create the graph flow that
+  repeats `body` until `cond` returns false.
+
+  For correctness, `tf.while_loop()` strictly enforces shape invariants for
+  the loop variables. A shape invariant is a (possibly partial) shape that
+  is unchanged across the iterations of the loop. An error will be raised
+  if the shape of a loop variable after an iteration is determined to be more
+  general than or incompatible with its shape invariant. For example, a shape
+  of [11, None] is more general than a shape of [11, 17], and [11, 21] is not
+  compatible with [11, 17]. By default (if the argument `shape_invariants` is
+  not specified), it is assumed that the initial shape of each tensor in
+  `loop_vars` is the same in every iteration. The `shape_invariants` argument
+  allows the caller to specify a less specific shape invariant for each loop
+  variable, which is needed if the shape varies between iterations. The
+  `tf.Tensor.set_shape`
+  function may also be used in the `body` function to indicate that
+  the output loop variable has a particular shape. The shape invariant for
+  SparseTensor and IndexedSlices are treated specially as follows:
+
+  a) If a loop variable is a SparseTensor, the shape invariant must be
+  TensorShape([r]) where r is the rank of the dense tensor represented
+  by the sparse tensor. It means the shapes of the three tensors of the
+  SparseTensor are ([None], [None, r], [r]). NOTE: The shape invariant here
+  is the shape of the SparseTensor.dense_shape property. It must be the shape of
+  a vector.
+
+  b) If a loop variable is an IndexedSlices, the shape invariant must be
+  a shape invariant of the values tensor of the IndexedSlices. It means
+  the shapes of the three tensors of the IndexedSlices are (shape, [shape[0]],
+  [shape.ndims]).
+
+  `while_loop` implements non-strict semantics, enabling multiple iterations
+  to run in parallel. The maximum number of parallel iterations can be
+  controlled by `parallel_iterations`, which gives users some control over
+  memory consumption and execution order. For correct programs, `while_loop`
+  should return the same result for any parallel_iterations > 0.
+
+  For training, TensorFlow stores the tensors that are produced in the
+  forward inference and are needed in back propagation. These tensors are a
+  main source of memory consumption and often cause OOM errors when training
+  on GPUs. When the flag swap_memory is true, we swap out these tensors from
+  GPU to CPU. This for example allows us to train RNN models with very long
+  sequences and large batches.
+
+  Args:
+    cond: A callable that represents the termination condition of the loop.
+    body: A callable that represents the loop body.
+    loop_vars: A (possibly nested) tuple, namedtuple or list of numpy array,
+      `Tensor`, and `TensorArray` objects.
+    shape_invariants: The shape invariants for the loop variables.
+    parallel_iterations: The number of iterations allowed to run in parallel.
+      It must be a positive integer.
+    back_prop: Whether backprop is enabled for this while loop.
+    swap_memory: Whether GPU-CPU memory swap is enabled for this loop.
+    name: Optional name prefix for the returned tensors.
+    maximum_iterations: Optional maximum number of iterations of the while loop
+      to run.  If provided, the `cond` output is AND-ed with an additional
+      condition ensuring the number of iterations executed is no greater than
+      `maximum_iterations`.
+    return_same_structure: If True, output has same structure as `loop_vars`. If
+      eager execution is enabled, this is ignored (and always treated as True).
+
+  Returns:
+    The output tensors for the loop variables after the loop.
+     If `return_same_structure` is True, the return value has the same
+     structure as `loop_vars`.
+     If `return_same_structure` is False, the return value is a Tensor,
+     TensorArray or IndexedSlice if the length of `loop_vars` is 1, or a list
+     otherwise.
+
+  Raises:
+    TypeError: if `cond` or `body` is not callable.
+    ValueError: if `loop_vars` is empty.
+
+  Example:
+
+  ```python
+  i = tf.constant(0)
+  c = lambda i: tf.less(i, 10)
+  b = lambda i: tf.add(i, 1)
+  r = tf.while_loop(c, b, [i])
+  ```
+
+  Example with nesting and a namedtuple:
+
+  ```python
+  import collections
+  Pair = collections.namedtuple('Pair', 'j, k')
+  ijk_0 = (tf.constant(0), Pair(tf.constant(1), tf.constant(2)))
+  c = lambda i, p: i < 10
+  b = lambda i, p: (i + 1, Pair((p.j + p.k), (p.j - p.k)))
+  ijk_final = tf.while_loop(c, b, ijk_0)
+  ```
+
+  Example using shape_invariants:
+
+  ```python
+  i0 = tf.constant(0)
+  m0 = tf.ones([2, 2])
+  c = lambda i, m: i < 10
+  b = lambda i, m: [i+1, tf.concat([m, m], axis=0)]
+  tf.while_loop(
+      c, b, loop_vars=[i0, m0],
+      shape_invariants=[i0.get_shape(), tf.TensorShape([None, 2])])
+  ```
+
+  Example which demonstrates non-strict semantics: In the following
+  example, the final value of the counter `i` does not depend on `x`. So
+  the `while_loop` can increment the counter parallel to updates of `x`.
+  However, because the loop counter at one loop iteration depends
+  on the value at the previous iteration, the loop counter itself cannot
+  be incremented in parallel. Hence if we just want the final value of the
+  counter (which we print on the line `print(sess.run(i))`), then
+  `x` will never be incremented, but the counter will be updated on a
+  single thread. Conversely, if we want the value of the output (which we
+  print on the line `print(sess.run(out).shape)`), then the counter may be
+  incremented on its own thread, while `x` can be incremented in
+  parallel on a separate thread. In the extreme case, it is conceivable
+  that the thread incrementing the counter runs until completion before
+  `x` is incremented even a single time. The only thing that can never
+  happen is that the thread updating `x` can never get ahead of the
+  counter thread because the thread incrementing `x` depends on the value
+  of the counter.
+
+  ```python
+  import tensorflow as tf
+
+  n = 10000
+  x = tf.constant(list(range(n)))
+  c = lambda i, x: i < n
+  b = lambda i, x: (tf.Print(i + 1, [i]), tf.Print(x + 1, [i], "x:"))
+  i, out = tf.while_loop(c, b, (0, x))
+  with tf.Session() as sess:
+      print(sess.run(i))  # prints [0] ... [9999]
+
+      # The following line may increment the counter and x in parallel.
+      # The counter thread may get ahead of the other thread, but not the
+      # other way around. So you may see things like
+      # [9996] x:[9987]
+      # meaning that the counter thread is on iteration 9996,
+      # while the other thread is on iteration 9987
+      print(sess.run(out).shape)
+  ```
+
+  """
   if ENABLE_WHILE_V2 and not context.executing_eagerly():
     if not _while_v2:
       raise ValueError("The while_v2 module is not set. Did you forget to "
@@ -2979,7 +3294,72 @@ def while_loop(cond,
     else:
       return result
 
+
+# pylint: enable=redefined-outer-name
+
+
+def _AsTensorList(x, p):
+  """Return x as a list of Tensors or IndexedSlices.
+
+  For entries of `x` that are Operations, this returns an Identity of `p`
+  with a dependency on the operation.
+
+  Args:
+    x: A Tensor/IndexedSlices/Operation or a list or tuple of them.
+    p: A Tensor to return for entries in `x` that are Operations.
+
+  Returns:
+    A list of Tensors or IndexedSlices.
+  """
+  if not isinstance(x, (list, _basetuple)):
+    x = [x]
+
+  l = []
+  for v in x:
+    if isinstance(v, ops.Operation):
+      v = with_dependencies([v], p)
+    v = ops.convert_to_tensor_or_indexed_slices(v)
+    if isinstance(v, ops.Tensor):
+      l.append(array_ops.identity(v))
+    else:
+      l.append(
+          ops.IndexedSlices(
+              array_ops.identity(v.values), array_ops.identity(v.indices)))
+  return l
+
+
+def _CheckResults(a, b):
+  assert len(a) == len(b), (
+      "Values returned by a() and b() must have the same length.")
+  for x, y in zip(a, b):
+    assert x.dtype == y.dtype, (
+        "Values returned by a() [%s] and b() [%s] must have "
+        "the same type: %s, %s." % (x.name, y.name, x.dtype.name, y.dtype.name))
+
+
 def with_dependencies(dependencies, output_tensor, name=None):
+  """Produces the content of `output_tensor` only after `dependencies`.
+
+  In some cases, a user may want the output of an operation to be
+  consumed externally only after some other dependencies have run
+  first. This function ensures returns `output_tensor`, but only after all
+  operations in `dependencies` have run. Note that this means that there is
+  no guarantee that `output_tensor` will be evaluated after any `dependencies`
+  have run.
+
+  See also `tf.tuple` and `tf.group`.
+
+  Args:
+    dependencies: Iterable of operations to run before this op finishes.
+    output_tensor: A `Tensor` or `IndexedSlices` that will be returned.
+    name: (Optional) A name for this operation.
+
+  Returns:
+    Same as `output_tensor`.
+
+  Raises:
+    TypeError: if `output_tensor` is not a `Tensor` or `IndexedSlices`.
+  """
   if context.executing_eagerly():
     return output_tensor
   with ops.name_scope(name, "control_dependency",
@@ -2994,6 +3374,7 @@ def with_dependencies(dependencies, output_tensor, name=None):
               _Identity(output_tensor.values, name=name), output_tensor.indices,
               output_tensor.dense_shape)
 
+
 def _GroupControlDeps(dev, deps, name=None):
   with ops.control_dependencies(deps):
     if dev is None:
@@ -3002,7 +3383,28 @@ def _GroupControlDeps(dev, deps, name=None):
       with ops.device(dev):
         return no_op(name=name)
 
+
+# TODO(touts): Accept "inputs" as a list.
+@tf_export("group")
 def group(*inputs, **kwargs):
+  """Create an op that groups multiple operations.
+
+  When this op finishes, all ops in `inputs` have finished. This op has no
+  output.
+
+  See also `tf.tuple` and
+  `tf.control_dependencies`.
+
+  Args:
+    *inputs: Zero or more tensors to group.
+    name: A name for this operation (optional).
+
+  Returns:
+    An Operation that executes all its inputs.
+
+  Raises:
+    ValueError: If an unknown keyword argument is provided.
+  """
   if context.executing_eagerly():
     return None
   name = kwargs.pop("name", None)
@@ -3042,3 +3444,366 @@ def group(*inputs, **kwargs):
 
     with ops.control_dependencies(deps):
       return no_op(name=name)
+
+
+@tf_export("tuple")
+def tuple(tensors, name=None, control_inputs=None):  # pylint: disable=redefined-builtin
+  """Group tensors together.
+
+  This creates a tuple of tensors with the same values as the `tensors`
+  argument, except that the value of each tensor is only returned after the
+  values of all tensors have been computed.
+
+  `control_inputs` contains additional ops that have to finish before this op
+  finishes, but whose outputs are not returned.
+
+  This can be used as a "join" mechanism for parallel computations: all the
+  argument tensors can be computed in parallel, but the values of any tensor
+  returned by `tuple` are only available after all the parallel computations
+  are done.
+
+  See also `tf.group` and
+  `tf.control_dependencies`.
+
+  Args:
+    tensors: A list of `Tensor`s or `IndexedSlices`, some entries can be `None`.
+    name: (optional) A name to use as a `name_scope` for the operation.
+    control_inputs: List of additional ops to finish before returning.
+
+  Returns:
+    Same as `tensors`.
+
+  Raises:
+    ValueError: If `tensors` does not contain any `Tensor` or `IndexedSlices`.
+    TypeError: If `control_inputs` is not a list of `Operation` or `Tensor`
+      objects.
+
+  """
+  if context.executing_eagerly():
+    return tensors
+  with ops.name_scope(name, "tuple", tensors) as name:
+    tensors = [t if (isinstance(t, ops.Operation)
+                     or tensor_util.is_tensor(t)
+                     or t is None)
+               else ops.convert_to_tensor(t) for t in tensors]
+    gating_ops = [t if isinstance(t, ops.Operation) else t.op for t in tensors
+                  if t is not None]
+    if control_inputs:
+      for c in control_inputs:
+        if isinstance(c, ops.Tensor):
+          c = c.op
+        elif not isinstance(c, ops.Operation):
+          raise TypeError("Control input must be Operation or Tensor: %s" % c)
+        gating_ops.append(c)
+    # Note that in order to ensure ordering in the pbtxt, we must take care to
+    # ensure the order here.
+    gating_ops = sorted(set(gating_ops), key=lambda op: op._id)  # Uniquify ops.
+    if not gating_ops:
+      raise ValueError("Must have at least one Tensor: %s" % tensors)
+    gate = group(*gating_ops)
+    tpl = []
+    for t in tensors:
+      if tensor_util.is_tensor(t):
+        tpl.append(with_dependencies([gate], t))
+      elif isinstance(t, ops.Operation):
+        with ops.control_dependencies([gate]):
+          tpl.append(group(t))
+      else:
+        tpl.append(None)
+    return tpl
+
+
+def _assert_at_most_n_true(predicates, n, msg):
+  """Returns an Assert op that checks that at most n predicates are True.
+
+  Args:
+    predicates: list of bool scalar tensors.
+    n: maximum number of true predicates allowed.
+    msg: Error message.
+  """
+  preds_c = array_ops.stack(predicates, name="preds_c")
+  num_true_conditions = math_ops.reduce_sum(
+      math_ops.cast(preds_c, dtypes.int32), name="num_true_conds")
+  condition = math_ops.less_equal(num_true_conditions,
+                                  constant_op.constant(n, name="n_true_conds"))
+  preds_names = ", ".join(getattr(p, "name", "?") for p in predicates)
+  error_msg = [
+      "%s: more than %d conditions (%s) evaluated as True:" %
+      (msg, n, preds_names), preds_c
+  ]
+  return Assert(condition, data=error_msg, summarize=len(predicates))
+
+
+def _case_create_default_action(predicates, actions):
+  """Creates default action for a list of actions and their predicates.
+
+  It uses the input actions to select an arbitrary as default and makes sure
+  that corresponding predicates have valid values.
+
+  Args:
+    predicates: a list of bool scalar tensors
+    actions: a list of callable objects which return tensors.
+
+  Returns:
+    a callable
+  """
+  k = len(predicates) - 1  # could pick any
+  predicate, action = predicates[k], actions[k]
+  other_predicates, other_actions = predicates[:k], actions[:k]
+
+  def default_action():
+    others_msg = ("Implementation error: "
+                  "selected default action #%d was called, but some of other "
+                  "predicates are True: " % k)
+    default_msg = ("Input error: "
+                   "None of conditions evaluated as True:",
+                   array_ops.stack(predicates, name="preds_c"))
+    with ops.control_dependencies([
+        _assert_at_most_n_true(other_predicates, n=0, msg=others_msg),
+        Assert(predicate, data=default_msg)
+    ]):
+      return action()
+
+  return default_action, other_predicates, other_actions
+
+
+def _case_verify_and_canonicalize_args(pred_fn_pairs, exclusive, name,
+                                       allow_python_preds):
+  """Verifies input arguments for the case function.
+
+  Args:
+    pred_fn_pairs: Dict or list of pairs of a boolean scalar tensor,
+                   and a callable which returns a list of tensors.
+    exclusive: True iff at most one predicate is allowed to evaluate to `True`.
+    name: A name for the case operation.
+    allow_python_preds: if true, pred_fn_pairs may contain Python bools in
+                        addition to boolean Tensors
+  Raises:
+    TypeError: If `pred_fn_pairs` is not a list/dictionary.
+    TypeError: If `pred_fn_pairs` is a list but does not contain 2-tuples.
+    TypeError: If `fns[i]` is not callable for any i, or `default` is not
+               callable.
+
+  Returns:
+    a tuple <list of scalar bool tensors, list of callables>.
+  """
+  if not isinstance(pred_fn_pairs, (list, _basetuple, dict)):
+    raise TypeError("fns must be a list, tuple, or dict")
+
+  if isinstance(pred_fn_pairs, collections.OrderedDict):
+    pred_fn_pairs = pred_fn_pairs.items()
+  elif isinstance(pred_fn_pairs, dict):
+    pred_fn_pairs = sorted(pred_fn_pairs.items(), key=lambda item: item[0].name)
+    if not exclusive:
+      logging.warn("%s: An unordered dictionary of predicate/fn pairs was "
+                   "provided, but exclusive=False. The order of conditional "
+                   "tests is deterministic but not guaranteed.", name)
+  for pred_fn_pair in pred_fn_pairs:
+    if not isinstance(pred_fn_pair, _basetuple) or len(pred_fn_pair) != 2:
+      raise TypeError("Each entry in pred_fn_pairs must be a 2-tuple")
+    pred, fn = pred_fn_pair
+
+    if isinstance(pred, ops.Tensor):
+      if pred.dtype != dtypes.bool:
+        raise TypeError("pred must be Tensor of type bool: %s" % pred.name)
+    elif not allow_python_preds:
+      raise TypeError("pred must be a Tensor, got: %s" % pred)
+    elif not isinstance(pred, bool):
+      raise TypeError("pred must be a Tensor or bool, got: %s" % pred)
+
+    if not callable(fn):
+      raise TypeError("fn for pred %s must be callable." % pred.name)
+
+  predicates, actions = zip(*pred_fn_pairs)
+  return predicates, actions
+
+
+def _case_helper(cond_fn, pred_fn_pairs, default,
+                 exclusive, name, allow_python_preds=False, **cond_kwargs):
+  """Implementation of case that allows for different cond functions.
+
+  Args:
+    cond_fn: method that has signature and semantics of `cond` above.
+    pred_fn_pairs: Dict or list of pairs of a boolean scalar tensor, and a
+                   callable which returns a list of tensors.
+    default: Optional callable that returns a list of tensors.
+    exclusive: True iff at most one predicate is allowed to evaluate to `True`.
+    name: A name for this operation (optional).
+    allow_python_preds: if true, pred_fn_pairs may contain Python bools in
+                        addition to boolean Tensors
+    **cond_kwargs: keyword arguments that will be passed to `cond_fn`.
+
+  Returns:
+    The tensors returned by the first pair whose predicate evaluated to True, or
+    those returned by `default` if none does.
+
+  Raises:
+    TypeError: If `pred_fn_pairs` is not a list/dictionary.
+    TypeError: If `pred_fn_pairs` is a list but does not contain 2-tuples.
+    TypeError: If `fns[i]` is not callable for any i, or `default` is not
+               callable.
+  """
+  predicates, actions = _case_verify_and_canonicalize_args(
+      pred_fn_pairs, exclusive, name, allow_python_preds)
+  with ops.name_scope(name, "case", [predicates]):
+    if default is None:
+      default, predicates, actions = _case_create_default_action(
+          predicates, actions)
+    fn = default
+    # To eval conditions in direct order we create nested conditions in reverse:
+    #   cond_fn(c[0], true_fn=.., false_fn=cond_fn(c[1], ...))
+    for predicate, action in reversed(list(zip(predicates, actions))):
+      fn = functools.partial(
+          cond_fn, predicate, true_fn=action, false_fn=fn, **cond_kwargs)
+    if exclusive:
+      with ops.control_dependencies([
+          _assert_at_most_n_true(
+              predicates, n=1, msg="Input error: exclusive=True")
+      ]):
+        return fn()
+    else:
+      return fn()
+
+
+@tf_export("case")
+def case(pred_fn_pairs,
+         default=None,
+         exclusive=False,
+         strict=False,
+         name="case"):
+  """Create a case operation.
+
+  The `pred_fn_pairs` parameter is a dict or list of pairs of size N.
+  Each pair contains a boolean scalar tensor and a python callable that
+  creates the tensors to be returned if the boolean evaluates to True.
+  `default` is a callable generating a list of tensors. All the callables
+  in `pred_fn_pairs` as well as `default` (if provided) should return the same
+  number and types of tensors.
+
+  If `exclusive==True`, all predicates are evaluated, and an exception is
+  thrown if more than one of the predicates evaluates to `True`.
+  If `exclusive==False`, execution stops at the first predicate which
+  evaluates to True, and the tensors generated by the corresponding function
+  are returned immediately. If none of the predicates evaluate to True, this
+  operation returns the tensors generated by `default`.
+
+  `tf.case` supports nested structures as implemented in
+  `tensorflow.python.util.nest`. All of the callables must return the same
+  (possibly nested) value structure of lists, tuples, and/or named tuples.
+  Singleton lists and tuples form the only exceptions to this: when returned by
+  a callable, they are implicitly unpacked to single values. This
+  behavior is disabled by passing `strict=True`.
+
+  If an unordered dictionary is used for `pred_fn_pairs`, the order of the
+  conditional tests is not guaranteed. However, the order is guaranteed to be
+  deterministic, so that variables created in conditional branches are created
+  in fixed order across runs.
+
+  **Example 1:**
+
+  Pseudocode:
+
+  ```
+  if (x < y) return 17;
+  else return 23;
+  ```
+
+  Expressions:
+
+  ```python
+  f1 = lambda: tf.constant(17)
+  f2 = lambda: tf.constant(23)
+  r = case([(tf.less(x, y), f1)], default=f2)
+  ```
+
+  **Example 2:**
+
+  Pseudocode:
+
+  ```
+  if (x < y && x > z) raise OpError("Only one predicate may evaluate true");
+  if (x < y) return 17;
+  else if (x > z) return 23;
+  else return -1;
+  ```
+
+  Expressions:
+
+  ```python
+  def f1(): return tf.constant(17)
+  def f2(): return tf.constant(23)
+  def f3(): return tf.constant(-1)
+  r = case({tf.less(x, y): f1, tf.greater(x, z): f2},
+           default=f3, exclusive=True)
+  ```
+
+  Args:
+    pred_fn_pairs: Dict or list of pairs of a boolean scalar tensor and a
+                   callable which returns a list of tensors.
+    default: Optional callable that returns a list of tensors.
+    exclusive: True iff at most one predicate is allowed to evaluate to `True`.
+    strict: A boolean that enables/disables 'strict' mode; see above.
+    name: A name for this operation (optional).
+
+  Returns:
+    The tensors returned by the first pair whose predicate evaluated to True, or
+    those returned by `default` if none does.
+
+  Raises:
+    TypeError: If `pred_fn_pairs` is not a list/dictionary.
+    TypeError: If `pred_fn_pairs` is a list but does not contain 2-tuples.
+    TypeError: If `fns[i]` is not callable for any i, or `default` is not
+               callable.
+  """
+  return _case_helper(cond, pred_fn_pairs, default, exclusive, name,
+                      allow_python_preds=False, strict=strict)
+
+
+class XLAControlFlowContext(ControlFlowContext):
+  """Base class for XLA and TPU control flow contexts."""
+
+  def __init__(self):
+    super(XLAControlFlowContext, self).__init__()
+    self._name = "XLAControlFlowContext"
+
+  def IsXLAContext(self):
+    return True
+
+  def AddOp(self, _):
+    pass
+
+  def AddValue(self, x):
+    return x
+
+
+def from_control_flow_context_def(context_def, import_scope=None):
+  """Deserializes `context_def` into the appropriate ControlFlowContext.
+
+  Args:
+    context_def: ControlFlowContextDef proto
+    import_scope: Optional `string`. Name scope to add.
+
+  Returns:
+    A ControlFlowContext subclass
+  """
+  if context_def.HasField("cond_ctxt"):
+    return CondContext.from_proto(context_def.cond_ctxt,
+                                  import_scope=import_scope)
+  if context_def.HasField("while_ctxt"):
+    return WhileContext.from_proto(context_def.while_ctxt,
+                                   import_scope=import_scope)
+  raise NotImplementedError("Unknown ControlFlowContextDef field: %s"
+                            % context_def.WhichOneof("ctxt"))
+
+
+ops.register_proto_function(
+    ops.GraphKeys.COND_CONTEXT,
+    proto_type=control_flow_pb2.CondContextDef,
+    to_proto=CondContext.to_proto,
+    from_proto=CondContext.from_proto)
+
+ops.register_proto_function(
+    ops.GraphKeys.WHILE_CONTEXT,
+    proto_type=control_flow_pb2.WhileContextDef,
+    to_proto=WhileContext.to_proto,
+    from_proto=WhileContext.from_proto)
