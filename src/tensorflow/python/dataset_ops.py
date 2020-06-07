@@ -30,21 +30,7 @@ from tensorflow.python import nest
 from tensorflow.python import random_seed
 from tensorflow.python import sparse
 from tensorflow.python import context
-from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import function
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import smart_cond
-from tensorflow.python.framework import sparse_tensor as sparse_tensor_lib
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.framework import tensor_util
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import control_flow_ops
-from tensorflow.python.ops import gen_dataset_ops
-from tensorflow.python.ops import gen_io_ops
-from tensorflow.python.ops import math_ops
-from tensorflow.python.ops import script_ops
-from tensorflow.python.ops import string_ops
+
 from tensorflow.python.util import deprecation
 from tensorflow.python.util.tf_export import tf_export
 
