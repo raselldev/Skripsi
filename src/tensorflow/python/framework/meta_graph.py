@@ -26,22 +26,9 @@ import six
 from google.protobuf.any_pb2 import Any
 from google.protobuf import text_format
 
-from tensorflow.core.framework import attr_value_pb2
-from tensorflow.core.framework import graph_pb2
-from tensorflow.core.framework import op_def_pb2
-from tensorflow.core.protobuf import meta_graph_pb2
-from tensorflow.core.protobuf import saver_pb2
-from tensorflow.python import pywrap_tensorflow
-from tensorflow.python import context
-from tensorflow.python.framework import graph_io
-from tensorflow.python.framework import importer
-from tensorflow.python.framework import op_def_registry
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import versions
-from tensorflow.python import file_io
-from tensorflow.python.platform import tf_logging as logging
-from tensorflow.python.util import compat
 
+
+from tensorflow.python.framework import ops
 
 # Prefix to be added to unbound input names so they are easily identifiable.
 _UNBOUND_INPUT_PREFIX = "$unbound_inputs_"

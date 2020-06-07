@@ -23,7 +23,7 @@ import traceback
 
 import six  # pylint: disable=unused-import
 
-from tensorflow.python.platform import tf_logging
+from tensorflow.python import tf_logging
 from tensorflow.python.util import tf_decorator
 # pylint: enable=g-bad-import-order,g-import-not-at-top
 

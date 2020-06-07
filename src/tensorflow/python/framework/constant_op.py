@@ -29,7 +29,7 @@ import six
 from tensorflow.core.framework import attr_value_pb2
 from tensorflow.core.framework import types_pb2
 from tensorflow.python import context
-from tensorflow.python.eager import execute
+#from tensorflow.python.eager import execute
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape

@@ -27,18 +27,8 @@ import weakref
 
 import numpy as np
 import six
-
 from tensorflow.python import pywrap_tensorflow
-from tensorflow.python.eager import backprop
-from tensorflow.python import context
-from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import function
 from tensorflow.python.framework import ops
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import gen_script_ops
-from tensorflow.python.ops import resource_variable_ops
-from tensorflow.python.util import compat
-from tensorflow.python.util import nest
 from tensorflow.python.util.tf_export import tf_export
 
 # Map from EagerPyFunc token to tuple (tape, eager args, eager outputs);

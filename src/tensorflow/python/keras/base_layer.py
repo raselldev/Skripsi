@@ -27,7 +27,7 @@ import numpy as np
 from six.moves import zip  # pylint: disable=redefined-builtin
 
 from tensorflow.python import context
-from tensorflow.python.eager import function as eager_function
+from tensorflow.python import function as eager_function
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
@@ -50,7 +50,7 @@ from tensorflow.python.util import nest
 from tensorflow.python.util import tf_decorator
 from tensorflow.python.util import tf_inspect
 from tensorflow.python.util.tf_export import tf_export
-from tensorflow.tools.docs import doc_controls
+from tensorflow import doc_controls
 
 
 

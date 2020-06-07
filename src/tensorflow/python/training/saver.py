@@ -35,7 +35,9 @@ from tensorflow.python import session
 from tensorflow.python import context
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import device as pydev
-from tensorflow.python.framework import errors
+#from tensorflow.python.framework import errors
+from tensorflow.python.framework import errors_impl as errors
+from tensorflow.python.framework.errors_impl import *
 from tensorflow.python.framework import meta_graph
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
@@ -46,8 +48,8 @@ from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import string_ops
 from tensorflow.python.ops import variables
-from tensorflow.python.platform import gfile
-from tensorflow.python.platform import tf_logging as logging
+#from tensorflow.python.platform import gfile
+from tensorflow.python import tf_logging as logging
 from tensorflow.python.training import checkpoint_management
 from tensorflow.python.training import saveable_object
 from tensorflow.python.training import training_util

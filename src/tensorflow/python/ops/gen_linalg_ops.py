@@ -10,9 +10,11 @@ import six as _six
 from tensorflow.python import pywrap_tensorflow as _pywrap_tensorflow
 from tensorflow.python import context as _context
 #from tensorflow.python.eager import core as _core
-from tensorflow.python.eager import execute as _execute
+from tensorflow.python import execute as _execute
 from tensorflow.python.framework import dtypes as _dtypes
-from tensorflow.python.framework import errors as _errors
+#from tensorflow.python.framework import errors as _errors
+from tensorflow.python.framework import errors_impl as _errors
+from tensorflow.python.framework.errors_impl import *
 from tensorflow.python.framework import tensor_shape as _tensor_shape
 
 from tensorflow.core.framework import op_def_pb2 as _op_def_pb2

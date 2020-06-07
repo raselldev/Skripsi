@@ -21,17 +21,17 @@ from __future__ import print_function
 
 import six
 
+
+
+from tensorflow.core.framework import tensor_shape_pb2
 from tensorflow.core.framework import attr_value_pb2
 from tensorflow.core.framework import op_def_pb2
-from tensorflow.core.framework import tensor_pb2
-from tensorflow.core.framework import tensor_shape_pb2
 from tensorflow.core.framework import types_pb2
-from tensorflow.python.framework import dtypes
+from tensorflow.python.util import tf_contextlib
+from tensorflow.python.util import compat
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
-from tensorflow.python.platform import tf_logging as logging
-from tensorflow.python.util import compat
-from tensorflow.python.util import tf_contextlib
+from tensorflow.python.framework import dtypes
 
 
 def _Attr(op_def, name):

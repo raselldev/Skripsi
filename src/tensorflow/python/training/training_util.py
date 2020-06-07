@@ -27,7 +27,7 @@ from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import variable_scope
 from tensorflow.python.ops import variables
-from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python import tf_logging as logging
 from tensorflow.python.util.tf_export import tf_export
 
 # Picked a long key value to minimize the chance of collision with user defined

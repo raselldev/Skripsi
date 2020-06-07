@@ -33,7 +33,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import gen_io_ops as io_ops
-from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python import tf_logging as logging
 from tensorflow.python.training import saveable_object
 from tensorflow.python.util import nest
 from tensorflow.python.util import serialization

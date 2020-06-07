@@ -27,7 +27,9 @@ from tensorflow.python import sparse
 from tensorflow.python import structure
 from tensorflow.python import context
 from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import errors
+#from tensorflow.python.framework import errors
+from tensorflow.python.framework import errors_impl as errors
+from tensorflow.python.framework.errors_impl import *
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.ops import gen_dataset_ops

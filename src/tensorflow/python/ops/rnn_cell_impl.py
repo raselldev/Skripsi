@@ -28,27 +28,21 @@ import collections
 import hashlib
 import numbers
 
+from tensorflow.python import base as base_layer
 from tensorflow.python import context
+from tensorflow.python.framework import ops
+from tensorflow.python.framework import tensor_util
+from tensorflow.python.framework import tensor_shape
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.framework import tensor_util
-#from tensorflow.python.keras import activations
+from tensorflow.python.ops import nn as nn_ops
+from tensorflow.python.ops import init_ops
+from tensorflow.python.ops import variables as tf_variables
+from tensorflow.python.ops import variable_scope as vs
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import math_ops
 from tensorflow.python.keras import initializers
 from tensorflow.python.keras import tf_utils
-from tensorflow.python import base as base_layer
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import clip_ops
-from tensorflow.python.ops import init_ops
-from tensorflow.python.ops import math_ops
-from tensorflow.python.ops import nn_ops
-from tensorflow.python.ops import partitioned_variables
-from tensorflow.python.ops import random_ops
-from tensorflow.python.ops import tensor_array_ops
-from tensorflow.python.ops import variable_scope as vs
-from tensorflow.python.ops import variables as tf_variables
-from tensorflow.python.platform import tf_logging as logging
 from tensorflow.python.training import base as checkpointable
 from tensorflow.python.util import nest
 from tensorflow.python.util.deprecation import deprecated

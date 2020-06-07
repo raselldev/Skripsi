@@ -19,16 +19,11 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
+from tensorflow.python.framework import random_seed
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
-from tensorflow.python.framework import random_seed
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import gen_random_ops
 from tensorflow.python.ops import math_ops
-# go/tf-wildcard-import
-# pylint: disable=wildcard-import
-from tensorflow.python.ops.gen_random_ops import *
 from tensorflow.python.util import deprecation
 from tensorflow.python.util.tf_export import tf_export
 

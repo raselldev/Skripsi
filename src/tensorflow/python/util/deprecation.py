@@ -22,7 +22,7 @@ import collections
 import functools
 import re
 
-from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python import tf_logging as logging
 from tensorflow.python.util import decorator_utils
 from tensorflow.python.util import is_in_graph_mode
 from tensorflow.python.util import tf_contextlib

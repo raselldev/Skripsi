@@ -66,10 +66,10 @@ class Model:
 		pool = cnnIn4d # input to first CNN layer
 		for i in range(numLayers):
 			kernel = b.Variable(b.truncated_normal([kernelVals[i], kernelVals[i], featureVals[i], featureVals[i + 1]], stddev=0.1))
-			conv = b.nn.conv2d(pool, kernel, padding='SAME',  strides=(1,1,1,1))
+			conv = b.conv2d(pool, kernel, padding='SAME',  strides=(1,1,1,1))
 			conv_norm = b.batch_normalization(conv, training=self.is_train)
-			relu = b.nn.relu(conv_norm)
-			pool = b.nn.max_pool(relu, (1, poolVals[i][0], poolVals[i][1], 1), (1, strideVals[i][0], strideVals[i][1], 1), 'VALID')
+			relu = b.relu(conv_norm)
+			pool = b.max_pool(relu, (1, poolVals[i][0], poolVals[i][1], 1), (1, strideVals[i][0], strideVals[i][1], 1), 'VALID')
 
 		self.cnnOut4d = pool
 
@@ -94,7 +94,7 @@ class Model:
 									
 		# project output to chars (including blank): BxTx1x2H -> BxTx1xC -> BxTxC
 		kernel = b.Variable(b.truncated_normal([1, 1, numHidden * 2, len(self.charList) + 1], stddev=0.1))
-		self.rnnOut3d = b.squeeze(b.nn.atrous_conv2d(value=concat, filters=kernel, rate=1, padding='SAME'), axis=[2])
+		self.rnnOut3d = b.squeeze(b.atrous_conv2d(value=concat, filters=kernel, rate=1, padding='SAME'), axis=[2])
 		
 
 	def setupCTC(self):
@@ -106,17 +106,17 @@ class Model:
 
 		# calc loss for batch
 		self.seqLen = b.placeholder(b.int32, [None])
-		self.loss = b.reduce_mean(b.nn.ctc_loss(labels=self.gtTexts, inputs=self.ctcIn3dTBC, sequence_length=self.seqLen, ctc_merge_repeated=True))
+		self.loss = b.reduce_mean(b.ctc_loss(labels=self.gtTexts, inputs=self.ctcIn3dTBC, sequence_length=self.seqLen, ctc_merge_repeated=True))
 
 		# calc loss for each element to compute label probability
 		self.savedCtcInput = b.placeholder(b.float32, shape=[Model.maxTextLen, None, len(self.charList) + 1])
-		self.lossPerElement = b.nn.ctc_loss(labels=self.gtTexts, inputs=self.savedCtcInput, sequence_length=self.seqLen, ctc_merge_repeated=True)
+		self.lossPerElement = b.ctc_loss(labels=self.gtTexts, inputs=self.savedCtcInput, sequence_length=self.seqLen, ctc_merge_repeated=True)
 
 		# decoder: either best path decoding or beam search decoding
 		if self.decoderType == DecoderType.BestPath:
-			self.decoder = b.nn.ctc_greedy_decoder(inputs=self.ctcIn3dTBC, sequence_length=self.seqLen)
+			self.decoder = b.ctc_greedy_decoder(inputs=self.ctcIn3dTBC, sequence_length=self.seqLen)
 		elif self.decoderType == DecoderType.BeamSearch:
-			self.decoder = b.nn.ctc_beam_search_decoder(inputs=self.ctcIn3dTBC, sequence_length=self.seqLen, beam_width=50, merge_repeated=False)
+			self.decoder = b.ctc_beam_search_decoder(inputs=self.ctcIn3dTBC, sequence_length=self.seqLen, beam_width=50, merge_repeated=False)
 		elif self.decoderType == DecoderType.WordBeamSearch:
 			# import compiled word beam search operation (see https://github.com/githubharald/CTCWordBeamSearch)
 			word_beam_search_module = b.load_op_library('TFWordBeamSearch.so')

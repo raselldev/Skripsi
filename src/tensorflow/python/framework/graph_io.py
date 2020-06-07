@@ -21,9 +21,7 @@ from __future__ import print_function
 import os
 import os.path
 
-from google.protobuf import text_format
-from tensorflow.python.framework import ops
-from tensorflow.python import file_io
+
 from tensorflow.python.util.tf_export import tf_export
 
 

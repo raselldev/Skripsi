@@ -27,35 +27,22 @@ import numpy as np
 import six
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
-from tensorflow.core.framework import attr_value_pb2
+from tensorflow.python import tf_logging as logging
 from tensorflow.python import context
-from tensorflow.python.framework import constant_op
+from tensorflow.python.ops import array_grad
+from tensorflow.python.ops import control_flow_grad
+from tensorflow.python.ops import control_flow_util
+from tensorflow.python.ops import math_grad
+from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import control_flow_ops
+from tensorflow.python.ops import resource_variable_ops
+from tensorflow.python.ops import cond_v2_impl
+from tensorflow.python.framework import tensor_shape
 from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import function as framework_function
 from tensorflow.python.framework import ops
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.framework import tensor_util
-from tensorflow.python.ops import array_grad  # pylint: disable=unused-import
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import check_ops  # pylint: disable=unused-import
-from tensorflow.python.ops import cond_v2_impl
-from tensorflow.python.ops import control_flow_grad  # pylint: disable=unused-import
-from tensorflow.python.ops import control_flow_ops
-from tensorflow.python.ops import control_flow_util
-from tensorflow.python.ops import functional_ops
-from tensorflow.python.ops import image_grad  # pylint: disable=unused-import
-from tensorflow.python.ops import linalg_grad  # pylint: disable=unused-import
-from tensorflow.python.ops import linalg_ops  # pylint: disable=unused-import
-from tensorflow.python.ops import logging_ops  # pylint: disable=unused-import
-from tensorflow.python.ops import manip_grad  # pylint: disable=unused-import
-from tensorflow.python.ops import math_grad  # pylint: disable=unused-import
-from tensorflow.python.ops import math_ops
-from tensorflow.python.ops import random_grad  # pylint: disable=unused-import
-from tensorflow.python.ops import resource_variable_ops
-from tensorflow.python.ops import spectral_grad  # pylint: disable=unused-import
-from tensorflow.python.ops import tensor_array_ops
-from tensorflow.python.platform import tf_logging as logging
-from tensorflow.python.util import compat
 from tensorflow.python.util.tf_export import tf_export
 
 # This is to avoid a circular dependency (eager.function depends on

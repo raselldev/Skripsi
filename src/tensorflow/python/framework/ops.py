@@ -23,6 +23,7 @@ import copy
 import re
 import sys
 import threading
+import contextlib
 
 import numpy as np
 import six
@@ -38,21 +39,22 @@ from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import pywrap_tensorflow as c_api
 from tensorflow.python import context
 #from tensorflow.python.eager import core
-from tensorflow.python.eager import tape
+#from tensorflow.python.eager import tape
 from tensorflow.python.framework import c_api_util
 from tensorflow.python.framework import cpp_shape_inference_pb2
 from tensorflow.python.framework import device as pydev
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import error_interpolation
-from tensorflow.python.framework import errors
+from tensorflow.python.framework import errors_impl as errors
+from tensorflow.python.framework.errors_impl import *
 from tensorflow.python.framework import op_def_registry
 from tensorflow.python.framework import registry
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.framework import traceable_stack
 from tensorflow.python.framework import versions
 from tensorflow.python.ops import control_flow_util
-from tensorflow.python.platform import app
-from tensorflow.python.platform import tf_logging as logging
+#from tensorflow.python.platform import app
+from tensorflow.python import tf_logging as logging
 from tensorflow.python.util import compat
 from tensorflow.python.util import decorator_utils
 from tensorflow.python.util import deprecation
@@ -63,12 +65,24 @@ from tensorflow.python.util import tf_contextlib
 from tensorflow.python.util import tf_stack
 from tensorflow.python.util.deprecation import deprecated_args
 from tensorflow.python.util.tf_export import tf_export
+from tensorflow.python import pywrap_tensorflow
 
 
 # Temporary global switches determining if we should enable the work-in-progress
 # calls to the C API. These will be removed once all functionality is supported.
 _USE_C_API = True
 _USE_C_SHAPES = True
+
+
+
+@contextlib.contextmanager
+def stop_recording():
+  try:
+    pywrap_tensorflow.TFE_Py_TapeSetStopOnThread()
+    yield
+  finally:
+    pywrap_tensorflow.TFE_Py_TapeSetRestartOnThread()
+
 
 
 def tensor_id(tensor):
@@ -5291,7 +5305,7 @@ def init_scope():
 
   if context.executing_eagerly():
     # Fastpath.
-    with tape.stop_recording():
+    with stop_recording():
       yield
   else:
     # Retrieve the active name scope: entering an `init_scope` preserves
@@ -5335,7 +5349,7 @@ def init_scope():
     outer_device_stack = None
     try:
       with outer_context(), name_scope(scope), control_dependencies(
-          None), tape.stop_recording():
+          None), stop_recording():
         if not context.executing_eagerly():
           # The device stack is preserved when lifting into a graph. Eager
           # execution doesn't implement device stacks and in particular it

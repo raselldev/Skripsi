@@ -23,28 +23,18 @@ from __future__ import print_function
 import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
+
 from tensorflow.python import context
-from tensorflow.python.framework import common_shapes
 from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import graph_util
+from tensorflow.python.framework import common_shapes
 from tensorflow.python.framework import ops
+from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import sparse_tensor
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import gen_data_flow_ops
-from tensorflow.python.ops import gen_math_ops
-from tensorflow.python.ops import gen_nn_ops
 from tensorflow.python.ops import gen_sparse_ops
+from tensorflow.python.ops import gen_math_ops
 from tensorflow.python.ops import gen_spectral_ops
-# go/tf-wildcard-import
-# pylint: disable=wildcard-import
 from tensorflow.python.ops.gen_math_ops import *
-# pylint: enable=wildcard-import
-from tensorflow.python.platform import tf_logging as logging
-from tensorflow.python.util import compat
 from tensorflow.python.util import deprecation
-from tensorflow.python.util import nest
 from tensorflow.python.util.tf_export import tf_export
 
 # Aliases for some automatically-generated names.

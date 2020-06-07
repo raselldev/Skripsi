@@ -31,19 +31,16 @@ import six
 from six import iteritems
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
-from tensorflow.python import context
 from tensorflow.python.framework import dtypes
+from tensorflow.python import context
+from tensorflow.python import tf_logging as logging
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import init_ops
-from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import variables
-from tensorflow.python.platform import tf_logging as logging
-from tensorflow.python.util import deprecation
+from tensorflow.python.ops import init_ops
 from tensorflow.python.util import function_utils
 from tensorflow.python.util import tf_contextlib
-from tensorflow.python.util import tf_inspect
+from tensorflow.python.util import deprecation
 from tensorflow.python.util.tf_export import tf_export
 
 __all__ = [

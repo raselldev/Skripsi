@@ -29,11 +29,8 @@ from __future__ import print_function
 
 import collections
 
-from tensorflow.core.framework import attr_value_pb2
 from tensorflow.python.framework import ops
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import control_flow_util
-from tensorflow.python.ops import gen_functional_ops
+
 
 
 # The following modules cannot be imported directly because they cause circular
