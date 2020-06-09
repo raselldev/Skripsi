@@ -30,7 +30,7 @@ import numpy as np
 from tensorflow.python.framework import errors_impl as errors
 from tensorflow.python.util import compat
 from tensorflow.python.util import nest
-from tensorflow.python import pywrap_tensorflow_internal as tf_session
+from tensorflow.python import pywrap_tensorflow as tf_session
 from tensorflow.python.ops import session_ops
 from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.framework import ops
