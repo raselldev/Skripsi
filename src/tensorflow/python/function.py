@@ -13,7 +13,6 @@ import numpy as np
 import six
 
 from tensorflow.python.framework import ops
-from tensorflow.python.ops import cond_v2_impl
 from tensorflow.python.ops import gradients_impl
 
 

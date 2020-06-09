@@ -20,19 +20,13 @@ from __future__ import print_function
 
 import threading
 
-from tensorflow.python import dataset_ops
-from tensorflow.python import context as eager_context
+
 from tensorflow.python.framework import ops
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import control_flow_ops
-from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops import variable_scope
 from tensorflow.python.ops import losses_impl
-from tensorflow.python import tf_logging
-from tensorflow.python.training import device_util
-from tensorflow.python.training import distribution_strategy_context
+from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.util import deprecation
-from tensorflow.python.util import nest
+from tensorflow.python.training import distribution_strategy_context
 
 
 # ------------------------------------------------------------------------------

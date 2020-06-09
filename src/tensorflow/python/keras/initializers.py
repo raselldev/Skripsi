@@ -20,29 +20,19 @@ from __future__ import print_function
 
 import six
 
-from tensorflow.python.framework import dtypes
-#from tensorflow.python.keras.utils.generic_utils import deserialize_keras_object
-#from tensorflow.python.keras.utils.generic_utils import serialize_keras_object
 
-# These imports are brought in so that keras.initializers.deserialize
-# has them available in module_objects.
-from tensorflow.python.ops.init_ops import Constant
-from tensorflow.python.ops.init_ops import GlorotNormal
-from tensorflow.python.ops.init_ops import GlorotUniform
-from tensorflow.python.ops.init_ops import he_normal  # pylint: disable=unused-import
-from tensorflow.python.ops.init_ops import he_uniform  # pylint: disable=unused-import
-from tensorflow.python.ops.init_ops import Identity
-from tensorflow.python.ops.init_ops import Initializer  # pylint: disable=unused-import
-from tensorflow.python.ops.init_ops import lecun_normal  # pylint: disable=unused-import
-from tensorflow.python.ops.init_ops import lecun_uniform  # pylint: disable=unused-import
-from tensorflow.python.ops.init_ops import Ones
-from tensorflow.python.ops.init_ops import Orthogonal
+
+from tensorflow.python.framework import dtypes
 from tensorflow.python.ops.init_ops import RandomNormal as TFRandomNormal
 from tensorflow.python.ops.init_ops import RandomUniform as TFRandomUniform
 from tensorflow.python.ops.init_ops import TruncatedNormal as TFTruncatedNormal
-from tensorflow.python.ops.init_ops import VarianceScaling  # pylint: disable=unused-import
+from tensorflow.python.ops.init_ops import GlorotUniform
+from tensorflow.python.ops.init_ops import GlorotNormal
+from tensorflow.python.ops.init_ops import Orthogonal
+from tensorflow.python.ops.init_ops import Identity
+from tensorflow.python.ops.init_ops import Constant
 from tensorflow.python.ops.init_ops import Zeros
-
+from tensorflow.python.ops.init_ops import Ones
 from tensorflow.python.util.tf_export import tf_export
 
 

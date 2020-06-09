@@ -27,14 +27,12 @@ import uuid
 
 import six
 
+
 from tensorflow.python import pywrap_tensorflow
-from tensorflow.python.framework import c_api_util
-#from tensorflow.python.framework import errors
 from tensorflow.python.framework import errors_impl as errors
-from tensorflow.python.framework.errors_impl import *
-from tensorflow.python.util import compat
-from tensorflow.python.util import deprecation
 from tensorflow.python.util.tf_export import tf_export
+from tensorflow.python.util import deprecation
+from tensorflow.python.util import compat
 
 # A good default block size depends on the system in question.
 # A somewhat conservative default chosen here.

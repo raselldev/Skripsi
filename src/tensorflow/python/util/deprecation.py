@@ -22,12 +22,11 @@ import collections
 import functools
 import re
 
-from tensorflow.python import tf_logging as logging
-from tensorflow.python.util import decorator_utils
-from tensorflow.python.util import is_in_graph_mode
-from tensorflow.python.util import tf_contextlib
-from tensorflow.python.util import tf_decorator
+#from tensorflow.python.util import is_in_graph_mode
 from tensorflow.python.util import tf_inspect
+from tensorflow.python.util import decorator_utils
+from tensorflow.python.util import tf_decorator
+from tensorflow.python.util import tf_contextlib
 
 
 # Allow deprecation warnings to be silenced temporarily with a context manager.
@@ -36,6 +35,8 @@ _PRINT_DEPRECATION_WARNINGS = True
 # Remember which deprecation warnings have been printed already.
 _PRINTED_WARNING = {}
 
+def is_in_graph_mode():
+  IS_IN_GRAPH_MODE = lambda: True
 
 class DeprecatedNamesAlreadySet(Exception):
   """Raised when setting deprecated names multiple times for the same symbol."""
@@ -456,7 +457,7 @@ def deprecated_args(date, instructions, *deprecated_arg_names_or_tuples,
       """Deprecation wrapper."""
       # TODO(apassos) figure out a way to have reasonable performance with
       # deprecation warnings and eager mode.
-      if is_in_graph_mode.IS_IN_GRAPH_MODE() and _PRINT_DEPRECATION_WARNINGS:
+      if is_in_graph_mode() and _PRINT_DEPRECATION_WARNINGS:
         invalid_args = []
         named_args = tf_inspect.getcallargs(func, *args, **kwargs)
         for arg_name, spec in iter(deprecated_positions.items()):

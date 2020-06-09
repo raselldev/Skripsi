@@ -24,14 +24,12 @@ import copy
 import random
 import threading
 
-from tensorflow.core.protobuf import config_pb2
-from tensorflow.python import pywrap_tensorflow
-from tensorflow.python.framework import c_api_util
+
 from tensorflow.python.framework import device as pydev
-from tensorflow.python.util import compat
-from tensorflow.python.util import is_in_graph_mode
+from tensorflow.python import pywrap_tensorflow
 from tensorflow.python.util import tf_contextlib
 from tensorflow.python.util.tf_export import tf_export
+
 
 GRAPH_MODE = 0
 EAGER_MODE = 1
@@ -55,6 +53,8 @@ DEVICE_PLACEMENT_SILENT_FOR_INT32 = (
 SYNC = 0
 ASYNC = 1
 
+def is_in_graph_mode():
+  IS_IN_GRAPH_MODE = lambda: True
 
 class _EagerTensorCache(object):
   """Simple cache which evicts items based on length in a FIFO manner."""

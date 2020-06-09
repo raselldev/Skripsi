@@ -27,33 +27,20 @@ import uuid
 import numpy as np
 import six
 
-from tensorflow.core.protobuf import checkpointable_object_graph_pb2
-from tensorflow.core.protobuf import meta_graph_pb2
-from tensorflow.core.protobuf import saver_pb2
-from tensorflow.python import pywrap_tensorflow
-from tensorflow.python import session
+
+from tensorflow.python import tf_logging as logging
 from tensorflow.python import context
 from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import device as pydev
-#from tensorflow.python.framework import errors
-from tensorflow.python.framework import errors_impl as errors
-from tensorflow.python.framework.errors_impl import *
-from tensorflow.python.framework import meta_graph
 from tensorflow.python.framework import ops
-from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import variables
+from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import control_flow_ops
-from tensorflow.python.ops import gen_io_ops
 from tensorflow.python.ops import io_ops
 from tensorflow.python.ops import resource_variable_ops
-from tensorflow.python.ops import state_ops
-from tensorflow.python.ops import string_ops
-from tensorflow.python.ops import variables
-#from tensorflow.python.platform import gfile
-from tensorflow.python import tf_logging as logging
-from tensorflow.python.training import checkpoint_management
+from tensorflow.core.protobuf import saver_pb2
 from tensorflow.python.training import saveable_object
-from tensorflow.python.training import training_util
 from tensorflow.python.training import base as checkpointable
+from tensorflow.python.training import checkpoint_management
 from tensorflow.python.util import compat
 from tensorflow.python.util.tf_export import tf_export
 

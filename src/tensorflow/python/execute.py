@@ -1,8 +1,6 @@
 import six
 
-from tensorflow.core.framework import tensor_pb2
 from tensorflow.python.framework import tensor_shape
-from google.protobuf import text_format
 from tensorflow.python.framework import dtypes
 from tensorflow.python.util import compat
 

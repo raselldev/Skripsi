@@ -20,10 +20,7 @@ from __future__ import print_function
 
 import six
 
-#from tensorflow.python.keras import backend as K
-#from tensorflow.python.keras.utils.generic_utils import deserialize_keras_object
-#from tensorflow.python.keras.utils.generic_utils import serialize_keras_object
-from tensorflow.python.ops import math_ops
+
 from tensorflow.python.util.tf_export import tf_export
 
 
