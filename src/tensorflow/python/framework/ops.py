@@ -972,7 +972,7 @@ def register_tensor_conversion_function(base_type,
 
 
 @tf_export("IndexedSlices")
-class IndexedSlices(_TensorLike):
+class IndexedSlices(object):
   def __init__(self, values, indices, dense_shape=None):
     """Creates an `IndexedSlices`."""
     _get_graph_from_inputs([values, indices, dense_shape])
