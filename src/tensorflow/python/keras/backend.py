@@ -590,7 +590,7 @@ def to_dense(tensor):
     return tensor
 
 
-name_scope = ops.name_scope
+#name_scope = ops.name_scope
 
 
 @tf_export('keras.backend.variable')
