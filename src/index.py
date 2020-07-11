@@ -31,14 +31,14 @@ def addFile():
     panel.pack()
     return filename
 
-def resetBtn():
+"""def resetBtn():
     #for widget in frame.winfo_children():
     #    widget.destroy()
     #frame.destroy()
     #frame = tk.Frame(root, bg="white")
     #frame.place(relwidth=0.8, relheight=0.8, relx=0.1, rely=0.1)
     python = sys.executable
-    os.execl(python, python, * sys.argv)
+    os.execl(python, python, * sys.argv)"""
 
 def infer(model, fnImg):
     img = preprocess(cv2.imread(fnImg, cv2.IMREAD_GRAYSCALE), Model.imgSize)
@@ -88,8 +88,8 @@ openFile.pack(side=RIGHT, padx=5, pady=5)"""
 runDetect = tk.Button(root, text="Detect", padx=10, pady=5, command=runDetect)
 runDetect.pack(side=RIGHT, padx=5, pady=5)
 
-resetBtn = tk.Button(root, text="Reset", padx=10, pady=5, command=resetBtn)
-resetBtn.pack(side=RIGHT, padx=5, pady=5)
+#resetBtn = tk.Button(root, text="Reset", padx=10, pady=5, command=resetBtn)
+#resetBtn.pack(side=RIGHT, padx=5, pady=5)
 
 
 root.mainloop() 
