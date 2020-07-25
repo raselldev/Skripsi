@@ -73,7 +73,6 @@ class Model:
 
 		self.cnnOut4d = pool
 
-
 	def setupRNN(self):
 		"create RNN layers and return output of these layers"
 		rnnIn3d = b.squeeze(self.cnnOut4d, axis=[2])
