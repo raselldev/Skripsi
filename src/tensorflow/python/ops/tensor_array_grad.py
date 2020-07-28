@@ -1,18 +1,3 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-"""Gradients for operators defined in tensor_array_ops.py."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -20,8 +5,7 @@ from __future__ import print_function
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import tensor_array_ops
 
-# TODO(b/31222613): These ops may be differentiable, and there may be
-# latent bugs here.
+
 ops.NotDifferentiable("TensorArray")
 ops.NotDifferentiable("TensorArrayGrad")
 ops.NotDifferentiable("TensorArraySize")
@@ -187,58 +171,3 @@ def _TensorArrayScatterGrad(op, flow):
   grad = g.gather(indices)
   return [None, None, grad, flow]
 
-
-@ops.RegisterGradient("TensorArrayConcat")
-@ops.RegisterGradient("TensorArrayConcatV2")
-@ops.RegisterGradient("TensorArrayConcatV3")
-def _TensorArrayConcatGrad(op, grad, unused_lengths_grad):
-  """Gradient for TensorArrayConcat.
-
-  Args:
-    op: Forward TensorArrayConcat op.
-    grad: Gradient `Tensor` to TensorArrayConcat.
-
-  Returns:
-    A flow `Tensor`, which can be used in control dependencies to
-    force the write of `grad` to the gradient `TensorArray`.
-  """
-  # Note: the forward flow dependency in the call to grad() is necessary for
-  # the case of dynamic sized TensorArrays.  When creating the gradient
-  # TensorArray, the final size of the forward array must be known.
-  # For this we need to wait until it has been created by depending on
-  # the input flow of the original op.
-  handle = op.inputs[0]
-  flow = op.inputs[1]
-  lengths = op.outputs[1]
-  dtype = op.get_attr("dtype")
-  grad_source = _GetGradSource(grad)
-  g = (tensor_array_ops.TensorArray(dtype=dtype, handle=handle, flow=flow,
-                                    colocate_with_first_write_call=False)
-       .grad(source=grad_source, flow=flow))
-  u_g = g.split(grad, lengths=lengths)
-  # handle, flow_in
-  return [None, u_g.flow]
-
-
-@ops.RegisterGradient("TensorArraySplit")
-@ops.RegisterGradient("TensorArraySplitV2")
-@ops.RegisterGradient("TensorArraySplitV3")
-def _TensorArraySplitGrad(op, flow):
-  """Gradient for TensorArraySplit.
-
-  Args:
-    op: Forward TensorArraySplit op.
-    flow: Gradient `Tensor` flow to TensorArraySplit.
-
-  Returns:
-    A grad `Tensor`, the gradient created in upstream ReadGrads or PackGrad.
-  """
-  handle = op.inputs[0]
-  dtype = op.get_attr("T")
-  grad_source = _GetGradSource(flow)
-  g = (tensor_array_ops.TensorArray(dtype=dtype, handle=handle, flow=flow,
-                                    colocate_with_first_write_call=False)
-       .grad(source=grad_source, flow=flow))
-  grad = g.concat()
-  # handle, value, lengths, flow_in
-  return [None, grad, None, flow]
