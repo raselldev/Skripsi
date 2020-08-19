@@ -25,7 +25,7 @@ from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.util import function_utils
 from tensorflow.python.util import tf_inspect
 from tensorflow.python.util import nest
-from tensorflow import doc_controls
+#from tensorflow import doc_controls
 
 
 @tf_export('keras.layers.InputSpec', 'layers.InputSpec')
@@ -194,7 +194,7 @@ class Layer(checkpointable.CheckpointableBase):
   def weights(self):
     return self.trainable_weights + self.non_trainable_weights
 
-  @doc_controls.for_subclass_implementers
+  #
   def add_update(self, updates, inputs=None):
     if context.executing_eagerly():
       return  # Updates already applied when in eager mode.
@@ -217,11 +217,11 @@ class Layer(checkpointable.CheckpointableBase):
       for u in updates:
         u._unconditional_update = False  # pylint: disable=protected-access
 
-  @doc_controls.for_subclass_implementers
+  
   def add_variable(self, *args, **kwargs):
     return self.add_weight(*args, **kwargs)
 
-  @doc_controls.for_subclass_implementers
+  
   def add_weight(self,
                  name,
                  shape,

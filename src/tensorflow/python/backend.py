@@ -41,3 +41,5 @@ def track_variable(v):
   if graph not in _GRAPH_VARIABLES:
     _GRAPH_VARIABLES[graph] = weakref.WeakSet()
   _GRAPH_VARIABLES[graph].add(v)
+
+  
