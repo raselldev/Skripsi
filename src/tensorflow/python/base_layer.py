@@ -3,20 +3,20 @@ from __future__ import division
 from __future__ import print_function
 
 import collections as collections_lib
-import enum  # pylint: disable=g-bad-import-order
+import enum
 import functools
-import inspect  # Necessary supplement to tf_inspect to deal with variadic args.
+import inspect
 import re
 import numpy as np
-from six.moves import zip  # pylint: disable=redefined-builtin
+from six.moves import zip
 
 
 from tensorflow.python import function as eager_function
 from tensorflow.python import context
-from tensorflow.python.keras import constraints
-from tensorflow.python.keras import regularizers
-from tensorflow.python.keras import initializers
-from tensorflow.python.keras import backend
+from tensorflow.python import constraints
+from tensorflow.python import regularizers
+from tensorflow.python import initializers
+from tensorflow.python import backend
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import variables as tf_variables
@@ -194,18 +194,6 @@ class Layer(checkpointable.CheckpointableBase):
   def weights(self):
     return self.trainable_weights + self.non_trainable_weights
 
-  @property
-  def variables(self):
-    return self.weights
-
-  @property
-  def updates(self):
-    if context.executing_eagerly():
-      raise RuntimeError('Layer.updates not supported in Eager mode.')
-    if not self.trainable and not self.stateful:
-      return []
-    return self._updates
-
   @doc_controls.for_subclass_implementers
   def add_update(self, updates, inputs=None):
     if context.executing_eagerly():
@@ -228,103 +216,6 @@ class Layer(checkpointable.CheckpointableBase):
     else:
       for u in updates:
         u._unconditional_update = False  # pylint: disable=protected-access
-
-  def get_updates_for(self, inputs):
-    if context.executing_eagerly():
-      raise RuntimeError('`get_updates_for()` not supported in Eager mode.')
-
-    # Updates disabled if layer is not trainable and not explicitly stateful.
-    if not self.trainable and not self.stateful:
-      return []
-
-    if inputs is None:
-      # Requesting unconditional updates.
-      return [x for x in self.updates if x._unconditional_update]  # pylint: disable=protected-access
-
-    # Requesting input-conditional updates.
-    inputs = nest.flatten(inputs)
-    reachable = tf_utils.get_reachable_from_inputs(inputs, self.updates)
-    updates = []
-    for update in self.updates:
-      if update in reachable:
-        updates.append(update)
-    return updates
-
-  @property
-  def losses(self):
-    collected_losses = []
-    collected_losses.extend(self._losses)
-    for regularizer in self._callable_losses:
-      loss_tensor = regularizer()
-      if loss_tensor is not None:
-        collected_losses.append(loss_tensor)
-    return collected_losses
-
-  @doc_controls.for_subclass_implementers
-  def add_loss(self, losses, inputs=None):
-    executing_eagerly = context.executing_eagerly()
-    if executing_eagerly:
-      if inputs is not None:
-        raise RuntimeError(
-            'Activity regularization (via the "inputs" argument to '
-            'Layer.add_loss) is not supported when executing eagerly. Consider '
-            'returning activity regularization losses from a Model\'s call() '
-            'method.')
-      if getattr(self, '_in_call', False):
-        # TODO(psv): Support activity regularization and a way to reset losses.
-        raise RuntimeError(
-            'Adding losses inside a Layer\'s call() method is not currently '
-            'supported when executing eagerly. Please file a feature request '
-            'if you need this limitation lifted.')
-    losses = to_list(losses)
-
-    def _tag_unconditional(loss):
-      if callable(loss):
-        loss = loss()
-      if loss is None:
-        return None  # Will be filtered out when computing the .losses property
-      if not tensor_util.is_tensor(loss):
-        loss = ops.convert_to_tensor(loss, dtype=_FLOATX)
-      loss._unconditional_loss = (inputs is None)  # pylint: disable=protected-access
-      return loss
-
-    for loss in losses:
-      if callable(loss):
-        self._callable_losses.append(
-            functools.partial(_tag_unconditional, loss))
-      else:
-        if executing_eagerly:
-          raise RuntimeError(
-              'Layer.add_loss only supported for zero-argument lambdas when '
-              'executing eagerly.')
-        self._losses.append(_tag_unconditional(loss))
-
-  def get_losses_for(self, inputs):
-    if context.executing_eagerly():
-      raise RuntimeError('Layer.get_losses_for not supported in Eager mode.')
-
-    if inputs is None:
-      # Requesting unconditional losses.
-      return [x for x in self.losses if x._unconditional_loss]  # pylint: disable=protected-access
-
-    # Requesting input-conditional losses.
-    inputs = nest.flatten(inputs)
-    # Retrieve the set of tensors in the TF graph that depend on `inputs`.
-    # The losses we want to return will be part of this set.
-    # To avoid unnecessary work, we stop the search in case all of
-    # `self.losses` have been retrieved.
-    reachable = tf_utils.get_reachable_from_inputs(inputs, self.losses)
-    losses = []
-    for loss in self.losses:
-      if loss in reachable:
-        losses.append(loss)
-    return losses
-
-  def _name_scope(self):
-    return self.name
-
-  def build(self, input_shape):
-    self.built = True
 
   @doc_controls.for_subclass_implementers
   def add_variable(self, *args, **kwargs):
@@ -417,19 +308,6 @@ class Layer(checkpointable.CheckpointableBase):
       self._non_trainable_weights.append(variable)
     return variable
 
-  def _handle_weight_regularization(self, name, variable, regularizer):
-    def _loss_for_variable(v):
-      with ops.colocate_with(v):
-        with ops.name_scope(name + '/Regularizer'):
-          regularization = regularizer(v)
-      return regularization
-
-    if isinstance(variable, tf_variables.PartitionedVariable):
-      for v in variable:
-        self.add_loss(functools.partial(_loss_for_variable, v))
-    else:
-      self.add_loss(functools.partial(_loss_for_variable, variable))
-
   def _handle_activity_regularization(self, inputs, outputs):
     # Apply activity regularization.
     # Note that it should be applied every time the layer creates a new
@@ -440,10 +318,6 @@ class Layer(checkpointable.CheckpointableBase):
         with ops.name_scope('ActivityRegularizer'):
           activity_regularization = self._activity_regularizer(output)
         self.add_loss(activity_regularization, inputs=inputs)
-
-  @doc_controls.for_subclass_implementers
-  def call(self, inputs, **kwargs):  # pylint: disable=unused-argument
-    return inputs
 
   def __call__(self, inputs, *args, **kwargs):
     input_list = nest.flatten(inputs)
@@ -604,333 +478,6 @@ class Layer(checkpointable.CheckpointableBase):
       except AttributeError:
         pass  # C type such as dict. Masking not supported in this case.
 
-  def _set_connectivity_metadata_(self, inputs, outputs, args, kwargs):
-    call_convention = getattr(self, '_call_convention',
-                              CallConvention.EXPLICIT_INPUTS_ARGUMENT)
-    if args:
-      if call_convention == CallConvention.EXPLICIT_INPUTS_ARGUMENT:
-        raise TypeError(
-            'This Layer takes an `inputs` argument to call(), and only the '
-            '`inputs` argument may be specified as a positional argument. '
-            'Pass everything else as a keyword argument (those arguments will'
-            ' not be tracked as inputs to the Layer).')
-      elif call_convention == CallConvention.SINGLE_POSITIONAL_ARGUMENT:
-        raise TypeError(
-            'This Layer takes a single positional argument to call(), which is '
-            'by convention the inputs argument, and only this argument may be '
-            'specified as a positional argument. Pass everything else as a '
-            'keyword argument (those arguments will not be tracked as inputs '
-            'to the Layer).')
-
-    # If the layer returns tensors from its inputs, unmodified,
-    # we copy them to avoid loss of tensor metadata.
-    output_ls = nest.flatten(outputs)
-    output_ls_copy = []
-    for x in output_ls:
-      if x in nest.flatten(inputs):
-        with ops.name_scope(self.name):
-          x = array_ops.identity(x)
-      output_ls_copy.append(x)
-    if len(output_ls_copy) == 1:
-      outputs = output_ls_copy[0]
-    else:
-      outputs = output_ls_copy
-
-    inputs, kwargs = self._inputs_from_call_args(
-        call_args=(inputs,) + args, call_kwargs=kwargs)
-    # Add an inbound node to the layer, so it can keep track of this call.
-    # This updates the layer history of the output tensor(s).
-    kwargs.pop('mask', None)  # `mask` should not be serialized.
-    self._add_inbound_node(
-        input_tensors=inputs, output_tensors=outputs, arguments=kwargs)
-    return inputs, outputs
-
-  def _inputs_from_call_args(self, call_args, call_kwargs):
-    call_convention = getattr(self, '_call_convention',
-                              CallConvention.EXPLICIT_INPUTS_ARGUMENT)
-    if (call_convention in (
-        CallConvention.EXPLICIT_INPUTS_ARGUMENT,
-        CallConvention.SINGLE_POSITIONAL_ARGUMENT)):
-      assert len(call_args) == 1  # TypeError raised earlier in __call__.
-      return call_args[0], call_kwargs
-    else:
-      call_arg_spec = tf_inspect.getfullargspec(self.call)
-      # There is no explicit "inputs" argument expected or provided to
-      # call(). Arguments which have default values are considered non-inputs,
-      # and arguments without are considered inputs.
-      if call_arg_spec.defaults:
-        if call_arg_spec.varargs is not None:
-          raise TypeError(
-              'Layer.call() may not accept both *args and arguments with '
-              'default values (unable to determine which are inputs to the '
-              'Layer).')
-        keyword_arg_names = set(
-            call_arg_spec.args[-len(call_arg_spec.defaults):])
-      else:
-        keyword_arg_names = set()
-        # Training is never an input argument name, to allow signatures like
-        # call(x, training).
-      keyword_arg_names.add('training')
-      _, unwrapped_call = tf_decorator.unwrap(self.call)
-      bound_args = inspect.getcallargs(
-          unwrapped_call, *call_args, **call_kwargs)
-      if call_arg_spec.varkw is not None:
-        var_kwargs = bound_args.pop(call_arg_spec.varkw)
-        bound_args.update(var_kwargs)
-        keyword_arg_names = keyword_arg_names.union(var_kwargs.keys())
-      all_args = call_arg_spec.args
-      if all_args and bound_args[all_args[0]] is self:
-        # Ignore the 'self' argument of methods
-        bound_args.pop(call_arg_spec.args[0])
-        all_args = all_args[1:]
-      non_input_arg_values = {}
-      input_arg_values = []
-      remaining_args_are_keyword = False
-      for argument_name in all_args:
-        if argument_name in keyword_arg_names:
-          remaining_args_are_keyword = True
-        else:
-          if remaining_args_are_keyword:
-            raise TypeError(
-                'Found a positional argument to call() after a non-input '
-                'argument. All arguments after "training" must be keyword '
-                'arguments, and are not tracked as inputs to the Layer.')
-        if remaining_args_are_keyword:
-          non_input_arg_values[argument_name] = bound_args[argument_name]
-        else:
-          input_arg_values.append(bound_args[argument_name])
-      if call_arg_spec.varargs is not None:
-        input_arg_values.extend(bound_args[call_arg_spec.varargs])
-      return input_arg_values, non_input_arg_values
-
-  def compute_output_shape(self, input_shape):
-    if context.executing_eagerly():
-      self.build(input_shape)
-
-      with context.graph_mode():
-        graph = eager_function.FuncGraph('graph')
-        with graph.as_default():
-          if isinstance(input_shape, list):
-            inputs = [generate_placeholders_from_shape(shape)
-                      for shape in input_shape]
-          else:
-            inputs = generate_placeholders_from_shape(input_shape)
-
-          try:
-            if self._expects_training_arg:
-              outputs = self(inputs, training=False)
-            else:
-              outputs = self(inputs)
-          except TypeError:
-            raise NotImplementedError('We could not automatically infer '
-                                      'the static shape of the layer\'s output.'
-                                      ' Please implement the '
-                                      '`compute_output_shape` method on your '
-                                      'layer (%s).' % self.__class__.__name__)
-      if isinstance(outputs, list):
-        return [output.shape for output in outputs]
-      else:
-        return outputs.shape
-    raise NotImplementedError
-
-  def compute_mask(self, inputs, mask=None):  # pylint: disable=unused-argument
-    if not self.supports_masking:
-      if mask is not None:
-        if isinstance(mask, list):
-          if any(m is not None for m in mask):
-            raise TypeError('Layer ' + self.name + ' does not support masking, '
-                            'but was passed an input_mask: ' + str(mask))
-        else:
-          raise TypeError('Layer ' + self.name + ' does not support masking, '
-                          'but was passed an input_mask: ' + str(mask))
-      # masking not explicitly supported: return None as mask
-      return None
-    # if masking is explicitly supported, by default
-    # carry over the input mask
-    return mask
-
-  def _add_inbound_node(self,
-                        input_tensors,
-                        output_tensors,
-                        arguments=None):
-    input_tensors = nest.flatten(input_tensors)
-    output_tensors = nest.flatten(output_tensors)
-
-    # Collect input tensor(s) coordinates.
-    inbound_layers = []
-    node_indices = []
-    tensor_indices = []
-    for x in input_tensors:
-      assert hasattr(x, '_keras_history')
-      inbound_layer, node_index, tensor_index = x._keras_history  # pylint: disable=protected-access
-      inbound_layers.append(inbound_layer)
-      node_indices.append(node_index)
-      tensor_indices.append(tensor_index)
-
-    # Create node, add it to inbound nodes.
-    Node(
-        self,
-        inbound_layers=inbound_layers,
-        node_indices=node_indices,
-        tensor_indices=tensor_indices,
-        input_tensors=input_tensors,
-        output_tensors=output_tensors,
-        arguments=arguments)
-
-    # Update tensor history metadata.
-    for i in range(len(output_tensors)):
-      # The metadata attribute consists of 1) a layer instance
-      # 2) a node index for the layer, 3) a tensor index for the node.
-      # The allows layer reuse (multiple nodes per layer) and multi-output
-      # or multi-input layers (e.g. a layer can return multiple tensors,
-      # and each can be sent to a different layer).
-      output_tensors[i]._keras_history = (self, len(self._inbound_nodes) - 1, i)  # pylint: disable=protected-access
-
-  def _get_node_attribute_at_index(self, node_index, attr, attr_name):
-    if not self._inbound_nodes:
-      raise RuntimeError('The layer has never been called '
-                         'and thus has no defined ' + attr_name + '.')
-    if not len(self._inbound_nodes) > node_index:
-      raise ValueError('Asked to get ' + attr_name + ' at node ' +
-                       str(node_index) + ', but the layer has only ' +
-                       str(len(self._inbound_nodes)) + ' inbound nodes.')
-    values = getattr(self._inbound_nodes[node_index], attr)
-    if len(values) == 1:
-      return values[0]
-    else:
-      return values
-
-  def get_input_mask_at(self, node_index):
-    inputs = self.get_input_at(node_index)
-    if isinstance(inputs, list):
-      return [getattr(x, '_keras_mask', None) for x in inputs]
-    else:
-      return getattr(inputs, '_keras_mask', None)
-
-  def get_output_mask_at(self, node_index):
-    output = self.get_output_at(node_index)
-    if isinstance(output, list):
-      return [getattr(x, '_keras_mask', None) for x in output]
-    else:
-      return getattr(output, '_keras_mask', None)
-
-  @property
-  def input_mask(self):
-    inputs = self.input
-    if isinstance(inputs, list):
-      return [getattr(x, '_keras_mask', None) for x in inputs]
-    else:
-      return getattr(inputs, '_keras_mask', None)
-
-  @property
-  def output_mask(self):
-    output = self.output
-    if isinstance(output, list):
-      return [getattr(x, '_keras_mask', None) for x in output]
-    else:
-      return getattr(output, '_keras_mask', None)
-
-  def get_input_shape_at(self, node_index):
-    return self._get_node_attribute_at_index(node_index, 'input_shapes',
-                                             'input shape')
-
-  def get_output_shape_at(self, node_index):
-    return self._get_node_attribute_at_index(node_index, 'output_shapes',
-                                             'output shape')
-
-  def get_input_at(self, node_index):
-    return self._get_node_attribute_at_index(node_index, 'input_tensors',
-                                             'input')
-
-  def get_output_at(self, node_index):
-    return self._get_node_attribute_at_index(node_index, 'output_tensors',
-                                             'output')
-
-  @property
-  def input(self):
-    if not self._inbound_nodes:
-      raise AttributeError('Layer ' + self.name +
-                           ' is not connected, no input to return.')
-    return self._get_node_attribute_at_index(0, 'input_tensors', 'input')
-
-  @property
-  def output(self):
-    if not self._inbound_nodes:
-      raise AttributeError('Layer ' + self.name + ' has no inbound nodes.')
-    return self._get_node_attribute_at_index(0, 'output_tensors', 'output')
-
-  @property
-  def input_shape(self):
-    if not self._inbound_nodes:
-      raise AttributeError('The layer has never been called '
-                           'and thus has no defined input shape.')
-    all_input_shapes = set(
-        [str(node.input_shapes) for node in self._inbound_nodes])
-    if len(all_input_shapes) == 1:
-      input_shapes = self._inbound_nodes[0].input_shapes
-      if len(input_shapes) == 1:
-        return tuple(tensor_shape.TensorShape(input_shapes[0]).as_list())
-      else:
-        return [
-            tuple(tensor_shape.TensorShape(shape).as_list())
-            for shape in input_shapes
-        ]
-    else:
-      raise AttributeError('The layer "' + str(self.name) +
-                           ' has multiple inbound nodes, '
-                           'with different input shapes. Hence '
-                           'the notion of "input shape" is '
-                           'ill-defined for the layer. '
-                           'Use `get_input_shape_at(node_index)` '
-                           'instead.')
-
-  def count_params(self):
-    if not self.built:
-      if self.__class__.__name__ == 'Sequential':
-        self.build()  # pylint: disable=no-value-for-parameter
-      else:
-        raise ValueError('You tried to call `count_params` on ' + self.name +
-                         ', but the layer isn\'t built. '
-                         'You can build it manually via: `' + self.name +
-                         '.build(batch_input_shape)`.')
-    weight_shapes = [w.shape.as_list() for w in self.weights]
-    return int(sum([np.prod(w) for w in weight_shapes]))
-
-  @property
-  def output_shape(self):
-    if not self._inbound_nodes:
-      raise AttributeError('The layer has never been called '
-                           'and thus has no defined output shape.')
-    all_output_shapes = set(
-        [str(node.output_shapes) for node in self._inbound_nodes])
-    if len(all_output_shapes) == 1:
-      output_shapes = self._inbound_nodes[0].output_shapes
-      if len(output_shapes) == 1:
-        return tuple(tensor_shape.TensorShape(output_shapes[0]).as_list())
-      else:
-        return [
-            tuple(tensor_shape.TensorShape(shape).as_list())
-            for shape in output_shapes
-        ]
-    else:
-      raise AttributeError('The layer "%s"'
-                           ' has multiple inbound nodes, '
-                           'with different output shapes. Hence '
-                           'the notion of "output shape" is '
-                           'ill-defined for the layer. '
-                           'Use `get_output_shape_at(node_index)` '
-                           'instead.' % self.name)
-
-  @property
-  @doc_controls.do_not_doc_inheritable
-  def inbound_nodes(self):
-    return self._inbound_nodes
-
-  @property
-  @doc_controls.do_not_doc_inheritable
-  def outbound_nodes(self):
-    return self._outbound_nodes
-
   def _assert_input_compatibility(self, inputs):
     if not self.input_spec:
       return
@@ -1014,83 +561,8 @@ class Layer(checkpointable.CheckpointableBase):
                                  ': expected shape=' + str(spec.shape) +
                                  ', found shape=' + str(shape))
 
-  def set_weights(self, weights):
-    params = self.weights
-    if len(params) != len(weights):
-      raise ValueError('You called `set_weights(weights)` on layer "' +
-                       self.name + '" with a  weight list of length ' +
-                       str(len(weights)) + ', but the layer was expecting ' +
-                       str(len(params)) + ' weights. Provided weights: ' +
-                       str(weights)[:50] + '...')
-    if not params:
-      return
-    weight_value_tuples = []
-    param_values = backend.batch_get_value(params)
-    for pv, p, w in zip(param_values, params, weights):
-      if pv.shape != w.shape:
-        raise ValueError('Layer weight shape ' + str(pv.shape) +
-                         ' not compatible with '
-                         'provided weight shape ' + str(w.shape))
-      weight_value_tuples.append((p, w))
-    backend.batch_set_value(weight_value_tuples)
 
-  def get_weights(self):
-    params = self.weights
-    return backend.batch_get_value(params)
-
-  def get_config(self):
-    config = {'name': self.name, 'trainable': self.trainable}
-    if hasattr(self, '_batch_input_shape'):
-      config['batch_input_shape'] = self._batch_input_shape
-    if hasattr(self, 'dtype'):
-      config['dtype'] = self.dtype
-    return config
-
-  @classmethod
-  def from_config(cls, config):
-    return cls(**config)
-
-
-def to_snake_case(name):
-  intermediate = re.sub('(.)([A-Z][a-z0-9]+)', r'\1_\2', name)
-  insecure = re.sub('([a-z])([A-Z])', r'\1_\2', intermediate).lower()
-  # If the class is private the name starts with "_" which is not secure
-  # for creating scopes. We prefix the name with "private" in this case.
-  if insecure[0] != '_':
-    return insecure
-  return 'private' + insecure
-
-
-
-def unique_layer_name(name, name_uid_map=None, avoid_names=None, namespace='',
-                      zero_based=False):
-  if name_uid_map is None:
-    name_uid_map = get_default_graph_uid_map()
-  if avoid_names is None:
-    avoid_names = set()
-  proposed_name = None
-  while proposed_name is None or proposed_name in avoid_names:
-    name_key = (namespace, name)
-    if zero_based:
-      number = name_uid_map[name_key]
-      if number:
-        proposed_name = name + '_' + str(number)
-      else:
-        proposed_name = name
-      name_uid_map[name_key] += 1
-    else:
-      name_uid_map[name_key] += 1
-      proposed_name = name + '_' + str(name_uid_map[name_key])
-  return proposed_name
-
-def get_default_graph_uid_map():
-  # TODO(fchollet): refactor this into backend.
-  graph = ops.get_default_graph()
-  name_uid_map = backend.PER_GRAPH_LAYER_NAME_UIDS.get(graph, None)
-  if name_uid_map is None:
-    name_uid_map = collections_lib.defaultdict(int)
-    backend.PER_GRAPH_LAYER_NAME_UIDS[graph] = name_uid_map
-  return name_uid_map
+ 
 
 class CallConvention(enum.Enum):
   # The Layer takes inputs as its first argument, named "inputs" for
@@ -1103,7 +575,6 @@ class CallConvention(enum.Enum):
   # The Layer has multiple positional arguments to which its inputs should be
   # bound.
   POSITIONAL_ARGUMENTS_ARE_INPUTS = 3
-
 
 class DeferredTensor(object):
   def __init__(self, shape, dtype, name=None):
@@ -1128,6 +599,48 @@ class DeferredTensor(object):
                                                         self.dtype.name)
 
 
+def to_snake_case(name):
+  intermediate = re.sub('(.)([A-Z][a-z0-9]+)', r'\1_\2', name)
+  insecure = re.sub('([a-z])([A-Z])', r'\1_\2', intermediate).lower()
+  # If the class is private the name starts with "_" which is not secure
+  # for creating scopes. We prefix the name with "private" in this case.
+  if insecure[0] != '_':
+    return insecure
+  return 'private' + insecure
+
+
+def unique_layer_name(name, name_uid_map=None, avoid_names=None, namespace='',
+                      zero_based=False):
+  if name_uid_map is None:
+    name_uid_map = get_default_graph_uid_map()
+  if avoid_names is None:
+    avoid_names = set()
+  proposed_name = None
+  while proposed_name is None or proposed_name in avoid_names:
+    name_key = (namespace, name)
+    if zero_based:
+      number = name_uid_map[name_key]
+      if number:
+        proposed_name = name + '_' + str(number)
+      else:
+        proposed_name = name
+      name_uid_map[name_key] += 1
+    else:
+      name_uid_map[name_key] += 1
+      proposed_name = name + '_' + str(name_uid_map[name_key])
+  return proposed_name
+
+
+def get_default_graph_uid_map():
+  # TODO(fchollet): refactor this into backend.
+  graph = ops.get_default_graph()
+  name_uid_map = backend.PER_GRAPH_LAYER_NAME_UIDS.get(graph, None)
+  if name_uid_map is None:
+    name_uid_map = collections_lib.defaultdict(int)
+    backend.PER_GRAPH_LAYER_NAME_UIDS[graph] = name_uid_map
+  return name_uid_map
+
+
 def collect_previous_mask(input_tensors):
   input_tensors = nest.flatten(input_tensors)
   masks = []
@@ -1141,10 +654,12 @@ def collect_previous_mask(input_tensors):
     return masks[0]
   return masks
 
+
 def to_list(x):
   if isinstance(x, list):
     return x
   return [x]
+
 
 def have_all_keras_metadata(iterable_or_element):
   if not isinstance(iterable_or_element, (list, tuple)):

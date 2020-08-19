@@ -23,12 +23,12 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
 #from tensorflow.python.keras import backend as K
-from tensorflow.python.keras import constraints
-from tensorflow.python.keras import initializers
-from tensorflow.python.keras import regularizers
-from tensorflow.python.keras.base_layer import InputSpec
-from tensorflow.python.keras.base_layer import Layer
-from tensorflow.python.keras import tf_utils
+from tensorflow.python import constraints
+from tensorflow.python import initializers
+from tensorflow.python import regularizers
+from tensorflow.python.base_layer import InputSpec
+from tensorflow.python.base_layer import Layer
+from tensorflow.python import tf_utils
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import init_ops
 from tensorflow.python.ops import math_ops

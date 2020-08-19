@@ -41,8 +41,8 @@ from tensorflow.python.ops import variables as tf_variables
 from tensorflow.python.ops import variable_scope as vs
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
-from tensorflow.python.keras import initializers
-from tensorflow.python.keras import tf_utils
+from tensorflow.python import initializers
+from tensorflow.python import tf_utils
 from tensorflow.python.training import base as checkpointable
 from tensorflow.python.util import nest
 from tensorflow.python.util.deprecation import deprecated

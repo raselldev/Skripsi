@@ -6,7 +6,6 @@ from __future__ import print_function
 from tensorflow.python import pywrap_tensorflow as c_api
 from tensorflow.python.util import tf_contextlib
 
-
 class ScopedTFStatus(object):
   """Wrapper around TF_Status that handles deletion."""
 
@@ -30,7 +29,8 @@ class ScopedTFGraph(object):
     # Note: when we're destructing the global context (i.e when the process is
     # terminating) we can have already deleted other modules.
     if c_api is not None and c_api.TF_DeleteGraph is not None:
-      c_api.TF_DeleteGraph(self.graph)
+      pass
+      #c_api.TF_DeleteGraph(self.graph)
 
 
 

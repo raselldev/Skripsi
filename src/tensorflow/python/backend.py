@@ -10,7 +10,6 @@ import weakref
 
 import numpy as np
 
-
 from tensorflow.python.ops import tensor_array_grad 
 from tensorflow.python import context
 from tensorflow.python.framework import ops
