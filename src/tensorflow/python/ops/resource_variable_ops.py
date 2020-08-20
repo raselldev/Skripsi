@@ -1,20 +1,3 @@
-# Copyright 2016 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-"""Ops to use variables as resources."""
-
-# pylint: disable=g-bad-name
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -28,83 +11,7 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import variables
 
 
-def get_resource_handle_data(graph_op):
-  assert ops._USE_C_SHAPES  # pylint: disable=protected-access
-  assert type(graph_op) == ops.Tensor  # pylint: disable=unidiomatic-typecheck
-
-  handle_data = pywrap_tensorflow.GetHandleShapeAndType(
-      graph_op.graph._c_graph, graph_op._as_tf_output())  # pylint: disable=protected-access
-
-  return cpp_shape_inference_pb2.CppShapeInferenceResult.HandleData.FromString(
-      compat.as_bytes(handle_data))
-
-
-def eager_safe_variable_handle(shape, dtype, shared_name, name, graph_mode):
-  """Creates a variable handle with information to do shape inference."""
-  container = ops.get_default_graph()._container  # pylint: disable=protected-access
-  if container is None:
-    container = ""
-  handle = gen_resource_variable_ops.var_handle_op(shape=shape, dtype=dtype,
-                                                   shared_name=shared_name,
-                                                   name=name,
-                                                   container=container)
-  if graph_mode:
-    return handle
-
-  # We do not want two distinct ResourceVariable objects for the same
-  # underlying resource in the runtime.
-  # When in eager mode, explicitly ensure so here. When in graph mode, it's
-  # ensured by always generating different variable names.
-  exists = gen_resource_variable_ops.var_is_initialized_op(handle)
-  if exists:
-    raise ValueError("variable object with name '%s' already created. Use "
-                     "get_variable() if reuse is desired." %
-                     shared_name)
-  with context.graph_mode(), ops.Graph().as_default() as graph:
-    h = gen_resource_variable_ops.var_handle_op(shape=shape, dtype=dtype,
-                                                shared_name=shared_name,
-                                                name=name,
-                                                container=container)
-
-    # Tensor._handle_data contains information for the shape-inference code to
-    # know the shape and dtype of the variable pointed to by a handle. Since
-    # shape inference doesn't run in eager mode we copy this data here for when
-    # the handle is captured by an eager mode function.
-    # pylint: disable=protected-access
-    if ops._USE_C_SHAPES:
-      handle._handle_data = get_resource_handle_data(h)
-    else:
-      if h._handle_data is None:
-        ops.set_shape_and_handle_data_for_outputs(h.op)
-      handle._handle_data = h._handle_data
-    # pylint: enable=protected-access
-  # Clean up op->graph->op reference cycles.
-  ops.dismantle_graph(graph)
-  return handle
-
-
-@contextlib.contextmanager
-def _handle_graph(handle):
-  # Note: might have an eager tensor but not be executing eagerly when building
-  # functions.
-  if (context.executing_eagerly() or isinstance(handle, ops.EagerTensor)
-      or ops.has_default_graph()):
-    yield
-  else:
-    with handle.graph.as_default():
-      yield
-
-
 class EagerResourceDeleter(object):
-  """An object which cleans up a resource handle.
-
-  An alternative to defining a __del__ method on an object. The intended use is
-  that ResourceVariables or other objects with resource handles will maintain a
-  single reference to this object. When the parent object is collected, this
-  object will be too. Even if the parent object is part of a reference cycle,
-  the cycle will be collectable.
-  """
-
   def __init__(self, handle, handle_device):
     if not isinstance(handle, ops.Tensor):
       raise ValueError(
@@ -114,31 +21,17 @@ class EagerResourceDeleter(object):
     self._handle_device = handle_device
 
   def __del__(self):
-    # Resources follow object-identity when executing eagerly, so it is safe to
-    # delete the resource we have a handle to.
     try:
-      # This resource was created in eager mode. However, this destructor may be
-      # running in graph mode (especially during unit tests). To clean up
-      # successfully, we switch back into eager mode temporarily.
       with context.eager_mode():
         with ops.device(self._handle_device):
           gen_resource_variable_ops.destroy_resource_op(
               self._handle, ignore_lookup_error=True)
     except TypeError:
-      # Suppress some exceptions, mainly for the case when we're running on
-      # module deletion. Things that can go wrong include the context module
-      # already being unloaded, self._handle._handle_data no longer being
-      # valid, and so on. Printing warnings in these cases is silly
-      # (exceptions raised from __del__ are printed as warnings to stderr).
-      pass  # 'NoneType' object is not callable when the handle has been
-      # partially unloaded.
+      pass
     except AttributeError:
-      pass  # 'NoneType' object has no attribute 'eager_mode' when context has
-      # been unloaded. Will catch other module unloads as well.
-
+      pass
 
 def shape_safe_assign_variable_handle(handle, shape, value, name=None):
-  """Helper that checks shape compatibility and assigns variable."""
   with _handle_graph(handle):
     value_tensor = ops.convert_to_tensor(value)
   shape.assert_is_compatible_with(value_tensor.shape)
@@ -146,61 +39,7 @@ def shape_safe_assign_variable_handle(handle, shape, value, name=None):
                                                       value_tensor,
                                                       name=name)
 
-
-# TODO(apassos) make this be variables.Variable
 class ResourceVariable(variables.RefVariable):
-  """Variable based on resource handles.
-
-  See the [Variables How To](https://tensorflow.org/guide/variables)
-  for a high level overview.
-
-  A `ResourceVariable` allows you to maintain state across subsequent calls to
-  session.run.
-
-  The `ResourceVariable` constructor requires an initial value for the variable,
-  which can be a `Tensor` of any type and shape. The initial value defines the
-  type and shape of the variable. After construction, the type and shape of
-  the variable are fixed. The value can be changed using one of the assign
-  methods.
-
-  Just like any `Tensor`, variables created with
-  `tf.Variable(use_resource=True)` can be used as inputs for other Ops in the
-  graph. Additionally, all the operators overloaded for the `Tensor` class are
-  carried over to variables, so you can also add nodes to the graph by just
-  doing arithmetic on variables.
-
-  Unlike ref-based variable, a ResourceVariable has well-defined semantics. Each
-  usage of a ResourceVariable in a TensorFlow graph adds a read_value operation
-  to the graph. The Tensors returned by a read_value operation are guaranteed to
-  see all modifications to the value of the variable which happen in any
-  operation on which the read_value depends on (either directly, indirectly, or
-  via a control dependency) and guaranteed to not see any modification to the
-  value of the variable from operations that depend on the read_value operation.
-  Updates from operations that have no dependency relationship to the read_value
-  operation might or might not be visible to read_value.
-
-  For example, if there is more than one assignment to a ResourceVariable in
-  a single session.run call there is a well-defined value for each operation
-  which uses the variable's value if the assignments and the read are connected
-  by edges in the graph. Consider the following example, in which two writes
-  can cause tf.Variable and tf.ResourceVariable to behave differently:
-
-  ```python
-  a = tf.Variable(1.0, use_resource=True)
-  a.initializer.run()
-
-  assign = a.assign(2.0)
-  with tf.control_dependencies([assign]):
-    b = a.read_value()
-  with tf.control_dependencies([b]):
-    other_assign = a.assign(3.0)
-  with tf.control_dependencies([other_assign]):
-    # Will print 2.0 because the value was read before other_assign ran. If
-    # `a` was a tf.Variable instead, 2.0 or 3.0 could be printed.
-    tf.Print(b, [b]).eval()
-  ```
-  """
-
   def __init__(self,
                initial_value=None,
                trainable=True,
@@ -212,55 +51,6 @@ class ResourceVariable(variables.RefVariable):
                variable_def=None,
                import_scope=None,
                constraint=None):
-    """Creates a variable.
-
-    Args:
-      initial_value: A `Tensor`, or Python object convertible to a `Tensor`,
-        which is the initial value for the Variable. The initial value must have
-        a shape specified unless `validate_shape` is set to False. Can also be a
-        callable with no argument that returns the initial value when called.
-        (Note that initializer functions from init_ops.py must first be bound
-         to a shape before being used here.)
-      trainable: If `True`, the default, also adds the variable to the graph
-        collection `GraphKeys.TRAINABLE_VARIABLES`. This collection is used as
-        the default list of variables to use by the `Optimizer` classes.
-      collections: List of graph collections keys. The new variable is added to
-        these collections. Defaults to `[GraphKeys.GLOBAL_VARIABLES]`.
-      validate_shape: Ignored. Provided for compatibility with tf.Variable.
-      caching_device: Optional device string or function describing where the
-        Variable should be cached for reading.  Defaults to the Variable's
-        device.  If not `None`, caches on another device.  Typical use is to
-        cache on the device where the Ops using the Variable reside, to
-        deduplicate copying through `Switch` and other conditional statements.
-      name: Optional name for the variable. Defaults to `'Variable'` and gets
-        uniquified automatically.
-      dtype: If set, initial_value will be converted to the given type.
-        If None, either the datatype will be kept (if initial_value is
-        a Tensor) or float32 will be used (if it is a Python object convertible
-        to a Tensor).
-      variable_def: `VariableDef` protocol buffer. If not None, recreates the
-        `ResourceVariable` object with its contents. `variable_def` and other
-        arguments (except for import_scope) are mutually exclusive.
-      import_scope: Optional `string`. Name scope to add to the
-        ResourceVariable. Only used when `variable_def` is provided.
-      constraint: An optional projection function to be applied to the variable
-        after being updated by an `Optimizer` (e.g. used to implement norm
-        constraints or value constraints for layer weights). The function must
-        take as input the unprojected Tensor representing the value of the
-        variable and return the Tensor for the projected value
-        (which must have the same shape). Constraints are not safe to
-        use when doing asynchronous distributed training.
-
-    Raises:
-      ValueError: If the initial value is not specified, or does not have a
-        shape and `validate_shape` is `True`.
-
-    @compatibility(eager)
-    When Eager Execution is enabled, the default for the `collections` argument
-    is `None`, which signifies that this `Variable` will not be added to any
-    collections.
-    @end_compatibility
-    """
     if variable_def:
       if initial_value is not None:
         raise ValueError("variable_def and initial_value are mutually "
@@ -280,7 +70,6 @@ class ResourceVariable(variables.RefVariable):
           dtype=dtype,
           constraint=constraint)
 
-  # pylint: disable=unused-argument
   def _init_from_args(self,
                       initial_value=None,
                       trainable=True,
@@ -290,51 +79,6 @@ class ResourceVariable(variables.RefVariable):
                       name=None,
                       dtype=None,
                       constraint=None):
-    """Creates a variable.
-
-    Args:
-      initial_value: A `Tensor`, or Python object convertible to a `Tensor`,
-        which is the initial value for the Variable. The initial value must have
-        a shape specified unless `validate_shape` is set to False. Can also be a
-        callable with no argument that returns the initial value when called.
-        (Note that initializer functions from init_ops.py must first be bound
-         to a shape before being used here.)
-      trainable: If `True`, the default, also adds the variable to the graph
-        collection `GraphKeys.TRAINABLE_VARIABLES`. This collection is used as
-        the default list of variables to use by the `Optimizer` classes.
-      collections: List of graph collections keys. The new variable is added to
-        these collections. Defaults to `[GraphKeys.GLOBAL_VARIABLES]`.
-      validate_shape: Ignored. Provided for compatibility with tf.Variable.
-      caching_device: Optional device string or function describing where the
-        Variable should be cached for reading.  Defaults to the Variable's
-        device.  If not `None`, caches on another device.  Typical use is to
-        cache on the device where the Ops using the Variable reside, to
-        deduplicate copying through `Switch` and other conditional statements.
-      name: Optional name for the variable. Defaults to `'Variable'` and gets
-        uniquified automatically.
-      dtype: If set, initial_value will be converted to the given type.
-        If None, either the datatype will be kept (if initial_value is
-       a Tensor) or float32 will be used (if it is a Python object convertible
-       to a Tensor).
-      constraint: An optional projection function to be applied to the variable
-        after being updated by an `Optimizer` (e.g. used to implement norm
-        constraints or value constraints for layer weights). The function must
-        take as input the unprojected Tensor representing the value of the
-        variable and return the Tensor for the projected value
-        (which must have the same shape). Constraints are not safe to
-        use when doing asynchronous distributed training.
-
-    Raises:
-      ValueError: If the initial value is not specified, or does not have a
-        shape and `validate_shape` is `True`.
-
-    @compatibility(eager)
-    When Eager Execution is enabled, variables are never added to collections.
-    It is not implicitly added to the `GLOBAL_VARIABLES` or
-    `TRAINABLE_VARIABLES` collections, and the `collections` argument is
-    ignored.
-    @end_compatibility
-    """
     if initial_value is None:
       raise ValueError("initial_value must be specified.")
     init_from_fn = callable(initial_value)
@@ -476,8 +220,6 @@ class ResourceVariable(variables.RefVariable):
     self._cached_shape_as_list = None
 
   def _init_from_proto(self, variable_def, import_scope=None):
-    """Initializes from `VariableDef` proto."""
-    # Note that init_from_proto is currently not supported in Eager mode.
     assert not context.executing_eagerly()
     self._in_graph_mode = True
     assert isinstance(variable_def, variable_pb2.VariableDef)
@@ -1412,11 +1154,6 @@ class _MixedPrecisionVariable(ResourceVariable):
     """To pass resource_variable_ops.is_resource_variable check."""
     pass
 
-# Register a conversion function which reads the value of the variable,
-# allowing instances of the class to be used as tensors.
-
-# Note: registering for Variable after ResourceVariable because inheritance will
-# otherwise lead to the wrong behavior.
 ops.register_tensor_conversion_function(ResourceVariable, _dense_var_to_tensor)
 ops.register_tensor_conversion_function(
     variables.Variable, variables.Variable._TensorConversionFunction)  # pylint: disable=protected-access

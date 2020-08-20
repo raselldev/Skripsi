@@ -1,9 +1,3 @@
-"""Python wrappers around TensorFlow ops.
-
-This file is MACHINE GENERATED! Do not edit.
-Original C++ source file: math_ops.cc
-"""
-
 import collections as _collections
 import six as _six
 
@@ -59,23 +53,6 @@ def _abs(x, name=None):
       else:
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-
-def _abs_eager_fallback(x, name=None, ctx=None):
-  r"""This is the slowpath function for Eager mode.
-  This is for function _abs
-  """
-  _ctx = ctx if ctx else _context.context()
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
-  _inputs_flat = [x]
-  _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Abs", 1, inputs=_inputs_flat, attrs=_attrs,
-                             ctx=_ctx, name=name)
-  _execute.record_gradient(
-      "Abs", _inputs_flat, _attrs, _result, name)
-  _result, = _result
-  return _result
-
 
 def accumulate_nv2(inputs, shape, name=None):
   r"""Returns the element-wise sum of a list of tensors.
@@ -135,29 +112,6 @@ def accumulate_nv2(inputs, shape, name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-
-def accumulate_nv2_eager_fallback(inputs, shape, name=None, ctx=None):
-  r"""This is the slowpath function for Eager mode.
-  This is for function accumulate_nv2
-  """
-  _ctx = ctx if ctx else _context.context()
-  if not isinstance(inputs, (list, tuple)):
-    raise TypeError(
-        "Expected list for 'inputs' argument to "
-        "'accumulate_nv2' Op, not %r." % inputs)
-  _attr_N = len(inputs)
-  shape = _execute.make_shape(shape, "shape")
-  _attr_T, inputs = _execute.args_to_matching_eager(list(inputs), _ctx)
-  _inputs_flat = list(inputs)
-  _attrs = ("N", _attr_N, "T", _attr_T, "shape", shape)
-  _result = _execute.execute(b"AccumulateNV2", 1, inputs=_inputs_flat,
-                             attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
-      "AccumulateNV2", _inputs_flat, _attrs, _result, name)
-  _result, = _result
-  return _result
-
-
 @tf_export('math.acos', 'acos')
 @deprecated_endpoints('acos')
 def acos(x, name=None):
@@ -198,23 +152,6 @@ def acos(x, name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-
-def acos_eager_fallback(x, name=None, ctx=None):
-  r"""This is the slowpath function for Eager mode.
-  This is for function acos
-  """
-  _ctx = ctx if ctx else _context.context()
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
-  _inputs_flat = [x]
-  _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Acos", 1, inputs=_inputs_flat, attrs=_attrs,
-                             ctx=_ctx, name=name)
-  _execute.record_gradient(
-      "Acos", _inputs_flat, _attrs, _result, name)
-  _result, = _result
-  return _result
-
-
 @tf_export('math.acosh', 'acosh')
 @deprecated_endpoints('acosh')
 def acosh(x, name=None):
@@ -254,22 +191,6 @@ def acosh(x, name=None):
       else:
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-
-def acosh_eager_fallback(x, name=None, ctx=None):
-  r"""This is the slowpath function for Eager mode.
-  This is for function acosh
-  """
-  _ctx = ctx if ctx else _context.context()
-  _attr_T, (x,) = _execute.args_to_matching_eager([x], _ctx)
-  _inputs_flat = [x]
-  _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Acosh", 1, inputs=_inputs_flat, attrs=_attrs,
-                             ctx=_ctx, name=name)
-  _execute.record_gradient(
-      "Acosh", _inputs_flat, _attrs, _result, name)
-  _result, = _result
-  return _result
 
 
 @tf_export('math.add', 'add')
@@ -9055,24 +8976,6 @@ def unsorted_segment_sum(data, segment_ids, num_segments, name=None):
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
 
-def unsorted_segment_sum_eager_fallback(data, segment_ids, num_segments, name=None, ctx=None):
-  r"""This is the slowpath function for Eager mode.
-  This is for function unsorted_segment_sum
-  """
-  _ctx = ctx if ctx else _context.context()
-  _attr_T, (data,) = _execute.args_to_matching_eager([data], _ctx)
-  _attr_Tindices, (segment_ids,) = _execute.args_to_matching_eager([segment_ids], _ctx)
-  _attr_Tnumsegments, (num_segments,) = _execute.args_to_matching_eager([num_segments], _ctx, _dtypes.int32)
-  _inputs_flat = [data, segment_ids, num_segments]
-  _attrs = ("T", _attr_T, "Tindices", _attr_Tindices, "Tnumsegments",
-  _attr_Tnumsegments)
-  _result = _execute.execute(b"UnsortedSegmentSum", 1, inputs=_inputs_flat,
-                             attrs=_attrs, ctx=_ctx, name=name)
-  _execute.record_gradient(
-      "UnsortedSegmentSum", _inputs_flat, _attrs, _result, name)
-  _result, = _result
-  return _result
-
 
 @tf_export('math.xdivy')
 def xdivy(x, y, name=None):
@@ -9115,22 +9018,6 @@ def xdivy(x, y, name=None):
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
 
-def xdivy_eager_fallback(x, y, name=None, ctx=None):
-  r"""This is the slowpath function for Eager mode.
-  This is for function xdivy
-  """
-  _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([x, y], _ctx)
-  (x, y) = _inputs_T
-  _inputs_flat = [x, y]
-  _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Xdivy", 1, inputs=_inputs_flat, attrs=_attrs,
-                             ctx=_ctx, name=name)
-  _execute.record_gradient(
-      "Xdivy", _inputs_flat, _attrs, _result, name)
-  _result, = _result
-  return _result
-
 
 @tf_export('math.xlogy')
 def xlogy(x, y, name=None):
@@ -9171,23 +9058,6 @@ def xlogy(x, y, name=None):
       else:
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-
-def xlogy_eager_fallback(x, y, name=None, ctx=None):
-  r"""This is the slowpath function for Eager mode.
-  This is for function xlogy
-  """
-  _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([x, y], _ctx)
-  (x, y) = _inputs_T
-  _inputs_flat = [x, y]
-  _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Xlogy", 1, inputs=_inputs_flat, attrs=_attrs,
-                             ctx=_ctx, name=name)
-  _execute.record_gradient(
-      "Xlogy", _inputs_flat, _attrs, _result, name)
-  _result, = _result
-  return _result
 
 
 @tf_export('math.zeta', 'zeta')
@@ -9235,23 +9105,6 @@ def zeta(x, q, name=None):
       else:
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-
-def zeta_eager_fallback(x, q, name=None, ctx=None):
-  r"""This is the slowpath function for Eager mode.
-  This is for function zeta
-  """
-  _ctx = ctx if ctx else _context.context()
-  _attr_T, _inputs_T = _execute.args_to_matching_eager([x, q], _ctx)
-  (x, q) = _inputs_T
-  _inputs_flat = [x, q]
-  _attrs = ("T", _attr_T)
-  _result = _execute.execute(b"Zeta", 1, inputs=_inputs_flat, attrs=_attrs,
-                             ctx=_ctx, name=name)
-  _execute.record_gradient(
-      "Zeta", _inputs_flat, _attrs, _result, name)
-  _result, = _result
-  return _result
 
 def _InitOpDefLibrary(op_list_proto_bytes):
   op_list = _op_def_pb2.OpList()
