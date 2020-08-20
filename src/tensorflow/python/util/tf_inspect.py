@@ -127,19 +127,6 @@ else:
 
 
 def getfullargspec(obj):
-  """TFDecorator-aware replacement for `inspect.getfullargspec`.
-
-  This wrapper emulates `inspect.getfullargspec` in[^)]* Python2.
-
-  Args:
-    obj: A callable, possibly decorated.
-
-  Returns:
-    The `FullArgSpec` that describes the signature of
-    the outermost decorator that changes the callable's signature. If the
-    callable is not decorated, `inspect.getfullargspec()` will be called
-    directly on the callable.
-  """
   decorators, target = tf_decorator.unwrap(obj)
   return next((d.decorator_argspec
                for d in decorators
@@ -162,78 +149,6 @@ def getcallargs(func, *positional, **named):
   return call_args
 
 
-def getframeinfo(*args, **kwargs):
-  return _inspect.getframeinfo(*args, **kwargs)
-
-
-def getdoc(object):  # pylint: disable=redefined-builtin
-  """TFDecorator-aware replacement for inspect.getdoc.
-
-  Args:
-    object: An object, possibly decorated.
-
-  Returns:
-    The docstring associated with the object.
-
-  The outermost-decorated object is intended to have the most complete
-  documentation, so the decorated parameter is not unwrapped.
-  """
-  return _inspect.getdoc(object)
-
-
-def getfile(object):  # pylint: disable=redefined-builtin
-  """TFDecorator-aware replacement for inspect.getfile."""
-  unwrapped_object = tf_decorator.unwrap(object)[1]
-
-  # Work around for the case when object is a stack frame
-  # and only .pyc files are used. In this case, getfile
-  # might return incorrect path. So, we get the path from f_globals
-  # instead.
-  if (hasattr(unwrapped_object, 'f_globals') and
-      '__file__' in unwrapped_object.f_globals):
-    return unwrapped_object.f_globals['__file__']
-  return _inspect.getfile(unwrapped_object)
-
-
-def getmembers(object, predicate=None):  # pylint: disable=redefined-builtin
-  """TFDecorator-aware replacement for inspect.getmembers."""
-  return _inspect.getmembers(object, predicate)
-
-
-def getmodule(object):  # pylint: disable=redefined-builtin
-  """TFDecorator-aware replacement for inspect.getmodule."""
-  return _inspect.getmodule(object)
-
-
-def getmro(cls):
-  """TFDecorator-aware replacement for inspect.getmro."""
-  return _inspect.getmro(cls)
-
-
-def getsource(object):  # pylint: disable=redefined-builtin
-  """TFDecorator-aware replacement for inspect.getsource."""
-  return _inspect.getsource(tf_decorator.unwrap(object)[1])
-
-
-def getsourcefile(object):  # pylint: disable=redefined-builtin
-  """TFDecorator-aware replacement for inspect.getsourcefile."""
-  return _inspect.getsourcefile(tf_decorator.unwrap(object)[1])
-
-
-def getsourcelines(object):  # pylint: disable=redefined-builtin
-  """TFDecorator-aware replacement for inspect.getsourcelines."""
-  return _inspect.getsourcelines(tf_decorator.unwrap(object)[1])
-
-
-def isbuiltin(object):  # pylint: disable=redefined-builtin
-  """TFDecorator-aware replacement for inspect.isbuiltin."""
-  return _inspect.isbuiltin(tf_decorator.unwrap(object)[1])
-
-
-def isclass(object):  # pylint: disable=redefined-builtin
-  """TFDecorator-aware replacement for inspect.isclass."""
-  return _inspect.isclass(tf_decorator.unwrap(object)[1])
-
 
 def isfunction(object):  # pylint: disable=redefined-builtin
   """TFDecorator-aware replacement for inspect.isfunction."""
@@ -243,6 +158,3 @@ def isfunction(object):  # pylint: disable=redefined-builtin
 def ismethod(object):  # pylint: disable=redefined-builtin
   """TFDecorator-aware replacement for inspect.ismethod."""
   return _inspect.ismethod(tf_decorator.unwrap(object)[1])
-
-
-
