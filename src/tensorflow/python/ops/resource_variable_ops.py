@@ -272,7 +272,6 @@ class ResourceVariable(variables.RefVariable):
     self._constraint = None
     self._cached_shape_as_list = None
 
-  @contextlib.contextmanager
   def _assign_dependencies(self):
     """Makes assignments depend on the cached value, if any.
 
@@ -527,14 +526,13 @@ class ResourceVariable(variables.RefVariable):
     else:
       return None
 
-  @staticmethod
   def from_proto(variable_def, import_scope=None):
     if context.executing_eagerly():
       raise RuntimeError("from_proto not supported in EAGER mode.")
     return ResourceVariable(
         variable_def=variable_def, import_scope=import_scope)
 
-  @staticmethod
+  
   def _OverloadAllOperators():  # pylint: disable=invalid-name
     """Register overloads for all operators."""
     for operator in ops.Tensor.OVERLOADABLE_OPERATORS:
@@ -555,7 +553,7 @@ class ResourceVariable(variables.RefVariable):
     """Unsupported."""
     raise NotImplementedError("ResourceVariable does not implement set_shape()")
 
-  @staticmethod
+  
   def _OverloadOperator(operator):  # pylint: disable=invalid-name
     """Defer an operator overload to `ops.Tensor`.
 

@@ -33,8 +33,6 @@ class ScopedTFGraph(object):
       #c_api.TF_DeleteGraph(self.graph)
 
 
-
-
 @tf_contextlib.contextmanager
 def tf_buffer(data=None):
   if data:
