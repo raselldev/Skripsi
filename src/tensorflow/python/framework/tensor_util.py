@@ -20,8 +20,8 @@ from __future__ import print_function
 import numpy as np
 import six
 
-from tensorflow.core.framework import tensor_pb2
-from tensorflow.core.framework import tensor_shape_pb2
+from tensorflow.core import tensor_pb2
+from tensorflow.core import tensor_shape_pb2
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.util import compat

@@ -26,7 +26,7 @@ from __future__ import print_function
 import numpy as np
 import six
 
-from tensorflow.core.framework import attr_value_pb2
+from tensorflow.core import attr_value_pb2
 from tensorflow.python import context
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops

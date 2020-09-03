@@ -19,7 +19,7 @@ from __future__ import print_function
 
 import numpy as np
 
-from tensorflow.core.framework import types_pb2
+from tensorflow.core import types_pb2
 from tensorflow.python import pywrap_tensorflow
 from tensorflow.python.util.tf_export import tf_export
 

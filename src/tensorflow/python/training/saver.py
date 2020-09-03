@@ -20,7 +20,7 @@ from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import io_ops
 from tensorflow.python.ops import resource_variable_ops
-from tensorflow.core.protobuf import saver_pb2
+from tensorflow.core import saver_pb2
 from tensorflow.python.training import saveable_object
 from tensorflow.python.training import base as checkpointable
 from tensorflow.python.training import checkpoint_management

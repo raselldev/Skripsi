@@ -5,7 +5,7 @@ from __future__ import print_function
 import contextlib
 from tensorflow.python import pywrap_tensorflow
 from tensorflow.python.framework import ops
-from tensorflow.core.framework import variable_pb2
+from tensorflow.core import variable_pb2
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import variables

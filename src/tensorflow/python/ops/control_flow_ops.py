@@ -30,7 +30,7 @@ import os
 import six
 
 from tensorflow.python import context
-from tensorflow.core.protobuf import control_flow_pb2
+from tensorflow.core import control_flow_pb2
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import sparse_tensor

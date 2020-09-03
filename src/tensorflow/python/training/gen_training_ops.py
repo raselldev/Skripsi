@@ -12,7 +12,7 @@ from tensorflow.python import execute as _execute
 from tensorflow.python import context as _context
 from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry
-from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
+from tensorflow.core import op_def_pb2 as _op_def_pb2
 
 def apply_ada_max(var, m, v, beta1_power, lr, beta1, beta2, epsilon, grad, use_locking=False, name=None):
   r"""Update '*var' according to the AdaMax algorithm.

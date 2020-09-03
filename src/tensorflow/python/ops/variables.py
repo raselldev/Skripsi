@@ -21,7 +21,7 @@ import enum  # pylint: disable=g-bad-import-order
 
 import six
 
-from tensorflow.core.framework import attr_value_pb2
+from tensorflow.core import attr_value_pb2
 from tensorflow.python import context
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import array_ops

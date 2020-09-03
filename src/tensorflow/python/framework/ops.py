@@ -14,10 +14,10 @@ import six
 from six.moves import xrange
 
 
-from tensorflow.core.framework import op_def_pb2
-from tensorflow.core.framework import attr_value_pb2
-from tensorflow.core.framework import node_def_pb2
-from tensorflow.core.framework import versions_pb2
+from tensorflow.core import op_def_pb2
+from tensorflow.core import attr_value_pb2
+from tensorflow.core import node_def_pb2
+from tensorflow.core import versions_pb2
 from tensorflow.python import pywrap_tensorflow
 from tensorflow.python import pywrap_tensorflow as c_api
 from tensorflow.python import context

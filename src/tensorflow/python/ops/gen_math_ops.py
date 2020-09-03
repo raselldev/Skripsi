@@ -2,7 +2,7 @@ import collections as _collections
 import six as _six
 
 
-from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
+from tensorflow.core import op_def_pb2 as _op_def_pb2
 from tensorflow.python import context as _context
 from tensorflow.python import execute as _execute
 from tensorflow.python.framework import op_def_library as _op_def_library

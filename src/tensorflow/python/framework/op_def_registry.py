@@ -19,7 +19,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tensorflow.core.framework import op_def_pb2
+from tensorflow.core import op_def_pb2
 
 
 _registered_ops = {}

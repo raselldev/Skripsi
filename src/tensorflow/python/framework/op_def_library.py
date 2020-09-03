@@ -23,10 +23,10 @@ import six
 
 
 
-from tensorflow.core.framework import tensor_shape_pb2
-from tensorflow.core.framework import attr_value_pb2
-from tensorflow.core.framework import op_def_pb2
-from tensorflow.core.framework import types_pb2
+from tensorflow.core import tensor_shape_pb2
+from tensorflow.core import attr_value_pb2
+from tensorflow.core import op_def_pb2
+from tensorflow.core import types_pb2
 from tensorflow.python.util import tf_contextlib
 from tensorflow.python.util import compat
 from tensorflow.python.framework import ops

@@ -7,7 +7,7 @@ from tensorflow.python import context as _context
 from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.python.util.tf_export import tf_export
-from tensorflow.core.framework import op_def_pb2 as _op_def_pb2
+from tensorflow.core import op_def_pb2 as _op_def_pb2
 
 
 _tensor_array_v3_outputs = ["handle", "flow"]
