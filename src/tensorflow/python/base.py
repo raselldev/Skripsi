@@ -8,7 +8,6 @@ import copy
 from tensorflow.python import base_layer
 from tensorflow.python.ops import variable_scope as vs
 from tensorflow.python.framework import ops
-from tensorflow.python.util import nest
 from tensorflow.python.framework import dtypes
 
 InputSpec = base_layer.InputSpec  # pylint: disable=invalid-name

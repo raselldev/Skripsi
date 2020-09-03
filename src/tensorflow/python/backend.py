@@ -13,8 +13,7 @@ import numpy as np
 from tensorflow.python.ops import tensor_array_grad 
 from tensorflow.python import context
 from tensorflow.python.framework import ops
-from tensorflow.python.util.tf_export import tf_export
-from tensorflow.python.util import tf_contextlib
+
 
 py_all = all
 py_sum = sum

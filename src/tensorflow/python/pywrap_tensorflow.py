@@ -1978,12 +1978,12 @@ def DoQuantizeTrainingOnGraphDefHelper(input_graph, num_bits, out_status):
 DoQuantizeTrainingOnGraphDefHelper = _pywrap_tensorflow_internal.DoQuantizeTrainingOnGraphDefHelper
 
 from tensorflow.python.util import deprecation
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 @deprecation.deprecated(
     None,
     "GraphDef quantized training rewriter is deprecated in the long term")
-@tf_export(v1=["train.do_quantize_training_on_graphdef"])
+#@tf_export(v1=["train.do_quantize_training_on_graphdef"])
 def do_quantize_training_on_graphdef(input_graph, num_bits):
   """A general quantization scheme is being developed in `tf.contrib.quantize`.
 

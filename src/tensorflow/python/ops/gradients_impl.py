@@ -439,8 +439,7 @@ def _RaiseNoGradWrtInitialLoopValError(op, from_ops, xs):
 
 
 def _IsFunction(graph):
-  return (isinstance(graph, _function.FuncGraph) or
-          isinstance(graph, framework_function._FuncGraph))  # pylint: disable=protected-access
+  return (isinstance(graph, framework_function._FuncGraph))  # pylint: disable=protected-access
 
 
 def _Captures(func_graph):

@@ -11,7 +11,7 @@ import numpy as np
 from six.moves import zip
 
 
-from tensorflow.python import function as eager_function
+#from tensorflow.python import function as eager_function
 from tensorflow.python import context
 from tensorflow.python import constraints
 from tensorflow.python import regularizers

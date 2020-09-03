@@ -60,14 +60,7 @@ def make_type(v, arg_name):
   return i
 
 def make_shape(v, arg_name):
-  """Convert v into a list."""
-  try:
-    shape = tensor_shape.as_shape(v)
-  except TypeError as e:
-    raise TypeError("Error converting %s to a TensorShape: %s." % (arg_name, e))
-  except ValueError as e:
-    raise ValueError("Error converting %s to a TensorShape: %s." % (arg_name,
-                                                                    e))
+  shape = tensor_shape.as_shape(v)
   if shape.ndims is None:
     return None
   else:

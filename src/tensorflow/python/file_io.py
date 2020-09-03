@@ -1,22 +1,3 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-"""File IO methods that wrap the C++ FileSystem API.
-
-The C++ FileSystem API is SWIG wrapped in file_io.i. These functions call those
-to accomplish basic File IO operations.
-"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -31,7 +12,6 @@ import six
 from tensorflow.python import pywrap_tensorflow
 from tensorflow.python.framework import errors_impl as errors
 from tensorflow.python.util.tf_export import tf_export
-from tensorflow.python.util import deprecation
 from tensorflow.python.util import compat
 
 # A good default block size depends on the system in question.
@@ -131,10 +111,7 @@ class FileIO(object):
       return self._prepare_value(
           pywrap_tensorflow.ReadFromStream(self._read_buf, length, status))
 
-  @deprecation.deprecated_args(
-      None,
-      "position is deprecated in favor of the offset argument.",
-      "position")
+
   def seek(self, offset=None, whence=0, position=None):
     # TODO(jhseu): Delete later. Used to omit `position` from docs.
     # pylint: disable=g-doc-args
@@ -241,7 +218,7 @@ class FileIO(object):
     self._writable_file = None
 
 
-@tf_export("gfile.Exists")
+
 def file_exists(filename):
   """Determines whether a path exists or not.
 
