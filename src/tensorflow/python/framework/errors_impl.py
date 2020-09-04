@@ -24,11 +24,11 @@ import warnings
 from tensorflow.core import error_codes_pb2
 from tensorflow.python import pywrap_tensorflow as c_api
 from tensorflow.python.framework import c_api_util
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.util import deprecation
 
 
-@tf_export("errors.OpError", "OpError")
+#@tf_export("errors.OpError", "OpError")
 @deprecation.deprecated_endpoints("OpError")
 class OpError(Exception):
   """A generic error that is raised when TensorFlow execution fails.
@@ -142,48 +142,43 @@ class OpError(Exception):
 
 
 OK = error_codes_pb2.OK
-tf_export("errors.OK").export_constant(__name__, "OK")
+#tf_export("errors.OK").export_constant(__name__, "OK")
 CANCELLED = error_codes_pb2.CANCELLED
-tf_export("errors.CANCELLED").export_constant(__name__, "CANCELLED")
+#tf_export("errors.CANCELLED").export_constant(__name__, "CANCELLED")
 UNKNOWN = error_codes_pb2.UNKNOWN
-tf_export("errors.UNKNOWN").export_constant(__name__, "UNKNOWN")
+#tf_export("errors.UNKNOWN").export_constant(__name__, "UNKNOWN")
 INVALID_ARGUMENT = error_codes_pb2.INVALID_ARGUMENT
-tf_export("errors.INVALID_ARGUMENT").export_constant(__name__,
-                                                     "INVALID_ARGUMENT")
+#tf_export("errors.INVALID_ARGUMENT").export_constant(__name__,                                                     "INVALID_ARGUMENT")
 DEADLINE_EXCEEDED = error_codes_pb2.DEADLINE_EXCEEDED
-tf_export("errors.DEADLINE_EXCEEDED").export_constant(__name__,
-                                                      "DEADLINE_EXCEEDED")
+#tf_export("errors.DEADLINE_EXCEEDED").export_constant(__name__,                                                    "DEADLINE_EXCEEDED")
 NOT_FOUND = error_codes_pb2.NOT_FOUND
-tf_export("errors.NOT_FOUND").export_constant(__name__, "NOT_FOUND")
+#tf_export("errors.NOT_FOUND").export_constant(__name__, "NOT_FOUND")
 ALREADY_EXISTS = error_codes_pb2.ALREADY_EXISTS
-tf_export("errors.ALREADY_EXISTS").export_constant(__name__, "ALREADY_EXISTS")
+#tf_export("errors.ALREADY_EXISTS").export_constant(__name__, "ALREADY_EXISTS")
 PERMISSION_DENIED = error_codes_pb2.PERMISSION_DENIED
-tf_export("errors.PERMISSION_DENIED").export_constant(__name__,
-                                                      "PERMISSION_DENIED")
+#tf_export("errors.PERMISSION_DENIED").export_constant(__name__,                                                  "PERMISSION_DENIED")
 UNAUTHENTICATED = error_codes_pb2.UNAUTHENTICATED
-tf_export("errors.UNAUTHENTICATED").export_constant(__name__, "UNAUTHENTICATED")
+#tf_export("errors.UNAUTHENTICATED").export_constant(__name__, "UNAUTHENTICATED")
 RESOURCE_EXHAUSTED = error_codes_pb2.RESOURCE_EXHAUSTED
-tf_export("errors.RESOURCE_EXHAUSTED").export_constant(__name__,
-                                                       "RESOURCE_EXHAUSTED")
+#tf_export("errors.RESOURCE_EXHAUSTED").export_constant(__name__,                                                    "RESOURCE_EXHAUSTED")
 FAILED_PRECONDITION = error_codes_pb2.FAILED_PRECONDITION
-tf_export("errors.FAILED_PRECONDITION").export_constant(__name__,
-                                                        "FAILED_PRECONDITION")
+#tf_export("errors.FAILED_PRECONDITION").export_constant(__name__,                                                    "FAILED_PRECONDITION")
 ABORTED = error_codes_pb2.ABORTED
-tf_export("errors.ABORTED").export_constant(__name__, "ABORTED")
+#tf_export("errors.ABORTED").export_constant(__name__, "ABORTED")
 OUT_OF_RANGE = error_codes_pb2.OUT_OF_RANGE
-tf_export("errors.OUT_OF_RANGE").export_constant(__name__, "OUT_OF_RANGE")
+#tf_export("errors.OUT_OF_RANGE").export_constant(__name__, "OUT_OF_RANGE")
 UNIMPLEMENTED = error_codes_pb2.UNIMPLEMENTED
-tf_export("errors.UNIMPLEMENTED").export_constant(__name__, "UNIMPLEMENTED")
+#tf_export("errors.UNIMPLEMENTED").export_constant(__name__, "UNIMPLEMENTED")
 INTERNAL = error_codes_pb2.INTERNAL
-tf_export("errors.INTERNAL").export_constant(__name__, "INTERNAL")
+#tf_export("errors.INTERNAL").export_constant(__name__, "INTERNAL")
 UNAVAILABLE = error_codes_pb2.UNAVAILABLE
-tf_export("errors.UNAVAILABLE").export_constant(__name__, "UNAVAILABLE")
+#tf_export("errors.UNAVAILABLE").export_constant(__name__, "UNAVAILABLE")
 DATA_LOSS = error_codes_pb2.DATA_LOSS
-tf_export("errors.DATA_LOSS").export_constant(__name__, "DATA_LOSS")
+#tf_export("errors.DATA_LOSS").export_constant(__name__, "DATA_LOSS")
 
 
 # pylint: disable=line-too-long
-@tf_export("errors.CancelledError")
+#@tf_export("errors.CancelledError")
 class CancelledError(OpError):
   """Raised when an operation or step is cancelled.
 
@@ -204,7 +199,7 @@ class CancelledError(OpError):
 # pylint: enable=line-too-long
 
 
-@tf_export("errors.UnknownError")
+#@tf_export("errors.UnknownError")
 class UnknownError(OpError):
   """Unknown error.
 
@@ -222,7 +217,7 @@ class UnknownError(OpError):
     super(UnknownError, self).__init__(node_def, op, message, error_code)
 
 
-@tf_export("errors.InvalidArgumentError")
+#@tf_export("errors.InvalidArgumentError")
 class InvalidArgumentError(OpError):
   """Raised when an operation receives an invalid argument.
 
@@ -243,7 +238,7 @@ class InvalidArgumentError(OpError):
                                                INVALID_ARGUMENT)
 
 
-@tf_export("errors.DeadlineExceededError")
+#@tf_export("errors.DeadlineExceededError")
 class DeadlineExceededError(OpError):
   """Raised when a deadline expires before an operation could complete.
 
@@ -258,7 +253,7 @@ class DeadlineExceededError(OpError):
                                                 DEADLINE_EXCEEDED)
 
 
-@tf_export("errors.NotFoundError")
+#@tf_export("errors.NotFoundError")
 class NotFoundError(OpError):
   """Raised when a requested entity (e.g., a file or directory) was not found.
 
@@ -275,7 +270,7 @@ class NotFoundError(OpError):
     super(NotFoundError, self).__init__(node_def, op, message, NOT_FOUND)
 
 
-@tf_export("errors.AlreadyExistsError")
+#@tf_export("errors.AlreadyExistsError")
 class AlreadyExistsError(OpError):
   """Raised when an entity that we attempted to create already exists.
 
@@ -293,7 +288,7 @@ class AlreadyExistsError(OpError):
                                              ALREADY_EXISTS)
 
 
-@tf_export("errors.PermissionDeniedError")
+#@tf_export("errors.PermissionDeniedError")
 class PermissionDeniedError(OpError):
   """Raised when the caller does not have permission to run an operation.
 
@@ -311,7 +306,7 @@ class PermissionDeniedError(OpError):
                                                 PERMISSION_DENIED)
 
 
-@tf_export("errors.UnauthenticatedError")
+#@tf_export("errors.UnauthenticatedError")
 class UnauthenticatedError(OpError):
   """The request does not have valid authentication credentials.
 
@@ -326,7 +321,7 @@ class UnauthenticatedError(OpError):
                                                UNAUTHENTICATED)
 
 
-@tf_export("errors.ResourceExhaustedError")
+#@tf_export("errors.ResourceExhaustedError")
 class ResourceExhaustedError(OpError):
   """Some resource has been exhausted.
 
@@ -342,7 +337,7 @@ class ResourceExhaustedError(OpError):
                                                  RESOURCE_EXHAUSTED)
 
 
-@tf_export("errors.FailedPreconditionError")
+#@tf_export("errors.FailedPreconditionError")
 class FailedPreconditionError(OpError):
   """Operation was rejected because the system is not in a state to execute it.
 
@@ -359,7 +354,7 @@ class FailedPreconditionError(OpError):
                                                   FAILED_PRECONDITION)
 
 
-@tf_export("errors.AbortedError")
+#@tf_export("errors.AbortedError")
 class AbortedError(OpError):
   """The operation was aborted, typically due to a concurrent action.
 
@@ -377,7 +372,7 @@ class AbortedError(OpError):
     super(AbortedError, self).__init__(node_def, op, message, ABORTED)
 
 
-@tf_export("errors.OutOfRangeError")
+#@tf_export("errors.OutOfRangeError")
 class OutOfRangeError(OpError):
   """Raised when an operation iterates past the valid input range.
 
@@ -396,7 +391,7 @@ class OutOfRangeError(OpError):
                                           OUT_OF_RANGE)
 
 
-@tf_export("errors.UnimplementedError")
+#@tf_export("errors.UnimplementedError")
 class UnimplementedError(OpError):
   """Raised when an operation has not been implemented.
 
@@ -415,7 +410,7 @@ class UnimplementedError(OpError):
                                              UNIMPLEMENTED)
 
 
-@tf_export("errors.InternalError")
+#@tf_export("errors.InternalError")
 class InternalError(OpError):
   """Raised when the system experiences an internal error.
 
@@ -430,7 +425,7 @@ class InternalError(OpError):
     super(InternalError, self).__init__(node_def, op, message, INTERNAL)
 
 
-@tf_export("errors.UnavailableError")
+#@tf_export("errors.UnavailableError")
 class UnavailableError(OpError):
   """Raised when the runtime is currently unavailable.
 
@@ -445,7 +440,7 @@ class UnavailableError(OpError):
                                            UNAVAILABLE)
 
 
-@tf_export("errors.DataLossError")
+#@tf_export("errors.DataLossError")
 class DataLossError(OpError):
   """Raised when unrecoverable data loss or corruption is encountered.
 
@@ -486,12 +481,12 @@ _EXCEPTION_CLASS_TO_CODE = {
     class_: code for code, class_ in _CODE_TO_EXCEPTION_CLASS.items()}
 
 
-@tf_export("errors.exception_type_from_error_code")
+#@tf_export("errors.exception_type_from_error_code")
 def exception_type_from_error_code(error_code):
   return _CODE_TO_EXCEPTION_CLASS[error_code]
 
 
-@tf_export("errors.error_code_from_exception_type")
+#@tf_export("errors.error_code_from_exception_type")
 def error_code_from_exception_type(cls):
   return _EXCEPTION_CLASS_TO_CODE[cls]
 
@@ -509,7 +504,7 @@ def _make_specific_exception(node_def, op, message, error_code):
 # @tf_contextlib.contextmanager version, which was switched to a class to avoid
 # some object creation overhead.
 # TODO(b/77295559): expand use of TF_Status* SWIG typemap and deprecate this.
-@tf_export("errors.raise_exception_on_not_ok_status")  # pylint: disable=invalid-name
+#@tf_export("errors.raise_exception_on_not_ok_status")  # pylint: disable=invalid-name
 class raise_exception_on_not_ok_status(object):
   """Context manager to check for C API status."""
 

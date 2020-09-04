@@ -9,7 +9,7 @@ import six as _six
 
 
 
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python import context as _context
 from tensorflow.python import execute as _execute
 from tensorflow.core import op_def_pb2 as _op_def_pb2
@@ -348,7 +348,7 @@ def batch_ifft3d_eager_fallback(input, name=None, ctx=None):
   return _result
 
 
-@tf_export('spectral.fft', 'fft')
+#@tf_export('spectral.fft', 'fft')
 @deprecated_endpoints('fft')
 def fft(input, name=None):
   r"""Fast Fourier transform.
@@ -409,7 +409,7 @@ def fft_eager_fallback(input, name=None, ctx=None):
   return _result
 
 
-@tf_export('spectral.fft2d', 'fft2d')
+#@tf_export('spectral.fft2d', 'fft2d')
 def fft2d(input, name=None):
   r"""2D fast Fourier transform.
 
@@ -469,7 +469,7 @@ def fft2d_eager_fallback(input, name=None, ctx=None):
   return _result
 
 
-@tf_export('spectral.fft3d', 'fft3d')
+#@tf_export('spectral.fft3d', 'fft3d')
 def fft3d(input, name=None):
   r"""3D fast Fourier transform.
 
@@ -529,7 +529,7 @@ def fft3d_eager_fallback(input, name=None, ctx=None):
   return _result
 
 
-@tf_export('spectral.ifft', 'ifft')
+#@tf_export('spectral.ifft', 'ifft')
 @deprecated_endpoints('ifft')
 def ifft(input, name=None):
   r"""Inverse fast Fourier transform.
@@ -590,7 +590,7 @@ def ifft_eager_fallback(input, name=None, ctx=None):
   return _result
 
 
-@tf_export('spectral.ifft2d', 'ifft2d')
+#@tf_export('spectral.ifft2d', 'ifft2d')
 def ifft2d(input, name=None):
   r"""Inverse 2D fast Fourier transform.
 
@@ -650,7 +650,7 @@ def ifft2d_eager_fallback(input, name=None, ctx=None):
   return _result
 
 
-@tf_export('spectral.ifft3d', 'ifft3d')
+#@tf_export('spectral.ifft3d', 'ifft3d')
 def ifft3d(input, name=None):
   r"""Inverse 3D fast Fourier transform.
 

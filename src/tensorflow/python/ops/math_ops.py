@@ -34,15 +34,15 @@ from tensorflow.python.ops import gen_math_ops
 from tensorflow.python.ops import gen_spectral_ops
 from tensorflow.python.ops.gen_math_ops import *
 from tensorflow.python.util import deprecation
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 # Aliases for some automatically-generated names.
 linspace = gen_math_ops.lin_space
 
 arg_max = deprecation.deprecated(None, "Use `argmax` instead")(arg_max)  # pylint: disable=used-before-assignment
 arg_min = deprecation.deprecated(None, "Use `argmin` instead")(arg_min)  # pylint: disable=used-before-assignment
-tf_export("arg_max")(arg_max)
-tf_export("arg_min")(arg_min)
+#tf_export("arg_max")(arg_max)
+#tf_export("arg_min")(arg_min)
 
 # This is set by resource_variable_ops.py. It is included in this way since
 # there is a circular dependency between math_ops and resource_variable_ops
@@ -59,7 +59,7 @@ def _set_doc(doc):
 
 
 # pylint: disable=redefined-builtin
-@tf_export("math.argmax", "argmax")
+#@tf_export("math.argmax", "argmax")
 @deprecation.deprecated_args(None, "Use the `axis` argument instead",
                              "dimension")
 @_set_doc(
@@ -77,7 +77,7 @@ def argmax(input,
   return gen_math_ops.arg_max(input, axis, name=name, output_type=output_type)
 
 
-@tf_export("math.argmin", "argmin")
+#@tf_export("math.argmin", "argmin")
 @deprecation.deprecated_args(None, "Use the `axis` argument instead",
                              "dimension")
 @_set_doc(
@@ -100,7 +100,7 @@ def argmin(input,
 
 # pylint: disable=anomalous-backslash-in-string,protected-access
 # pylint: disable=g-docstring-has-escape
-@tf_export("math.abs", "abs")
+#@tf_export("math.abs", "abs")
 def abs(x, name=None):  # pylint: disable=redefined-builtin
   r"""Computes the absolute value of a tensor.
 
@@ -175,7 +175,7 @@ class DivideDelegateWithName(object):
     return _div_python2(self.x, y, self.name)
 
 
-@tf_export("math.divide", "divide")
+#@tf_export("math.divide", "divide")
 def divide(x, y, name=None):
   """Computes Python style division of `x` by `y`."""
 
@@ -187,7 +187,7 @@ def divide(x, y, name=None):
     return x / y
 
 
-@tf_export("math.multiply", "multiply")
+#@tf_export("math.multiply", "multiply")
 def multiply(x, y, name=None):
   return gen_math_ops.mul(x, y, name)
 
@@ -207,7 +207,7 @@ _mul.__doc__ = (
     gen_math_ops.mul.__doc__ + ("" if _mul.__doc__ is None else _mul.__doc__))
 
 
-@tf_export("math.subtract", "subtract")
+#@tf_export("math.subtract", "subtract")
 def subtract(x, y, name=None):
   return gen_math_ops.sub(x, y, name)
 
@@ -228,7 +228,7 @@ _sub.__doc__ = (
 
 
 # pylint: disable=g-docstring-has-escape
-@tf_export("math.negative", "negative")
+#@tf_export("math.negative", "negative")
 def negative(x, name=None):
   """Computes numerical negative value element-wise.
 
@@ -277,7 +277,7 @@ def _neg(x, name=None):
 # pylint: enable=g-docstring-has-escape
 
 
-@tf_export("math.sign", "sign")
+#@tf_export("math.sign", "sign")
 def sign(x, name=None):
   """Returns an element-wise indication of the sign of a number.
 
@@ -308,7 +308,7 @@ def sign(x, name=None):
       return gen_math_ops.sign(x, name=name)
 
 
-@tf_export("math.square", "square")
+#@tf_export("math.square", "square")
 def square(x, name=None):
   r"""Computes square of x element-wise.
 
@@ -331,7 +331,7 @@ def square(x, name=None):
       return gen_math_ops.square(x, name=name)
 
 
-@tf_export("math.sqrt", "sqrt")
+#@tf_export("math.sqrt", "sqrt")
 def sqrt(x, name=None):
   r"""Computes square root of x element-wise.
 
@@ -354,7 +354,7 @@ def sqrt(x, name=None):
       return gen_math_ops.sqrt(x, name=name)
 
 
-@tf_export("math.erf", "erf")
+#@tf_export("math.erf", "erf")
 @deprecation.deprecated_endpoints("erf")
 def erf(x, name=None):
   """Computes the Gauss error function of `x` element-wise.
@@ -376,7 +376,7 @@ def erf(x, name=None):
       return gen_math_ops.erf(x, name=name)
 
 
-@tf_export("math.scalar_mul", "scalar_mul")
+#@tf_export("math.scalar_mul", "scalar_mul")
 def scalar_mul(scalar, x):
   """Multiplies a scalar times a `Tensor` or `IndexedSlices` object.
 
@@ -406,7 +406,7 @@ def scalar_mul(scalar, x):
     raise ValueError("Only scalar multiply works, got shape %s" % shape)
 
 
-@tf_export("math.pow", "pow")
+#@tf_export("math.pow", "pow")
 def pow(x, y, name=None):  # pylint: disable=redefined-builtin
   r"""Computes the power of one value to another.
 
@@ -434,7 +434,7 @@ def pow(x, y, name=None):  # pylint: disable=redefined-builtin
 
 
 # pylint: disable=redefined-builtin,redefined-outer-name
-@tf_export("dtypes.complex", "complex")
+#@tf_export("dtypes.complex", "complex")
 def complex(real, imag, name=None):
   r"""Converts two real numbers to a complex number.
 
@@ -476,7 +476,7 @@ def complex(real, imag, name=None):
     return gen_math_ops._complex(real, imag, Tout=Tout, name=name)
 
 
-@tf_export("math.real", "real")
+#@tf_export("math.real", "real")
 @deprecation.deprecated_endpoints("real")
 def real(input, name=None):
   r"""Returns the real part of a complex (or real) tensor.
@@ -508,7 +508,7 @@ def real(input, name=None):
       return input
 
 
-@tf_export("math.imag", "imag")
+#@tf_export("math.imag", "imag")
 @deprecation.deprecated_endpoints("imag")
 def imag(input, name=None):
   r"""Returns the imaginary part of a complex (or real) tensor.
@@ -539,7 +539,7 @@ def imag(input, name=None):
       return array_ops.zeros_like(input)
 
 
-@tf_export("math.angle", "angle")
+#@tf_export("math.angle", "angle")
 @deprecation.deprecated_endpoints("angle")
 def angle(input, name=None):
   r"""Returns the element-wise argument of a complex (or real) tensor.
@@ -579,7 +579,7 @@ def angle(input, name=None):
 # pylint: enable=redefined-outer-name,redefined-builtin
 
 
-@tf_export("math.round", "round")
+#@tf_export("math.round", "round")
 def round(x, name=None):  # pylint: disable=redefined-builtin
   """Rounds the values of a tensor to the nearest integer, element-wise.
 
@@ -606,7 +606,7 @@ def round(x, name=None):  # pylint: disable=redefined-builtin
     return gen_math_ops.round(x, name=name)
 
 
-@tf_export("dtypes.cast", "cast")
+#@tf_export("dtypes.cast", "cast")
 def cast(x, dtype, name=None):
   """Casts a tensor to a new type.
 
@@ -669,7 +669,7 @@ def cast(x, dtype, name=None):
     return x
 
 
-@tf_export("dtypes.saturate_cast", "saturate_cast")
+#@tf_export("dtypes.saturate_cast", "saturate_cast")
 def saturate_cast(value, dtype, name=None):
   """Performs a safe saturating cast of `value` to `dtype`.
 
@@ -703,7 +703,7 @@ def saturate_cast(value, dtype, name=None):
     return cast(value, dtype, name=name)
 
 
-@tf_export("to_float")
+#@tf_export("to_float")
 def to_float(x, name="ToFloat"):
   """Casts a tensor to type `float32`.
 
@@ -721,7 +721,7 @@ def to_float(x, name="ToFloat"):
   return cast(x, dtypes.float32, name=name)
 
 
-@tf_export("to_double")
+#@tf_export("to_double")
 def to_double(x, name="ToDouble"):
   """Casts a tensor to type `float64`.
 
@@ -739,7 +739,7 @@ def to_double(x, name="ToDouble"):
   return cast(x, dtypes.float64, name=name)
 
 
-@tf_export("to_int32")
+#@tf_export("to_int32")
 def to_int32(x, name="ToInt32"):
   """Casts a tensor to type `int32`.
 
@@ -757,7 +757,7 @@ def to_int32(x, name="ToInt32"):
   return cast(x, dtypes.int32, name=name)
 
 
-@tf_export("to_int64")
+#@tf_export("to_int64")
 def to_int64(x, name="ToInt64"):
   """Casts a tensor to type `int64`.
 
@@ -775,7 +775,7 @@ def to_int64(x, name="ToInt64"):
   return cast(x, dtypes.int64, name=name)
 
 
-@tf_export("to_bfloat16")
+#@tf_export("to_bfloat16")
 def to_bfloat16(x, name="ToBFloat16"):
   """Casts a tensor to type `bfloat16`.
 
@@ -793,7 +793,7 @@ def to_bfloat16(x, name="ToBFloat16"):
   return cast(x, dtypes.bfloat16, name=name)
 
 
-@tf_export("to_complex64")
+#@tf_export("to_complex64")
 def to_complex64(x, name="ToComplex64"):
   """Casts a tensor to type `complex64`.
 
@@ -811,7 +811,7 @@ def to_complex64(x, name="ToComplex64"):
   return cast(x, dtypes.complex64, name=name)
 
 
-@tf_export("to_complex128")
+#@tf_export("to_complex128")
 def to_complex128(x, name="ToComplex128"):
   """Casts a tensor to type `complex128`.
 
@@ -988,7 +988,7 @@ def _div_python2(x, y, name=None):
       return gen_math_ops.floor_div(x, y, name=name)
 
 
-@tf_export("math.truediv", "truediv")
+#@tf_export("math.truediv", "truediv")
 def truediv(x, y, name=None):
   """Divides x / y elementwise (using Python 3 division operator semantics).
 
@@ -1020,7 +1020,7 @@ def truediv(x, y, name=None):
   return _truediv_python3(x, y, name)
 
 
-@tf_export("div")
+#@tf_export("div")
 def div(x, y, name=None):
   """Divides x / y elementwise (using Python 2 division operator semantics).
 
@@ -1042,7 +1042,7 @@ def div(x, y, name=None):
   return _div_python2(x, y, name)
 
 
-@tf_export("div_no_nan")
+#@tf_export("div_no_nan")
 def div_no_nan(x, y, name=None):
   """Computes an unsafe divide which returns 0 if the y is zero.
 
@@ -1071,7 +1071,7 @@ mod = gen_math_ops.floor_mod
 
 # TODO(aselle): Deprecate this once all internal functionality uses
 # tf.truncatediv
-@tf_export("math.floordiv", "floordiv")
+#@tf_export("math.floordiv", "floordiv")
 @deprecation.deprecated_endpoints("floordiv")
 def floordiv(x, y, name=None):
   """Divides `x / y` elementwise, rounding toward the most negative integer.
@@ -1101,16 +1101,16 @@ def floordiv(x, y, name=None):
 
 
 realdiv = gen_math_ops.real_div
-tf_export("realdiv")(realdiv)
+#tf_export("realdiv")(realdiv)
 truncatediv = gen_math_ops.truncate_div
-tf_export("truncatediv")(truncatediv)
+#tf_export("truncatediv")(truncatediv)
 # TODO(aselle): Rename this to floordiv when we can.
 floor_div = gen_math_ops.floor_div
-tf_export("floor_div")(floor_div)
+#tf_export("floor_div")(floor_div)
 truncatemod = gen_math_ops.truncate_mod
-tf_export("truncatemod")(truncatemod)
+#tf_export("truncatemod")(truncatemod)
 floormod = gen_math_ops.floor_mod
-tf_export("floormod", "mod")(floormod)
+#tf_export("floormod", "mod")(floormod)
 
 
 def _mul_dispatch(x, y, name=None):
@@ -1145,7 +1145,7 @@ _OverrideBinaryOperatorHelper(gen_math_ops.floor_mod, "mod")
 _OverrideBinaryOperatorHelper(pow, "pow")
 
 
-@tf_export("math.logical_xor", "logical_xor")
+#@tf_export("math.logical_xor", "logical_xor")
 @deprecation.deprecated_endpoints("logical_xor")
 def logical_xor(x, y, name="LogicalXor"):
   """x ^ y = (x | y) & ~(x & y)."""
@@ -1166,7 +1166,7 @@ ops.Tensor._override_operator("__gt__", gen_math_ops.greater)
 ops.Tensor._override_operator("__ge__", gen_math_ops.greater_equal)
 
 
-@tf_export("range")
+#@tf_export("range")
 def range(start, limit=None, delta=1, dtype=None, name="range"):  # pylint: disable=redefined-builtin
   """Creates a sequence of numbers.
 
@@ -1279,7 +1279,7 @@ def _may_reduce_to_scalar(keepdims, axis, reduction_indices, output):
   return output
 
 
-@tf_export("math.reduce_sum", "reduce_sum")
+#@tf_export("math.reduce_sum", "reduce_sum")
 @deprecation.deprecated_args(
     None, "keep_dims is deprecated, use keepdims instead", "keep_dims")
 def reduce_sum(input_tensor,
@@ -1341,7 +1341,7 @@ def reduce_sum(input_tensor,
                                    name=name))
 
 
-@tf_export("math.count_nonzero", "count_nonzero")
+#@tf_export("math.count_nonzero", "count_nonzero")
 @deprecation.deprecated_args(
     None, "keep_dims is deprecated, use keepdims instead", "keep_dims")
 def count_nonzero(input_tensor,
@@ -1419,7 +1419,7 @@ def count_nonzero(input_tensor,
         dtype=dtype)
 
 
-@tf_export("math.reduce_mean", "reduce_mean")
+#@tf_export("math.reduce_mean", "reduce_mean")
 @deprecation.deprecated_args(
     None, "keep_dims is deprecated, use keepdims instead", "keep_dims")
 def reduce_mean(input_tensor,
@@ -1491,7 +1491,7 @@ def reduce_mean(input_tensor,
                                    name=name))
 
 
-@tf_export("math.reduce_prod", "reduce_prod")
+#@tf_export("math.reduce_prod", "reduce_prod")
 @deprecation.deprecated_args(
     None, "keep_dims is deprecated, use keepdims instead", "keep_dims")
 def reduce_prod(input_tensor,
@@ -1541,7 +1541,7 @@ def reduce_prod(input_tensor,
                                    name=name))
 
 
-@tf_export("math.reduce_min", "reduce_min")
+#@tf_export("math.reduce_min", "reduce_min")
 @deprecation.deprecated_args(
     None, "keep_dims is deprecated, use keepdims instead", "keep_dims")
 def reduce_min(input_tensor,
@@ -1590,7 +1590,7 @@ def reduce_min(input_tensor,
                                    name=name))
 
 
-@tf_export("math.reduce_max", "reduce_max")
+#@tf_export("math.reduce_max", "reduce_max")
 @deprecation.deprecated_args(
     None, "keep_dims is deprecated, use keepdims instead", "keep_dims")
 def reduce_max(input_tensor,
@@ -1639,7 +1639,7 @@ def reduce_max(input_tensor,
                                    name=name))
 
 
-@tf_export("math.reduce_all", "reduce_all")
+#@tf_export("math.reduce_all", "reduce_all")
 @deprecation.deprecated_args(
     None, "keep_dims is deprecated, use keepdims instead", "keep_dims")
 def reduce_all(input_tensor,
@@ -1697,7 +1697,7 @@ def reduce_all(input_tensor,
                                    name=name))
 
 
-@tf_export("math.reduce_any", "reduce_any")
+#@tf_export("math.reduce_any", "reduce_any")
 @deprecation.deprecated_args(
     None, "keep_dims is deprecated, use keepdims instead", "keep_dims")
 def reduce_any(input_tensor,
@@ -1755,7 +1755,7 @@ def reduce_any(input_tensor,
                                    name=name))
 
 
-@tf_export("math.reduce_logsumexp", "reduce_logsumexp")
+#@tf_export("math.reduce_logsumexp", "reduce_logsumexp")
 @deprecation.deprecated_args(
     None, "keep_dims is deprecated, use keepdims instead", "keep_dims")
 def reduce_logsumexp(input_tensor,
@@ -1829,7 +1829,7 @@ def reduce_logsumexp(input_tensor,
     return _may_reduce_to_scalar(keepdims, axis, reduction_indices, result)
 
 
-@tf_export("linalg.trace", "trace")
+#@tf_export("linalg.trace", "trace")
 @deprecation.deprecated_endpoints("trace")
 def trace(x, name=None):
   """Compute the trace of a tensor `x`.
@@ -1872,7 +1872,7 @@ def trace(x, name=None):
     return reduce_sum(array_ops.matrix_diag_part(x), [-1], name=name)
 
 
-@tf_export("linalg.matmul", "matmul")
+#@tf_export("linalg.matmul", "matmul")
 def matmul(a,
            b,
            transpose_a=False,
@@ -2056,7 +2056,7 @@ def matmul(a,
 _OverrideBinaryOperatorHelper(matmul, "matmul")
 
 sparse_matmul = gen_math_ops.sparse_mat_mul
-tf_export("sparse_matmul")(sparse_matmul)
+#tf_export("sparse_matmul")(sparse_matmul)
 
 
 @ops.RegisterStatistics("MatMul", "flops")
@@ -2134,7 +2134,7 @@ def _as_indexed_slices_list(inputs, optimize=True):
   return casted_outputs
 
 
-@tf_export("math.add_n", "add_n")
+#@tf_export("math.add_n", "add_n")
 def add_n(inputs, name=None):
   """Adds all input tensors element-wise.
 
@@ -2169,7 +2169,7 @@ def add_n(inputs, name=None):
   return gen_math_ops.add_n(inputs, name=name)
 
 
-@tf_export("math.accumulate_n", "accumulate_n")
+#@tf_export("math.accumulate_n", "accumulate_n")
 @deprecation.deprecated_endpoints("accumulate_n")
 def accumulate_n(inputs, shape=None, tensor_dtype=None, name=None):
   """Returns the element-wise sum of a list of tensors.
@@ -2256,7 +2256,7 @@ def _accumulate_n_grad(op, grad):
   return [grad] * len(op.inputs)
 
 
-@tf_export("math.sigmoid", "nn.sigmoid", "sigmoid")
+#@tf_export("math.sigmoid", "nn.sigmoid", "sigmoid")
 def sigmoid(x, name=None):
   """Computes sigmoid of `x` element-wise.
 
@@ -2279,7 +2279,7 @@ def sigmoid(x, name=None):
     return gen_math_ops.sigmoid(x, name=name)
 
 
-@tf_export("math.log_sigmoid", "log_sigmoid")
+#@tf_export("math.log_sigmoid", "log_sigmoid")
 @deprecation.deprecated_endpoints("log_sigmoid")
 def log_sigmoid(x, name=None):
   """Computes log sigmoid of `x` element-wise.
@@ -2299,7 +2299,7 @@ def log_sigmoid(x, name=None):
     return gen_math_ops.neg(gen_nn_ops.softplus(-x), name=name)
 
 
-@tf_export("math.tanh", "nn.tanh", "tanh")
+#@tf_export("math.tanh", "nn.tanh", "tanh")
 def tanh(x, name=None):
   """Computes hyperbolic tangent of `x` element-wise.
 
@@ -2320,7 +2320,7 @@ def tanh(x, name=None):
       return gen_math_ops.tanh(x, name=name)
 
 
-@tf_export("math.bincount", "bincount")
+#@tf_export("math.bincount", "bincount")
 @deprecation.deprecated_endpoints("bincount")
 def bincount(arr,
              weights=None,
@@ -2368,7 +2368,7 @@ def bincount(arr,
   return gen_math_ops.bincount(arr, output_size, weights)
 
 
-@tf_export("math.cumsum", "cumsum")
+#@tf_export("math.cumsum", "cumsum")
 def cumsum(x, axis=0, exclusive=False, reverse=False, name=None):
   """Compute the cumulative sum of the tensor `x` along `axis`.
 
@@ -2420,7 +2420,7 @@ def cumsum(x, axis=0, exclusive=False, reverse=False, name=None):
         x, axis, exclusive=exclusive, reverse=reverse, name=name)
 
 
-@tf_export("math.cumprod", "cumprod")
+#@tf_export("math.cumprod", "cumprod")
 @deprecation.deprecated_endpoints("cumprod")
 def cumprod(x, axis=0, exclusive=False, reverse=False, name=None):
   """Compute the cumulative product of the tensor `x` along `axis`.
@@ -2473,7 +2473,7 @@ def cumprod(x, axis=0, exclusive=False, reverse=False, name=None):
         x, axis, exclusive=exclusive, reverse=reverse, name=name)
 
 
-@tf_export("math.conj", "conj")
+#@tf_export("math.conj", "conj")
 @deprecation.deprecated_endpoints("conj")
 def conj(x, name=None):
   r"""Returns the complex conjugate of a complex number.
@@ -2574,7 +2574,7 @@ def _unsorted_segment_N(data, segment_ids, num_segments):
   return gen_math_ops.maximum(N, 1)
 
 
-@tf_export("math.unsorted_segment_mean", "unsorted_segment_mean")
+#@tf_export("math.unsorted_segment_mean", "unsorted_segment_mean")
 @deprecation.deprecated_endpoints("unsorted_segment_mean")
 def unsorted_segment_mean(data, segment_ids, num_segments, name=None):
   r"""Computes the mean along segments of a tensor.
@@ -2617,7 +2617,7 @@ def unsorted_segment_mean(data, segment_ids, num_segments, name=None):
     return summed / N
 
 
-@tf_export("math.unsorted_segment_sqrt_n", "unsorted_segment_sqrt_n")
+#@tf_export("math.unsorted_segment_sqrt_n", "unsorted_segment_sqrt_n")
 @deprecation.deprecated_endpoints("unsorted_segment_sqrt_n")
 def unsorted_segment_sqrt_n(data, segment_ids, num_segments, name=None):
   r"""Computes the sum along segments of a tensor divided by the sqrt(N).
@@ -2663,7 +2663,7 @@ def unsorted_segment_sqrt_n(data, segment_ids, num_segments, name=None):
     return summed / gen_math_ops.sqrt(N)
 
 
-@tf_export("sparse.segment_sum", "sparse_segment_sum")
+#@tf_export("sparse.segment_sum", "sparse_segment_sum")
 @deprecation.deprecated_endpoints("sparse_segment_sum")
 def sparse_segment_sum(data, indices, segment_ids, name=None,
                        num_segments=None):
@@ -2737,7 +2737,7 @@ def sparse_segment_sum(data, indices, segment_ids, name=None,
         data=data, indices=indices, segment_ids=segment_ids, name=name)
 
 
-@tf_export("sparse.segment_mean", "sparse_segment_mean")
+#@tf_export("sparse.segment_mean", "sparse_segment_mean")
 @deprecation.deprecated_endpoints("sparse_segment_mean")
 def sparse_segment_mean(data,
                         indices,
@@ -2783,7 +2783,7 @@ def sparse_segment_mean(data,
         data=data, indices=indices, segment_ids=segment_ids, name=name)
 
 
-@tf_export("sparse.segment_sqrt_n", "sparse_segment_sqrt_n")
+#@tf_export("sparse.segment_sqrt_n", "sparse_segment_sqrt_n")
 @deprecation.deprecated_endpoints("sparse_segment_sqrt_n")
 def sparse_segment_sqrt_n(data,
                           indices,
@@ -2821,7 +2821,7 @@ def sparse_segment_sqrt_n(data,
         data=data, indices=indices, segment_ids=segment_ids, name=name)
 
 
-@tf_export("tensordot", "linalg.tensordot")
+#@tf_export("tensordot", "linalg.tensordot")
 def tensordot(a, b, axes, name=None):
   r"""Tensor contraction of a and b along specified axes.
 
@@ -2991,7 +2991,7 @@ def tensordot(a, b, axes, name=None):
       return product
 
 
-@tf_export("math.polyval")
+#@tf_export("math.polyval")
 def polyval(coeffs, x, name=None):
   r"""Computes the elementwise value of a polynomial.
 
@@ -3033,7 +3033,7 @@ def polyval(coeffs, x, name=None):
     return p
 
 
-@tf_export("math.bessel_i0e")
+#@tf_export("math.bessel_i0e")
 def bessel_i0e(x, name=None):
   """Computes the Bessel i0e function of `x` element-wise.
 
@@ -3063,7 +3063,7 @@ def bessel_i0e(x, name=None):
       return gen_math_ops.bessel_i0e(x, name=name)
 
 
-@tf_export("math.bessel_i1e")
+#@tf_export("math.bessel_i1e")
 def bessel_i1e(x, name=None):
   """Computes the Bessel i1e function of `x` element-wise.
 

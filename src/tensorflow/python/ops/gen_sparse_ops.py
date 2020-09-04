@@ -9,7 +9,7 @@ import six as _six
 
 
 
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.framework import dtypes as _dtypes
 from tensorflow.python import context as _context
 from tensorflow.python import execute as _execute

@@ -15,11 +15,11 @@ from tensorflow.python.framework import sparse_tensor
 from tensorflow.python.ops.gen_array_ops import *
 from tensorflow.python.ops.gen_array_ops import reverse_v2 as reverse
 from tensorflow.python.ops import gen_array_ops
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 
 newaxis = None
-tf_export("newaxis").export_constant(__name__, "newaxis")
+#tf_export("newaxis").export_constant(__name__, "newaxis")
 
 _BaseSlice = slice
 
@@ -112,12 +112,12 @@ def _slice_helper(tensor, slice_spec, var=None):
         name=name)
 
 
-@tf_export("slice")
+#@tf_export("slice")
 def slice(input_, begin, size, name=None):
   return gen_array_ops._slice(input_, begin, size, name=name)
 
 
-@tf_export("strided_slice")
+#@tf_export("strided_slice")
 def strided_slice(input_,
                   begin,
                   end,
@@ -180,7 +180,7 @@ ops.Tensor._override_operator("__getitem__", _slice_helper)
 
 
 
-@tf_export("stack")
+#@tf_export("stack")
 def stack(values, axis=0, name="stack"):
   if axis == 0:
     try:
@@ -226,7 +226,7 @@ ops.register_tensor_conversion_function((list, tuple),
                                         _autopacking_conversion_function, 99)
 
 
-@tf_export("concat")
+#@tf_export("concat")
 def concat(values, axis, name="concat"):
   
   if not isinstance(values, (list, tuple)):
@@ -241,7 +241,7 @@ def concat(values, axis, name="concat"):
   return gen_array_ops.concat_v2(values=values, axis=axis, name=name)
 
 
-@tf_export("split")
+#@tf_export("split")
 def split(value, num_or_size_splits, axis=0, num=None, name="split"):
   
   size_splits = ops.convert_to_tensor(num_or_size_splits)
@@ -269,7 +269,7 @@ def _constant_if_small(value, shape, dtype, name):
   return None
 
 
-@tf_export("zeros")
+#@tf_export("zeros")
 def zeros(shape, dtype=dtypes.float32, name=None):
   dtype = dtypes.as_dtype(dtype).base_dtype
   with ops.name_scope(name, "zeros", [shape]) as name:
@@ -298,7 +298,7 @@ def zeros(shape, dtype=dtypes.float32, name=None):
   return output
 
 
-@tf_export("zeros_like")
+#@tf_export("zeros_like")
 def zeros_like(tensor, dtype=None, name=None, optimize=True):
   with ops.name_scope(name, "zeros_like", [tensor]) as name:
     tensor = ops.convert_to_tensor(tensor, name="tensor")
@@ -321,7 +321,7 @@ def zeros_like(tensor, dtype=None, name=None, optimize=True):
       return gen_array_ops.zeros_like(tensor, name=name)
 
 
-@tf_export("ones")
+#@tf_export("ones")
 def ones(shape, dtype=dtypes.float32, name=None):
   dtype = dtypes.as_dtype(dtype).base_dtype
   with ops.name_scope(name, "ones", [shape]) as name:

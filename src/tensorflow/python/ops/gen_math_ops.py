@@ -9,7 +9,7 @@ from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.python.framework import dtypes as _dtypes
 from tensorflow.python.util.deprecation import deprecated_endpoints
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 
 def _abs(x, name=None):
@@ -112,7 +112,7 @@ def accumulate_nv2(inputs, shape, name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-@tf_export('math.acos', 'acos')
+#@tf_export('math.acos', 'acos')
 @deprecated_endpoints('acos')
 def acos(x, name=None):
   r"""Computes acos of x element-wise.
@@ -152,7 +152,7 @@ def acos(x, name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-@tf_export('math.acosh', 'acosh')
+#@tf_export('math.acosh', 'acosh')
 @deprecated_endpoints('acosh')
 def acosh(x, name=None):
   r"""Computes inverse hyperbolic cosine of x element-wise.
@@ -193,7 +193,7 @@ def acosh(x, name=None):
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
 
-@tf_export('math.add', 'add')
+#@tf_export('math.add', 'add')
 @deprecated_endpoints('add')
 def add(x, y, name=None):
   r"""Returns x + y element-wise.
@@ -818,7 +818,7 @@ def arg_min_eager_fallback(input, dimension, output_type=_dtypes.int64, name=Non
   return _result
 
 
-@tf_export('math.asin', 'asin')
+#@tf_export('math.asin', 'asin')
 @deprecated_endpoints('asin')
 def asin(x, name=None):
   r"""Computes asin of x element-wise.
@@ -875,7 +875,7 @@ def asin_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.asinh', 'asinh')
+#@tf_export('math.asinh', 'asinh')
 @deprecated_endpoints('asinh')
 def asinh(x, name=None):
   r"""Computes inverse hyperbolic sine of x element-wise.
@@ -932,7 +932,7 @@ def asinh_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.atan', 'atan')
+#@tf_export('math.atan', 'atan')
 @deprecated_endpoints('atan')
 def atan(x, name=None):
   r"""Computes atan of x element-wise.
@@ -989,7 +989,7 @@ def atan_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.atan2', 'atan2')
+#@tf_export('math.atan2', 'atan2')
 @deprecated_endpoints('atan2')
 def atan2(y, x, name=None):
   r"""Computes arctangent of `y/x` element-wise, respecting signs of the arguments.
@@ -1054,7 +1054,7 @@ def atan2_eager_fallback(y, x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.atanh', 'atanh')
+#@tf_export('math.atanh', 'atanh')
 @deprecated_endpoints('atanh')
 def atanh(x, name=None):
   r"""Computes inverse hyperbolic tangent of x element-wise.
@@ -1327,7 +1327,7 @@ def bessel_i1e_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.betainc', 'betainc')
+#@tf_export('math.betainc', 'betainc')
 @deprecated_endpoints('betainc')
 def betainc(a, b, x, name=None):
   r"""Compute the regularized incomplete beta integral \\(I_x(a, b)\\).
@@ -1617,7 +1617,7 @@ def cast_eager_fallback(x, DstT, Truncate=False, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.ceil', 'ceil')
+#@tf_export('math.ceil', 'ceil')
 @deprecated_endpoints('ceil')
 def ceil(x, name=None):
   r"""Returns element-wise smallest integer not less than x.
@@ -2043,7 +2043,7 @@ def conj_eager_fallback(input, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.cos', 'cos')
+#@tf_export('math.cos', 'cos')
 @deprecated_endpoints('cos')
 def cos(x, name=None):
   r"""Computes cos of x element-wise.
@@ -2100,7 +2100,7 @@ def cos_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.cosh', 'cosh')
+#@tf_export('math.cosh', 'cosh')
 @deprecated_endpoints('cosh')
 def cosh(x, name=None):
   r"""Computes hyperbolic cosine of x element-wise.
@@ -2157,7 +2157,7 @@ def cosh_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('linalg.cross', 'cross')
+#@tf_export('linalg.cross', 'cross')
 @deprecated_endpoints('cross')
 def cross(a, b, name=None):
   r"""Compute the pairwise cross product.
@@ -2446,7 +2446,7 @@ def cumsum_eager_fallback(x, axis, exclusive=False, reverse=False, name=None, ct
   return _result
 
 
-@tf_export('math.digamma', 'digamma')
+#@tf_export('math.digamma', 'digamma')
 @deprecated_endpoints('digamma')
 def digamma(x, name=None):
   r"""Computes Psi, the derivative of Lgamma (the log of the absolute value of
@@ -2626,7 +2626,7 @@ def div_no_nan_eager_fallback(x, y, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.equal', 'equal')
+#@tf_export('math.equal', 'equal')
 @deprecated_endpoints('equal')
 def equal(x, y, name=None):
   r"""Returns the truth value of (x == y) element-wise.
@@ -2743,7 +2743,7 @@ def erf_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.erfc', 'erfc')
+#@tf_export('math.erfc', 'erfc')
 @deprecated_endpoints('erfc')
 def erfc(x, name=None):
   r"""Computes the complementary error function of `x` element-wise.
@@ -2800,7 +2800,7 @@ def erfc_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.exp', 'exp')
+#@tf_export('math.exp', 'exp')
 @deprecated_endpoints('exp')
 def exp(x, name=None):
   r"""Computes exponential of x element-wise.  \\(y = e^x\\).
@@ -2857,7 +2857,7 @@ def exp_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.expm1', 'expm1')
+#@tf_export('math.expm1', 'expm1')
 @deprecated_endpoints('expm1')
 def expm1(x, name=None):
   r"""Computes exponential of x - 1 element-wise.
@@ -2916,7 +2916,7 @@ def expm1_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.floor', 'floor')
+#@tf_export('math.floor', 'floor')
 @deprecated_endpoints('floor')
 def floor(x, name=None):
   r"""Returns element-wise largest integer not greater than x.
@@ -3096,7 +3096,7 @@ def floor_mod_eager_fallback(x, y, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.greater', 'greater')
+#@tf_export('math.greater', 'greater')
 @deprecated_endpoints('greater')
 def greater(x, y, name=None):
   r"""Returns the truth value of (x > y) element-wise.
@@ -3158,7 +3158,7 @@ def greater_eager_fallback(x, y, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.greater_equal', 'greater_equal')
+#@tf_export('math.greater_equal', 'greater_equal')
 @deprecated_endpoints('greater_equal')
 def greater_equal(x, y, name=None):
   r"""Returns the truth value of (x >= y) element-wise.
@@ -3309,7 +3309,7 @@ def _histogram_fixed_width_eager_fallback(values, value_range, nbins, dtype=_dty
   return _result
 
 
-@tf_export('math.igamma', 'igamma')
+#@tf_export('math.igamma', 'igamma')
 @deprecated_endpoints('igamma')
 def igamma(a, x, name=None):
   r"""Compute the lower regularized incomplete Gamma function `P(a, x)`.
@@ -3439,7 +3439,7 @@ def igamma_grad_a_eager_fallback(a, x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.igammac', 'igammac')
+#@tf_export('math.igammac', 'igammac')
 @deprecated_endpoints('igammac')
 def igammac(a, x, name=None):
   r"""Compute the upper regularized incomplete Gamma function `Q(a, x)`.
@@ -3702,7 +3702,7 @@ def inv_grad_eager_fallback(y, dy, name=None, ctx=None):
   return _result
 
 
-@tf_export('debugging.is_finite', 'is_finite')
+#@tf_export('debugging.is_finite', 'is_finite')
 @deprecated_endpoints('is_finite')
 def is_finite(x, name=None):
   r"""Returns which elements of x are finite.
@@ -3763,7 +3763,7 @@ def is_finite_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('debugging.is_inf', 'is_inf')
+#@tf_export('debugging.is_inf', 'is_inf')
 @deprecated_endpoints('is_inf')
 def is_inf(x, name=None):
   r"""Returns which elements of x are Inf.
@@ -3824,7 +3824,7 @@ def is_inf_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('debugging.is_nan', 'is_nan')
+#@tf_export('debugging.is_nan', 'is_nan')
 @deprecated_endpoints('is_nan')
 def is_nan(x, name=None):
   r"""Returns which elements of x are NaN.
@@ -3885,7 +3885,7 @@ def is_nan_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.less', 'less')
+#@tf_export('math.less', 'less')
 @deprecated_endpoints('less')
 def less(x, y, name=None):
   r"""Returns the truth value of (x < y) element-wise.
@@ -3947,7 +3947,7 @@ def less_eager_fallback(x, y, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.less_equal', 'less_equal')
+#@tf_export('math.less_equal', 'less_equal')
 @deprecated_endpoints('less_equal')
 def less_equal(x, y, name=None):
   r"""Returns the truth value of (x <= y) element-wise.
@@ -4009,7 +4009,7 @@ def less_equal_eager_fallback(x, y, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.lgamma', 'lgamma')
+#@tf_export('math.lgamma', 'lgamma')
 @deprecated_endpoints('lgamma')
 def lgamma(x, name=None):
   r"""Computes the log of the absolute value of `Gamma(x)` element-wise.
@@ -4066,7 +4066,7 @@ def lgamma_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('lin_space', 'linspace')
+#@tf_export('lin_space', 'linspace')
 def lin_space(start, stop, num, name=None):
   r"""Generates values in an interval.
 
@@ -4139,7 +4139,7 @@ def lin_space_eager_fallback(start, stop, num, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.log', 'log')
+#@tf_export('math.log', 'log')
 @deprecated_endpoints('log')
 def log(x, name=None):
   r"""Computes natural logarithm of x element-wise.
@@ -4198,7 +4198,7 @@ def log_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.log1p', 'log1p')
+#@tf_export('math.log1p', 'log1p')
 @deprecated_endpoints('log1p')
 def log1p(x, name=None):
   r"""Computes natural logarithm of (1 + x) element-wise.
@@ -4257,7 +4257,7 @@ def log1p_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.logical_and', 'logical_and')
+#@tf_export('math.logical_and', 'logical_and')
 @deprecated_endpoints('logical_and')
 def logical_and(x, y, name=None):
   r"""Returns the truth value of x AND y element-wise.
@@ -4319,7 +4319,7 @@ def logical_and_eager_fallback(x, y, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.logical_not', 'logical_not')
+#@tf_export('math.logical_not', 'logical_not')
 @deprecated_endpoints('logical_not')
 def logical_not(x, name=None):
   r"""Returns the truth value of NOT x element-wise.
@@ -4376,7 +4376,7 @@ def logical_not_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.logical_or', 'logical_or')
+#@tf_export('math.logical_or', 'logical_or')
 @deprecated_endpoints('logical_or')
 def logical_or(x, y, name=None):
   r"""Returns the truth value of x OR y element-wise.
@@ -4599,7 +4599,7 @@ def _max_eager_fallback(input, axis, keep_dims=False, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.maximum', 'maximum')
+#@tf_export('math.maximum', 'maximum')
 @deprecated_endpoints('maximum')
 def maximum(x, y, name=None):
   r"""Returns the max of x and y (i.e. x > y ? x : y) element-wise.
@@ -4811,7 +4811,7 @@ def _min_eager_fallback(input, axis, keep_dims=False, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.minimum', 'minimum')
+#@tf_export('math.minimum', 'minimum')
 @deprecated_endpoints('minimum')
 def minimum(x, y, name=None):
   r"""Returns the min of x and y (i.e. x < y ? x : y) element-wise.
@@ -5053,7 +5053,7 @@ def neg_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.not_equal', 'not_equal')
+#@tf_export('math.not_equal', 'not_equal')
 @deprecated_endpoints('not_equal')
 def not_equal(x, y, name=None):
   r"""Returns the truth value of (x != y) element-wise.
@@ -5115,7 +5115,7 @@ def not_equal_eager_fallback(x, y, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.polygamma', 'polygamma')
+#@tf_export('math.polygamma', 'polygamma')
 @deprecated_endpoints('polygamma')
 def polygamma(a, x, name=None):
   r"""Compute the polygamma function \\(\psi^{(n)}(x)\\).
@@ -5943,7 +5943,7 @@ def real_div_eager_fallback(x, y, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.reciprocal', 'reciprocal')
+#@tf_export('math.reciprocal', 'reciprocal')
 @deprecated_endpoints('reciprocal')
 def reciprocal(x, name=None):
   r"""Computes the reciprocal of x element-wise.
@@ -6232,7 +6232,7 @@ def requantize_eager_fallback(input, input_min, input_max, requested_output_min,
   return _result
 
 
-@tf_export('math.rint', 'rint')
+#@tf_export('math.rint', 'rint')
 @deprecated_endpoints('rint')
 def rint(x, name=None):
   r"""Returns element-wise integer closest to x.
@@ -6357,7 +6357,7 @@ def round_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.rsqrt', 'rsqrt')
+#@tf_export('math.rsqrt', 'rsqrt')
 @deprecated_endpoints('rsqrt')
 def rsqrt(x, name=None):
   r"""Computes reciprocal of square root of x element-wise.
@@ -6476,7 +6476,7 @@ def rsqrt_grad_eager_fallback(y, dy, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.segment_max', 'segment_max')
+#@tf_export('math.segment_max', 'segment_max')
 @deprecated_endpoints('segment_max')
 def segment_max(data, segment_ids, name=None):
   r"""Computes the maximum along segments of a tensor.
@@ -6551,7 +6551,7 @@ def segment_max_eager_fallback(data, segment_ids, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.segment_mean', 'segment_mean')
+#@tf_export('math.segment_mean', 'segment_mean')
 @deprecated_endpoints('segment_mean')
 def segment_mean(data, segment_ids, name=None):
   r"""Computes the mean along segments of a tensor.
@@ -6627,7 +6627,7 @@ def segment_mean_eager_fallback(data, segment_ids, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.segment_min', 'segment_min')
+#@tf_export('math.segment_min', 'segment_min')
 @deprecated_endpoints('segment_min')
 def segment_min(data, segment_ids, name=None):
   r"""Computes the minimum along segments of a tensor.
@@ -6702,7 +6702,7 @@ def segment_min_eager_fallback(data, segment_ids, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.segment_prod', 'segment_prod')
+#@tf_export('math.segment_prod', 'segment_prod')
 @deprecated_endpoints('segment_prod')
 def segment_prod(data, segment_ids, name=None):
   r"""Computes the product along segments of a tensor.
@@ -6777,7 +6777,7 @@ def segment_prod_eager_fallback(data, segment_ids, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.segment_sum', 'segment_sum')
+#@tf_export('math.segment_sum', 'segment_sum')
 @deprecated_endpoints('segment_sum')
 def segment_sum(data, segment_ids, name=None):
   r"""Computes the sum along segments of a tensor.
@@ -7128,7 +7128,7 @@ def sign_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.sin', 'sin')
+#@tf_export('math.sin', 'sin')
 @deprecated_endpoints('sin')
 def sin(x, name=None):
   r"""Computes sin of x element-wise.
@@ -7185,7 +7185,7 @@ def sin_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.sinh', 'sinh')
+#@tf_export('math.sinh', 'sinh')
 @deprecated_endpoints('sinh')
 def sinh(x, name=None):
   r"""Computes hyperbolic sine of x element-wise.
@@ -8150,7 +8150,7 @@ def square_eager_fallback(x, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.squared_difference', 'squared_difference')
+#@tf_export('math.squared_difference', 'squared_difference')
 @deprecated_endpoints('squared_difference')
 def squared_difference(x, y, name=None):
   r"""Returns (x - y)(x - y) element-wise.
@@ -8347,7 +8347,7 @@ def _sum_eager_fallback(input, axis, keep_dims=False, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.tan', 'tan')
+#@tf_export('math.tan', 'tan')
 @deprecated_endpoints('tan')
 def tan(x, name=None):
   r"""Computes tan of x element-wise.
@@ -8647,7 +8647,7 @@ def truncate_mod_eager_fallback(x, y, name=None, ctx=None):
   return _result
 
 
-@tf_export('math.unsorted_segment_max', 'unsorted_segment_max')
+#@tf_export('math.unsorted_segment_max', 'unsorted_segment_max')
 @deprecated_endpoints('unsorted_segment_max')
 def unsorted_segment_max(data, segment_ids, num_segments, name=None):
   r"""Computes the maximum along segments of a tensor.
@@ -8742,7 +8742,7 @@ def unsorted_segment_max_eager_fallback(data, segment_ids, num_segments, name=No
   return _result
 
 
-@tf_export('math.unsorted_segment_min', 'unsorted_segment_min')
+#@tf_export('math.unsorted_segment_min', 'unsorted_segment_min')
 @deprecated_endpoints('unsorted_segment_min')
 def unsorted_segment_min(data, segment_ids, num_segments, name=None):
   r"""Computes the minimum along segments of a tensor.
@@ -8826,7 +8826,7 @@ def unsorted_segment_min_eager_fallback(data, segment_ids, num_segments, name=No
   return _result
 
 
-@tf_export('math.unsorted_segment_prod', 'unsorted_segment_prod')
+#@tf_export('math.unsorted_segment_prod', 'unsorted_segment_prod')
 @deprecated_endpoints('unsorted_segment_prod')
 def unsorted_segment_prod(data, segment_ids, num_segments, name=None):
   r"""Computes the product along segments of a tensor.
@@ -8909,7 +8909,7 @@ def unsorted_segment_prod_eager_fallback(data, segment_ids, num_segments, name=N
   return _result
 
 
-@tf_export('math.unsorted_segment_sum', 'unsorted_segment_sum')
+#@tf_export('math.unsorted_segment_sum', 'unsorted_segment_sum')
 @deprecated_endpoints('unsorted_segment_sum')
 def unsorted_segment_sum(data, segment_ids, num_segments, name=None):
   r"""Computes the sum along segments of a tensor.
@@ -8977,7 +8977,7 @@ def unsorted_segment_sum(data, segment_ids, num_segments, name=None):
 
 
 
-@tf_export('math.xdivy')
+#@tf_export('math.xdivy')
 def xdivy(x, y, name=None):
   r"""Returns 0 if x == 0, and x / y otherwise, elementwise.
 
@@ -9019,7 +9019,7 @@ def xdivy(x, y, name=None):
 
 
 
-@tf_export('math.xlogy')
+#@tf_export('math.xlogy')
 def xlogy(x, y, name=None):
   r"""Returns 0 if x == 0, and x * log(y) otherwise, elementwise.
 
@@ -9060,7 +9060,7 @@ def xlogy(x, y, name=None):
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
 
-@tf_export('math.zeta', 'zeta')
+#@tf_export('math.zeta', 'zeta')
 @deprecated_endpoints('zeta')
 def zeta(x, q, name=None):
   r"""Compute the Hurwitz zeta function \\(\zeta(x, q)\\).

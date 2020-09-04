@@ -11,9 +11,9 @@ from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.python.framework import dtypes as _dtypes
 from tensorflow.python.util.deprecation import deprecated_endpoints
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
-@tf_export('reverse', 'manip.reverse', 'reverse_v2')
+#@tf_export('reverse', 'manip.reverse', 'reverse_v2')
 @deprecated_endpoints('manip.reverse', 'reverse_v2')
 def reverse_v2(tensor, axis, name=None):
   _ctx = _context._context
@@ -355,7 +355,7 @@ def strided_slice(input, begin, end, strides, begin_mask=0, end_mask=0, ellipsis
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-@tf_export('fill')
+#@tf_export('fill')
 def fill(dims, value, name=None):
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
@@ -415,7 +415,7 @@ def split(axis, value, num_split, name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-@tf_export('reshape', 'manip.reshape')
+#@tf_export('reshape', 'manip.reshape')
 @deprecated_endpoints('manip.reshape')
 def reshape(tensor, shape, name=None):
   _ctx = _context._context
@@ -446,7 +446,7 @@ def reshape(tensor, shape, name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-@tf_export('tile', 'manip.tile')
+#@tf_export('tile', 'manip.tile')
 @deprecated_endpoints('manip.tile')
 def tile(input, multiples, name=None):
   _ctx = _context._context
@@ -540,7 +540,7 @@ def prevent_gradient(input, message="", name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-@tf_export('math.invert_permutation', 'invert_permutation')
+#@tf_export('math.invert_permutation', 'invert_permutation')
 @deprecated_endpoints('invert_permutation')
 def invert_permutation(x, name=None):
   _ctx = _context._context
