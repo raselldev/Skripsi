@@ -7,7 +7,7 @@ import sys
 import traceback
 
 import six 
-from tensorflow.python import tf_logging
+#from tensorflow.python import tf_logging
 from tensorflow.python.util import tf_decorator
 
 
@@ -29,10 +29,6 @@ class _TFShouldUseHelper(object):
   def __del__(self):
     if self._sated:
       return
-    if self._fatal_error_if_unsated:
-      logger = tf_logging.fatal
-    else:
-      logger = tf_logging.error
     creation_stack = ''.join(
         [line.rstrip() for line in traceback.format_stack(self._stack_frame)])
     logger(

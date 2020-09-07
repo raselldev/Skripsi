@@ -25,7 +25,7 @@ from __future__ import print_function
 
 import traceback
 
-from tensorflow.python import tf_logging as logging
+#from tensorflow.python import tf_logging as logging
 from tensorflow.python.util import compat
 
 
@@ -61,7 +61,7 @@ class Registry(object):
                      "(Previous registration was in %s %s:%d)" %
                      (self._name, name, function_name, filename, line_number))
 
-    logging.vlog(1, "Registering %s (%s) in %s.", name, candidate, self._name)
+    #logging.vlog(1, "Registering %s (%s) in %s.", name, candidate, self._name)
     # stack trace is [this_function, Register(), user_function,...]
     # so the user function is #2.
     stack = traceback.extract_stack()

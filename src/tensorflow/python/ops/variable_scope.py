@@ -33,7 +33,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 
 from tensorflow.python.framework import dtypes
 from tensorflow.python import context
-from tensorflow.python import tf_logging as logging
+#from tensorflow.python import tf_logging as logging
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.ops import variables
@@ -929,8 +929,7 @@ class _VariableStore(object):
       # In eager mode we do not want to keep default references to Variable
       # objects as this will prevent their memory from being released.
       self._vars[name] = v
-    logging.vlog(1, "Created variable %s with shape %s and init %s", v.name,
-                 format(shape), initializer)
+    #logging.vlog(1, "Created variable %s with shape %s and init %s", v.name,                 format(shape), initializer)
 
     # Run the regularizer if requested and save the resulting loss.
     if regularizer:
@@ -945,8 +944,7 @@ class _VariableStore(object):
           else:
             v_name = v.name
             loss_name = loss.name
-          logging.vlog(1, "Applied regularizer to %s and added the result %s "
-                       "to REGULARIZATION_LOSSES.", v_name, loss_name)
+          #logging.vlog(1, "Applied regularizer to %s and added the result %s "   "to REGULARIZATION_LOSSES.", v_name, loss_name)
           ops.add_to_collection(ops.GraphKeys.REGULARIZATION_LOSSES, loss)
     return v
 
@@ -2335,8 +2333,7 @@ def variable_op_scope(values,
                       use_resource=None,
                       constraint=None):
   """Deprecated: context manager for defining an op that creates variables."""
-  logging.warn("tf.variable_op_scope(values, name, default_name) is deprecated,"
-               " use tf.variable_scope(name, default_name, values)")
+  #logging.warn("tf.variable_op_scope(values, name, default_name) is deprecated,"               " use tf.variable_scope(name, default_name, values)")
   with variable_scope(name_or_scope,
                       default_name=default_name,
                       values=values,

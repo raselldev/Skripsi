@@ -11,7 +11,7 @@ import numpy as np
 import six
 
 
-from tensorflow.python import tf_logging as logging
+#from tensorflow.python import tf_logging as logging
 from tensorflow.python import context
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import ops
@@ -824,7 +824,8 @@ class Saver(object):
             self._CheckpointFilename(p), self.saver_def.version,
             meta_graph_suffix)
       except Exception as e:  # pylint: disable=broad-except
-        logging.warning("Ignoring: %s", str(e))
+        #logging.warning("Ignoring: %s", str(e))
+        pass
 
   def as_saver_def(self):
     return self.saver_def
@@ -926,12 +927,7 @@ class Saver(object):
     if latest_filename is None:
       latest_filename = "checkpoint"
     if self._write_version != saver_pb2.SaverDef.V2:
-      logging.warning("*******************************************************")
-      logging.warning("TensorFlow's V1 checkpoint format has been deprecated.")
-      logging.warning("Consider switching to the more efficient V2 format:")
-      logging.warning("   `tf.train.Saver(write_version=tf.train.SaverDef.V2)`")
-      logging.warning("now on by default.")
-      logging.warning("*******************************************************")
+      print("salah version")
 
     if os.path.split(latest_filename)[0]:
       raise ValueError("'latest_filename' must not contain path components")
@@ -1028,7 +1024,7 @@ class Saver(object):
       raise ValueError("The passed save_path is not a valid checkpoint: "
                        + compat.as_text(save_path))
 
-    logging.info("Restoring parameters from %s", compat.as_text(save_path))
+    #logging.info("Restoring parameters from %s", compat.as_text(save_path))
     try:
       if context.executing_eagerly():
         self._build_eager(save_path, build_save=False, build_restore=True)
@@ -1042,11 +1038,7 @@ class Saver(object):
         raise _wrap_restore_error_with_msg(
             err, "a Variable name or other graph key that is missing")
 
-      logging.warning(
-          "Restoring an object-based checkpoint using a name-based saver. This "
-          "may be somewhat fragile, and will re-build the Saver. Instead, "
-          "consider loading object-based checkpoints using "
-          "tf.train.Checkpoint().")
+      
       self._object_restore_saver = saver_from_object_based_checkpoint(
           checkpoint_path=save_path,
           var_list=self._var_list,

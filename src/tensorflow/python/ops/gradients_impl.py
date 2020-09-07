@@ -27,7 +27,7 @@ import numpy as np
 import six
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
-from tensorflow.python import tf_logging as logging
+#from tensorflow.python import tf_logging as logging
 from tensorflow.python import context
 from tensorflow.python.ops import array_grad
 from tensorflow.python.ops import control_flow_grad
@@ -951,7 +951,7 @@ def _AccumulatorShape(inputs):
 
 def _LogOpGradients(op, out_grads, in_grads):
   """Log the in and out grads of an op."""
-  logging.vlog(1, "Gradient for '" + op.name + "'")
+  #logging.vlog(1, "Gradient for '" + op.name + "'")
 
   def _FilterGrad(x):
     if x is None:
@@ -961,10 +961,8 @@ def _LogOpGradients(op, out_grads, in_grads):
     else:
       return True
 
-  logging.vlog(1, "  in  --> %s",
-               ", ".join([x.name for x in out_grads if _FilterGrad(x)]))
-  logging.vlog(1, "  out --> %s",
-               ", ".join([x.name for x in in_grads if _FilterGrad(x)]))
+  #logging.vlog(1, "  in  --> %s",  ", ".join([x.name for x in out_grads if _FilterGrad(x)]))
+  #logging.vlog(1, "  out --> %s",   ", ".join([x.name for x in in_grads if _FilterGrad(x)]))
 
 
 def _MultiDeviceAddN(tensor_list, gradient_uid):
@@ -1105,8 +1103,7 @@ def _AggregatedGrads(grads,
         else:
           used = "add_n"
           out_grads[i] = _MultiDeviceAddN(out_grad, gradient_uid)
-        logging.vlog(2, "  _AggregatedGrads %d x %s using %s", len(out_grad),
-                     tensor_shape, used)
+        #logging.vlog(2, "  _AggregatedGrads %d x %s using %s", len(out_grad),            tensor_shape, used)
       else:
         out_grads[i] = _AggregateIndexedSlicesGradients(out_grad)
     else:  # not out_grad

@@ -1,21 +1,3 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-
-"""Base class for optimizers."""
-# pylint: disable=g-bad-name
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -39,47 +21,30 @@ def get_loss_reduction():
   loss_reduction = ops.get_default_graph()._last_loss_reduction  
   return variable_scope.VariableAggregation.MEAN
 
-def get_filtered_grad_fn(grad_fn):
-  # `distributed_context.join()` requires that its arguments are parallel
-  # across threads, and in particular that `grads_and_vars` has the same
-  # variables in the same order.
-
-  # When computing gradients in eager mode with multiple threads, you
-  # can get extra variables with a gradient of `None`. This happens when
-  # those variables are accessed in another thread during the gradient
-  # computation. To get a consistent set of variables, we filter out
-  # those with `None` gradients.
-  def filtered_grad_fn(*args, **kwargs):
-    return [(g, v) for g, v in grad_fn(*args, **kwargs) if g is not None]
-
-  return filtered_grad_fn
-
-
-def _deduplicate_indexed_slices(values, indices):
-  """Sums `values` associated with any non-unique `indices`.
-
-  Args:
-    values: A `Tensor` with rank >= 1.
-    indices: A one-dimensional integer `Tensor`, indexing into the first
-      dimension of `values` (as in an IndexedSlices object).
-  Returns:
-    A tuple of (`summed_values`, `unique_indices`) where `unique_indices` is a
-    de-duplicated version of `indices` and `summed_values` contains the sum of
-    `values` slices associated with each unique index.
-  """
-  unique_indices, new_index_positions = array_ops.unique(indices)
-  summed_values = math_ops.unsorted_segment_sum(
-      values, new_index_positions,
-      array_ops.shape(unique_indices)[0])
-  return (summed_values, unique_indices)
-
+def _get_processor(v):
+  """The processor of v."""
+  if context.executing_eagerly():
+    if isinstance(v, ops.Tensor):
+      return _TensorProcessor(v)
+    else:
+      return _DenseResourceVariableProcessor(v)
+  if isinstance(
+      v, resource_variable_ops.ResourceVariable) and not v._in_graph_mode:  # pylint: disable=protected-access
+    # True if and only if `v` was initialized eagerly.
+    return _DenseResourceVariableProcessor(v)
+  if v.op.type == "VarHandleOp":
+    return _DenseResourceVariableProcessor(v)
+  if isinstance(v, variables.Variable):
+    return _RefVariableProcessor(v)
+  if isinstance(v, ops.Tensor):
+    return _TensorProcessor(v)
+  raise NotImplementedError("Trying to optimize unsupported type ", v)
 
 def _var_key(var):
   # TODO(ashankar): Consolidate handling for eager and graph
   if hasattr(var, "op"):
     return (var.op.graph, var.op.name)
   return var._unique_id  # pylint: disable=protected-access
-
 
 class _OptimizableVariable(object):
   """Interface for abstracting over variables in the optimizers."""
@@ -93,7 +58,6 @@ class _OptimizableVariable(object):
   def update_op(self, optimizer, g):
     """Returns the update ops for updating the variable."""
     raise NotImplementedError("Calling an abstract method.")
-
 
 class _RefVariableProcessor(_OptimizableVariable):
   """Processor for Variable."""
@@ -124,90 +88,6 @@ class _RefVariableProcessor(_OptimizableVariable):
       # pylint: disable=protected-access
       return optimizer._apply_sparse_duplicate_indices(g, self._v)
 
-
-class _DenseReadResourceVariableProcessor(_OptimizableVariable):
-  """Processor for dense ResourceVariables."""
-
-  def __init__(self, v):
-    self._v = v
-
-  def target(self):
-    return self._v
-
-  def update_op(self, optimizer, g):
-    # pylint: disable=protected-access
-    update_op = optimizer._resource_apply_dense(g, self._v.op.inputs[0])
-    if self._v.constraint is not None:
-      with ops.control_dependencies([update_op]):
-        return self._v.assign(self._v.constraint(self._v))
-    else:
-      return update_op
-
-
-class _DenseResourceVariableProcessor(_OptimizableVariable):
-  """Processor for dense ResourceVariables."""
-
-  def __init__(self, v):
-    self._v = v
-
-  def target(self):
-    return self._v
-
-  def update_op(self, optimizer, g):
-    # pylint: disable=protected-access
-    if isinstance(g, ops.IndexedSlices):
-      if self._v.constraint is not None:
-        raise RuntimeError(
-            "Cannot use a constraint function on a sparse variable.")
-      return optimizer._resource_apply_sparse_duplicate_indices(
-          g.values, self._v, g.indices)
-    update_op = optimizer._resource_apply_dense(g, self._v)
-    if self._v.constraint is not None:
-      with ops.control_dependencies([update_op]):
-        return self._v.assign(self._v.constraint(self._v))
-    else:
-      return update_op
-
-
-class _TensorProcessor(_OptimizableVariable):
-  """Processor for ordinary Tensors.
-
-  Even though a Tensor can't really be updated, sometimes it is useful to
-  compute the gradients with respect to a Tensor using the optimizer. Updating
-  the Tensor is, of course, unsupported.
-  """
-
-  def __init__(self, v):
-    self._v = v
-
-  def target(self):
-    return self._v
-
-  def update_op(self, optimizer, g):
-    raise NotImplementedError("Trying to update a Tensor ", self._v)
-
-
-def _get_processor(v):
-  """The processor of v."""
-  if context.executing_eagerly():
-    if isinstance(v, ops.Tensor):
-      return _TensorProcessor(v)
-    else:
-      return _DenseResourceVariableProcessor(v)
-  if isinstance(
-      v, resource_variable_ops.ResourceVariable) and not v._in_graph_mode:  # pylint: disable=protected-access
-    # True if and only if `v` was initialized eagerly.
-    return _DenseResourceVariableProcessor(v)
-  if v.op.type == "VarHandleOp":
-    return _DenseResourceVariableProcessor(v)
-  if isinstance(v, variables.Variable):
-    return _RefVariableProcessor(v)
-  if isinstance(v, ops.Tensor):
-    return _TensorProcessor(v)
-  raise NotImplementedError("Trying to optimize unsupported type ", v)
-
-
-#@tf_export("train.Optimizer")
 class Optimizer(
     # Optimizers inherit from CheckpointableBase rather than Checkpointable
     # since they do most of their dependency management themselves (slot
