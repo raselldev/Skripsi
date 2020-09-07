@@ -35,7 +35,7 @@ from tensorflow.python.training import slot_creator
 from tensorflow.python.training import distribution_strategy_context
 from tensorflow.python.training import distribute as distribute_lib
 from tensorflow.python.training import base as checkpointable
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 
 def get_filtered_grad_fn(grad_fn):
@@ -206,7 +206,7 @@ def _get_processor(v):
   raise NotImplementedError("Trying to optimize unsupported type ", v)
 
 
-@tf_export("train.Optimizer")
+#@tf_export("train.Optimizer")
 class Optimizer(
     # Optimizers inherit from CheckpointableBase rather than Checkpointable
     # since they do most of their dependency management themselves (slot

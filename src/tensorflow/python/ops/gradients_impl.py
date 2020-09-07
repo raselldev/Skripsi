@@ -43,7 +43,7 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import function as framework_function
 from tensorflow.python.framework import ops
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 # This is to avoid a circular dependency (eager.function depends on
 # gradients_impl). This is set in eager/function.py.
@@ -523,7 +523,7 @@ def _Consumers(t, func_graphs):
   return consumers
 
 
-@tf_export("gradients")
+#@tf_export("gradients")
 def gradients(ys,
               xs,
               grad_ys=None,
@@ -995,7 +995,7 @@ def _MultiDeviceAddN(tensor_list, gradient_uid):
   return math_ops.add_n(summands)
 
 
-@tf_export("AggregationMethod")
+#@tf_export("AggregationMethod")
 class AggregationMethod(object):
   """A class listing aggregation methods used to combine gradients.
 
@@ -1188,7 +1188,7 @@ def _hessian_vector_product(ys, xs, v):
   return gradients(elemwise_products, xs)
 
 
-@tf_export("hessians")
+#@tf_export("hessians")
 def hessians(ys,
              xs,
              name="hessians",

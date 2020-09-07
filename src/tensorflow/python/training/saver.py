@@ -25,7 +25,7 @@ from tensorflow.python.training import saveable_object
 from tensorflow.python.training import base as checkpointable
 from tensorflow.python.training import checkpoint_management
 from tensorflow.python.util import compat
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 
 get_checkpoint_state = checkpoint_management.get_checkpoint_state
@@ -664,7 +664,7 @@ class BulkSaverBuilder(BaseSaverBuilder):
       return io_ops.restore_v2(filename_tensor, names, slices, dtypes)
 
 
-@tf_export("train.Saver")
+#("train.Saver")
 class Saver(object):
   def __init__(self,
                var_list=None,

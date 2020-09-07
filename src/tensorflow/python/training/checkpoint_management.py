@@ -31,7 +31,7 @@ from tensorflow.python.training.checkpoint_state_pb2 import CheckpointState
 from tensorflow.python import file_io
 from tensorflow.python.framework import errors_impl as errors
 from tensorflow.core import saver_pb2
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 
 def _GetCheckpointFilename(save_dir, latest_filename):
@@ -50,7 +50,7 @@ def _GetCheckpointFilename(save_dir, latest_filename):
   return os.path.join(save_dir, latest_filename)
 
 
-@tf_export("train.generate_checkpoint_state_proto")
+#@tf_export("train.generate_checkpoint_state_proto")
 def generate_checkpoint_state_proto(save_dir,
                                     model_checkpoint_path,
                                     all_model_checkpoint_paths=None,
@@ -116,7 +116,7 @@ def generate_checkpoint_state_proto(save_dir,
   return coord_checkpoint_proto
 
 
-@tf_export("train.update_checkpoint_state")
+#("train.update_checkpoint_state")
 def update_checkpoint_state(save_dir,
                             model_checkpoint_path,
                             all_model_checkpoint_paths=None,
@@ -232,7 +232,7 @@ def update_checkpoint_state_internal(save_dir,
                                       text_format.MessageToString(ckpt))
 
 
-@tf_export("train.get_checkpoint_state")
+#@tf_export("train.get_checkpoint_state")
 def get_checkpoint_state(checkpoint_dir, latest_filename=None):
   """Returns CheckpointState proto from the "checkpoint" file.
 
@@ -309,7 +309,7 @@ def _prefix_to_checkpoint_path(prefix, format_version):
   return prefix  # Just the data file.
 
 
-@tf_export("train.latest_checkpoint")
+#@tf_export("train.latest_checkpoint")
 def latest_checkpoint(checkpoint_dir, latest_filename=None):
   """Finds the filename of latest saved checkpoint file.
 
@@ -339,7 +339,7 @@ def latest_checkpoint(checkpoint_dir, latest_filename=None):
   return None
 
 
-@tf_export("train.checkpoint_exists")
+#("train.checkpoint_exists")
 def checkpoint_exists(checkpoint_prefix):
   """Checks whether a V1 or V2 checkpoint exists with the specified prefix.
 
@@ -364,7 +364,7 @@ def checkpoint_exists(checkpoint_prefix):
     return False
 
 
-@tf_export("train.get_checkpoint_mtimes")
+#@tf_export("train.get_checkpoint_mtimes")
 def get_checkpoint_mtimes(checkpoint_prefixes):
   """Returns the mtimes (modification timestamps) of the checkpoints.
 
@@ -403,7 +403,7 @@ def get_checkpoint_mtimes(checkpoint_prefixes):
   return mtimes
 
 
-@tf_export("train.remove_checkpoint")
+#@tf_export("train.remove_checkpoint")
 def remove_checkpoint(checkpoint_prefix,
                       checkpoint_format_version=saver_pb2.SaverDef.V2,
                       meta_graph_suffix="meta"):

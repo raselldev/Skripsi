@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import numpy as np
 
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 
 

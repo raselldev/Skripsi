@@ -32,7 +32,7 @@ from tensorflow.python.util import compat
 from tensorflow.python.util import nest
 from tensorflow.python import pywrap_tensorflow as tf_session
 from tensorflow.python.ops import session_ops
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import sparse_tensor
 
@@ -1325,7 +1325,7 @@ class BaseSession(SessionInterface):
   # pylint: disable=protected-access
   
 
-@tf_export('Session')
+#@tf_export('Session')
 class Session(BaseSession):
 
   def __init__(self, target='', graph=None, config=None):

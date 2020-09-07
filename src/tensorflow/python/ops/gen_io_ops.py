@@ -12,7 +12,7 @@ from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.core import op_def_pb2 as _op_def_pb2
 from tensorflow.python.util.deprecation import deprecated_endpoints
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 
 def fixed_length_record_reader(record_bytes, header_bytes=0, footer_bytes=0, hop_bytes=0, container="", shared_name="", name=None):
@@ -366,7 +366,7 @@ def lmdb_reader(container="", shared_name="", name=None):
 
   raise RuntimeError("lmdb_reader op does not support eager execution. Arg 'reader_handle' is a ref.")
 
-@tf_export('io.matching_files', 'matching_files')
+#@tf_export('io.matching_files', 'matching_files')
 @deprecated_endpoints('matching_files')
 def matching_files(pattern, name=None):
   r"""Returns the set of files matching one or more glob patterns.
@@ -503,7 +503,7 @@ def merge_v2_checkpoints_eager_fallback(checkpoint_prefixes, destination_prefix,
   return _result
 
 
-@tf_export('io.read_file', 'read_file')
+#@tf_export('io.read_file', 'read_file')
 @deprecated_endpoints('read_file')
 def read_file(filename, name=None):
   r"""Reads and outputs the entire contents of the input filename.
@@ -2225,7 +2225,7 @@ def whole_file_reader_v2_eager_fallback(container="", shared_name="", name=None,
   return _result
 
 
-@tf_export('io.write_file', 'write_file')
+#@tf_export('io.write_file', 'write_file')
 @deprecated_endpoints('write_file')
 def write_file(filename, contents, name=None):
   r"""Writes contents to the file at input filename. Creates file and recursively
