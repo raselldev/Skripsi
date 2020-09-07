@@ -34,7 +34,7 @@ from tensorflow.python.util import function_utils
 from tensorflow.python.util import tf_stack
 from tensorflow.python.util import compat
 from tensorflow.python.util import deprecation
-from tensorflow.python.util import decorator_utils
+#from tensorflow.python.util import decorator_utils
 from tensorflow.python.util import tf_contextlib
 from tensorflow.python.util import lock_util
 from tensorflow.python.util.deprecation import deprecated_args
@@ -3950,7 +3950,7 @@ class GraphKeys(object):
   # NOTE(yuanbyu): internal and experimental.
   _STREAMING_MODEL_PORTS = "streaming_model_ports"
 
-  @decorator_utils.classproperty
+  #@decorator_utils.classproperty
   @deprecation.deprecated(None, "Use `tf.GraphKeys.GLOBAL_VARIABLES` instead.")
   def VARIABLES(cls):  # pylint: disable=no-self-argument
     return cls.GLOBAL_VARIABLES

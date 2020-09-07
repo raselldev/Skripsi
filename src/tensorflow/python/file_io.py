@@ -18,6 +18,13 @@ from tensorflow.python.util import compat
 # A somewhat conservative default chosen here.
 _DEFAULT_BLOCK_SIZE = 16 * 1024 * 1024
 
+def as_str_any(value):
+  if isinstance(value, bytes):
+    return as_str(value)
+  else:
+    return str(value)
+
+
 
 class FileIO(object):
   """FileIO class that exposes methods to read / write to / from files.

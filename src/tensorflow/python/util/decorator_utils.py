@@ -1,19 +1,3 @@
-# Copyright 2016 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-
-"""Utility functions for writing decorators (which modify docstrings)."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -33,27 +17,9 @@ def get_qualified_name(function):
 
 
 def _normalize_docstring(docstring):
-  """Normalizes the docstring.
-
-  Replaces tabs with spaces, removes leading and trailing blanks lines, and
-  removes any indentation.
-
-  Copied from PEP-257:
-  https://www.python.org/dev/peps/pep-0257/#handling-docstring-indentation
-
-  Args:
-    docstring: the docstring to normalize
-
-  Returns:
-    The normalized docstring
-  """
   if not docstring:
     return ''
-  # Convert tabs to spaces (following the normal Python rules)
-  # and split into a list of lines:
   lines = docstring.expandtabs().splitlines()
-  # Determine minimum indentation (first line doesn't count):
-  # (we use sys.maxsize because sys.maxint doesn't exist in Python 3)
   indent = sys.maxsize
   for line in lines[1:]:
     stripped = line.lstrip()
@@ -106,20 +72,6 @@ def validate_callable(func, decorator_name):
 
 
 class classproperty(object):  # pylint: disable=invalid-name
-  """Class property decorator.
-
-  Example usage:
-
-  class MyClass(object):
-
-    @classproperty
-    def value(cls):
-      return '123'
-
-  > print MyClass.value
-  123
-  """
-
   def __init__(self, func):
     self._func = func
 
