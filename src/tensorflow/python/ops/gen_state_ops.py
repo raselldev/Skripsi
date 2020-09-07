@@ -8,7 +8,7 @@ import collections as _collections
 import six as _six
 
 
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python import context as _context
 from tensorflow.python import execute as _execute
 from tensorflow.core import op_def_pb2 as _op_def_pb2
@@ -595,7 +595,7 @@ def scatter_add(ref, indices, updates, use_locking=False, name=None):
 
   raise RuntimeError("scatter_add op does not support eager execution. Arg 'output_ref' is a ref.")
 
-@tf_export('scatter_div')
+#@tf_export('scatter_div')
 def scatter_div(ref, indices, updates, use_locking=False, name=None):
   r"""Divides a variable reference by sparse updates.
 
@@ -658,7 +658,7 @@ def scatter_div(ref, indices, updates, use_locking=False, name=None):
 
   raise RuntimeError("scatter_div op does not support eager execution. Arg 'output_ref' is a ref.")
 
-@tf_export('scatter_max')
+#@tf_export('scatter_max')
 def scatter_max(ref, indices, updates, use_locking=False, name=None):
   r"""Reduces sparse updates into a variable reference using the `max` operation.
 
@@ -723,7 +723,7 @@ def scatter_max(ref, indices, updates, use_locking=False, name=None):
 
   raise RuntimeError("scatter_max op does not support eager execution. Arg 'output_ref' is a ref.")
 
-@tf_export('scatter_min')
+#@tf_export('scatter_min')
 def scatter_min(ref, indices, updates, use_locking=False, name=None):
   r"""Reduces sparse updates into a variable reference using the `min` operation.
 
@@ -788,7 +788,7 @@ def scatter_min(ref, indices, updates, use_locking=False, name=None):
 
   raise RuntimeError("scatter_min op does not support eager execution. Arg 'output_ref' is a ref.")
 
-@tf_export('scatter_mul')
+#@tf_export('scatter_mul')
 def scatter_mul(ref, indices, updates, use_locking=False, name=None):
   r"""Multiplies sparse updates into a variable reference.
 

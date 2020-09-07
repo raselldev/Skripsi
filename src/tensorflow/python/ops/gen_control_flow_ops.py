@@ -13,7 +13,7 @@ from tensorflow.python import context as _context
 from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.core import op_def_pb2 as _op_def_pb2
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 
 def abort(error_msg="", exit_without_error=False, name=None):
@@ -475,7 +475,7 @@ def next_iteration_eager_fallback(data, name=None, ctx=None):
   return _result
 
 
-@tf_export('no_op')
+#@tf_export('no_op')
 def no_op(name=None):
   r"""Does nothing. Only useful as a placeholder for control edges.
 

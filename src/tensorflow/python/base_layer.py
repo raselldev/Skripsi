@@ -21,14 +21,14 @@ from tensorflow.python.framework import ops
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import variables as tf_variables
 from tensorflow.python.training import base as checkpointable
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.util import function_utils
 from tensorflow.python.util import tf_inspect
 from tensorflow.python.util import nest
 #from tensorflow import doc_controls
 
 
-@tf_export('keras.layers.InputSpec', 'layers.InputSpec')
+#@tf_export('keras.layers.InputSpec', 'layers.InputSpec')
 class InputSpec(object):
   def __init__(self,
                dtype=None,
@@ -57,7 +57,7 @@ class InputSpec(object):
     return 'InputSpec(%s)' % ', '.join(x for x in spec if x)
 
 
-@tf_export('keras.layers.Layer')
+#@tf_export('keras.layers.Layer')
 class Layer(checkpointable.CheckpointableBase):
   @checkpointable.no_automatic_dependency_tracking
   def __init__(self, trainable=True, name=None, dtype=None, **kwargs):

@@ -25,7 +25,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import gen_random_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.util import deprecation
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 # pylint: enable=wildcard-import
 
@@ -39,7 +39,7 @@ def _ShapeTensor(shape):
   return ops.convert_to_tensor(shape, dtype=dtype, name="shape")
 
 
-@tf_export("random.normal", "random_normal")
+#@tf_export("random.normal", "random_normal")
 def random_normal(shape,
                   mean=0.0,
                   stddev=1.0,
@@ -132,7 +132,7 @@ def parameterized_truncated_normal(shape,
     return rnd
 
 
-@tf_export("random.truncated_normal", "truncated_normal")
+#@tf_export("random.truncated_normal", "truncated_normal")
 def truncated_normal(shape,
                      mean=0.0,
                      stddev=1.0,
@@ -177,7 +177,7 @@ ops.NotDifferentiable("ParameterizedTruncatedNormal")
 ops.NotDifferentiable("TruncatedNormal")
 
 
-@tf_export("random.uniform", "random_uniform")
+#@tf_export("random.uniform", "random_uniform")
 def random_uniform(shape,
                    minval=0,
                    maxval=None,
@@ -242,7 +242,7 @@ def random_uniform(shape,
 ops.NotDifferentiable("RandomUniform")
 
 
-@tf_export("random.shuffle", "random_shuffle")
+#@tf_export("random.shuffle", "random_shuffle")
 def random_shuffle(value, seed=None, name=None):
   """Randomly shuffles a tensor along its first dimension.
 
@@ -273,7 +273,7 @@ def random_shuffle(value, seed=None, name=None):
       value, seed=seed1, seed2=seed2, name=name)
 
 
-@tf_export("image.random_crop", "random_crop")
+#@tf_export("image.random_crop", "random_crop")
 def random_crop(value, size, seed=None, name=None):
   """Randomly crops a tensor to a given size.
 
@@ -316,7 +316,7 @@ def random_crop(value, size, seed=None, name=None):
     return array_ops.slice(value, offset, size, name=name)
 
 
-@tf_export("random.multinomial", "multinomial")
+#@tf_export("random.multinomial", "multinomial")
 def multinomial(logits, num_samples, seed=None, name=None, output_dtype=None):
   """Draws samples from a multinomial distribution.
 
@@ -352,7 +352,7 @@ def multinomial(logits, num_samples, seed=None, name=None, output_dtype=None):
 ops.NotDifferentiable("Multinomial")
 
 
-@tf_export("random.gamma", "random_gamma")
+#@tf_export("random.gamma", "random_gamma")
 @deprecation.deprecated_endpoints("random_gamma")
 def random_gamma(shape,
                  alpha,
@@ -436,7 +436,7 @@ def random_gamma(shape,
             shape, alpha_broadcast, seed=seed1, seed2=seed2) / beta)
 
 
-@tf_export("random.poisson", "random_poisson")
+#@tf_export("random.poisson", "random_poisson")
 @deprecation.deprecated_endpoints("random_poisson")
 def random_poisson(lam, shape, dtype=dtypes.float32, seed=None, name=None):
   """Draws `shape` samples from each of the given Poisson distribution(s).

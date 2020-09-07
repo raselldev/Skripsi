@@ -33,11 +33,10 @@ from tensorflow.python.ops.init_ops import Identity
 from tensorflow.python.ops.init_ops import Constant
 from tensorflow.python.ops.init_ops import Zeros
 from tensorflow.python.ops.init_ops import Ones
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 
-@tf_export('keras.initializers.TruncatedNormal',
-           'keras.initializers.truncated_normal')
+#@tf_export('keras.initializers.TruncatedNormal',   'keras.initializers.truncated_normal')
 class TruncatedNormal(TFTruncatedNormal):
   """Initializer that generates a truncated normal distribution.
 
@@ -61,8 +60,7 @@ class TruncatedNormal(TFTruncatedNormal):
         mean=mean, stddev=stddev, seed=seed, dtype=dtype)
 
 
-@tf_export('keras.initializers.RandomUniform', 'keras.initializers.uniform',
-           'keras.initializers.random_uniform')
+#@tf_export('keras.initializers.RandomUniform', 'keras.initializers.uniform', 'keras.initializers.random_uniform')
 class RandomUniform(TFRandomUniform):
   """Initializer that generates tensors with a uniform distribution.
 
@@ -82,8 +80,7 @@ class RandomUniform(TFRandomUniform):
         minval=minval, maxval=maxval, seed=seed, dtype=dtype)
 
 
-@tf_export('keras.initializers.RandomNormal', 'keras.initializers.normal',
-           'keras.initializers.random_normal')
+#@tf_export('keras.initializers.RandomNormal', 'keras.initializers.normal',          'keras.initializers.random_normal')
 class RandomNormal(TFRandomNormal):
   """Initializer that generates tensors with a normal distribution.
 
@@ -123,12 +120,12 @@ glorot_uniform = GlorotUniform
 # Utility functions
 
 
-@tf_export('keras.initializers.serialize')
+#@tf_export('keras.initializers.serialize')
 def serialize(initializer):
   return serialize_keras_object(initializer)
 
 
-@tf_export('keras.initializers.deserialize')
+#@tf_export('keras.initializers.deserialize')
 def deserialize(config, custom_objects=None):
   return deserialize_keras_object(
       config,
@@ -137,7 +134,7 @@ def deserialize(config, custom_objects=None):
       printable_module_name='initializer')
 
 
-@tf_export('keras.initializers.get')
+#@tf_export('keras.initializers.get')
 def get(identifier):
   if identifier is None:
     return None

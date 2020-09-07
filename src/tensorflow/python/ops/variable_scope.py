@@ -41,7 +41,7 @@ from tensorflow.python.ops import init_ops
 from tensorflow.python.util import function_utils
 from tensorflow.python.util import tf_contextlib
 from tensorflow.python.util import deprecation
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 __all__ = [
     "AUTO_REUSE", "VariableScope", "get_variable_scope", "get_variable",
@@ -195,7 +195,7 @@ VariableSynchronization = variables.VariableSynchronization  # pylint: disable=i
 VariableAggregation = variables.VariableAggregation  # pylint: disable=invalid-name
 
 AUTO_REUSE = _ReuseMode.AUTO_REUSE
-tf_export(v1=["AUTO_REUSE"]).export_constant(__name__, "AUTO_REUSE")
+#tf_export(v1=["AUTO_REUSE"]).export_constant(__name__, "AUTO_REUSE")
 AUTO_REUSE.__doc__ = """
 When passed in as the value for the `reuse` flag, AUTO_REUSE indicates that
 get_variable() should create the requested variable if it doesn't exist or, if
@@ -206,7 +206,7 @@ it does exist, simply return it.
 _DEFAULT_USE_RESOURCE = False
 
 
-@tf_export(v1=["enable_resource_variables"])
+#@tf_export(v1=["enable_resource_variables"])
 def enable_resource_variables():
   """Creates resource variables by default.
 
@@ -228,7 +228,7 @@ def enable_resource_variables():
 
 @deprecation.deprecated(
     None, "non-resource variables are not supported in the long term")
-@tf_export(v1=["disable_resource_variables"])
+#@tf_export(v1=["disable_resource_variables"])
 def disable_resource_variables():
   """Opts out of resource variables.
 
@@ -985,14 +985,14 @@ class _VariableStore(object):
 
 
 # To stop regularization, use this regularizer
-@tf_export("no_regularizer")
+#@tf_export("no_regularizer")
 def no_regularizer(_):
   """Use this function to prevent regularization of variables."""
   return None
 
 
 # TODO(alive): support caching devices and partitioned variables in Eager mode.
-@tf_export(v1=["VariableScope"])
+#@tf_export(v1=["VariableScope"])
 class VariableScope(object):
   """Variable scope object to carry defaults to provide to `get_variable`.
 
@@ -1340,7 +1340,7 @@ def get_variable_scope_store():
   return scope_store
 
 
-@tf_export(v1=["get_variable_scope"])
+#@tf_export(v1=["get_variable_scope"])
 def get_variable_scope():
   """Returns the current variable scope."""
   return get_variable_scope_store().current_scope
@@ -1449,7 +1449,7 @@ class EagerVariableStore(object):
 # The argument list for get_variable must match arguments to get_local_variable.
 # So, if you are updating the arguments, also update arguments to
 # get_local_variable below.
-@tf_export(v1=["get_variable"])
+#@tf_export(v1=["get_variable"])
 def get_variable(name,
                  shape=None,
                  dtype=None,
@@ -1594,7 +1594,7 @@ get_variable.__doc__ = get_variable_or_local_docstring % (
 
 # The argument list for get_local_variable must match arguments to get_variable.
 # So, if you are updating the arguments, also update arguments to get_variable.
-@tf_export(v1=["get_local_variable"])
+#@tf_export(v1=["get_local_variable"])
 def get_local_variable(  # pylint: disable=missing-docstring
     name,
     shape=None,
@@ -1939,7 +1939,7 @@ def _get_unique_variable_scope(prefix):
 # Named like a function for backwards compatibility with the
 # @tf_contextlib.contextmanager version, which was switched to a class to avoid
 # some object creation overhead.
-@tf_export(v1=["variable_scope"])  # pylint: disable=invalid-name
+#@tf_export(v1=["variable_scope"])  # pylint: disable=invalid-name
 class variable_scope(object):
   """A context manager for defining ops that creates variables (layers).
 
@@ -2320,7 +2320,7 @@ class variable_scope(object):
 
 
 # pylint: disable=g-doc-return-or-yield
-@tf_export(v1=["variable_op_scope"])
+#@tf_export(v1=["variable_op_scope"])
 @tf_contextlib.contextmanager
 def variable_op_scope(values,
                       name_or_scope,
@@ -2479,7 +2479,7 @@ def _make_getter(captured_getter, captured_previous):
 variable = variables.VariableV1
 
 
-@tf_export(v1=["variable_creator_scope"])
+#@tf_export(v1=["variable_creator_scope"])
 @tf_contextlib.contextmanager
 def variable_creator_scope_v1(variable_creator):
   """Scope which defines a variable creation function to be used by variable().
@@ -2555,7 +2555,7 @@ def variable_creator_scope_v1(variable_creator):
 
 
 # Note: only the docstrings differ between this and v1.
-@tf_export(v2=["variable_creator_scope"])
+#@tf_export(v2=["variable_creator_scope"])
 @tf_contextlib.contextmanager
 def variable_creator_scope(variable_creator):
   """Scope which defines a variable creation function to be used by variable().

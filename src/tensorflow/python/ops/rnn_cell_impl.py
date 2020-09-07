@@ -46,7 +46,7 @@ from tensorflow.python import tf_utils
 from tensorflow.python.training import base as checkpointable
 from tensorflow.python.util import nest
 from tensorflow.python.util.deprecation import deprecated
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 
 _BIAS_VARIABLE_NAME = "bias"
@@ -164,7 +164,7 @@ def _zero_state_tensors(state_size, batch_size, dtype):
   return nest.map_structure(get_state_shape, state_size)
 
 
-@tf_export("nn.rnn_cell.RNNCell")
+#@tf_export("nn.rnn_cell.RNNCell")
 class RNNCell(base_layer.Layer):
   """Abstract object representing an RNN cell.
 
@@ -364,7 +364,7 @@ class LayerRNNCell(RNNCell):
                                      *args, **kwargs)
 
 
-@tf_export(v1=["nn.rnn_cell.BasicRNNCell"])
+#@tf_export(v1=["nn.rnn_cell.BasicRNNCell"])
 class BasicRNNCell(LayerRNNCell):
   """The most basic RNN cell.
 
@@ -456,7 +456,7 @@ class BasicRNNCell(LayerRNNCell):
     return dict(list(base_config.items()) + list(config.items()))
 
 
-@tf_export("nn.rnn_cell.GRUCell")
+#@tf_export("nn.rnn_cell.GRUCell")
 class GRUCell(LayerRNNCell):
   """Gated Recurrent Unit cell (cf. http://arxiv.org/abs/1406.1078).
 
@@ -584,7 +584,7 @@ class GRUCell(LayerRNNCell):
 _LSTMStateTuple = collections.namedtuple("LSTMStateTuple", ("c", "h"))
 
 
-@tf_export("nn.rnn_cell.LSTMStateTuple")
+#@tf_export("nn.rnn_cell.LSTMStateTuple")
 class LSTMStateTuple(_LSTMStateTuple):
   """Tuple used by LSTM Cells for `state_size`, `zero_state`, and output state.
 
@@ -605,7 +605,7 @@ class LSTMStateTuple(_LSTMStateTuple):
 
 
 # TODO(scottzhu): Stop exporting this class in TF 2.0.
-@tf_export("nn.rnn_cell.BasicLSTMCell")
+#@tf_export("nn.rnn_cell.BasicLSTMCell")
 class BasicLSTMCell(LayerRNNCell):
   """DEPRECATED: Please use `tf.nn.rnn_cell.LSTMCell` instead.
 
@@ -773,7 +773,7 @@ class BasicLSTMCell(LayerRNNCell):
     return dict(list(base_config.items()) + list(config.items()))
 
 
-@tf_export("nn.rnn_cell.LSTMCell")
+#@tf_export("nn.rnn_cell.LSTMCell")
 class LSTMCell(LayerRNNCell):
   """Long short-term memory unit (LSTM) recurrent network cell.
 
@@ -1058,7 +1058,7 @@ def _default_dropout_state_filter_visitor(substate):
   return True
 
 
-@tf_export("nn.rnn_cell.DropoutWrapper")
+#@tf_export("nn.rnn_cell.DropoutWrapper")
 class DropoutWrapper(RNNCell):
   """Operator adding dropout to inputs and outputs of the given cell."""
 
@@ -1290,7 +1290,7 @@ class DropoutWrapper(RNNCell):
     return output, new_state
 
 
-@tf_export("nn.rnn_cell.ResidualWrapper")
+#@tf_export("nn.rnn_cell.ResidualWrapper")
 class ResidualWrapper(RNNCell):
   """RNNCell wrapper that ensures cell inputs are added to the outputs."""
 
@@ -1349,7 +1349,7 @@ class ResidualWrapper(RNNCell):
     return (res_outputs, new_state)
 
 
-@tf_export("nn.rnn_cell.DeviceWrapper")
+#@tf_export("nn.rnn_cell.DeviceWrapper")
 class DeviceWrapper(RNNCell):
   """Operator that ensures an RNNCell runs on a particular device."""
 
@@ -1387,7 +1387,7 @@ class DeviceWrapper(RNNCell):
       return self._cell(inputs, state, scope=scope)
 
 
-@tf_export("nn.rnn_cell.MultiRNNCell")
+#@tf_export("nn.rnn_cell.MultiRNNCell")
 class MultiRNNCell(RNNCell):
   """RNN cell composed sequentially of multiple simple cells.
 

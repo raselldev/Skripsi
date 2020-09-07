@@ -45,7 +45,7 @@ from tensorflow.python.ops import control_flow_util as util
 from tensorflow.python.ops.gen_control_flow_ops import *
 from tensorflow.python.util import deprecation
 from tensorflow.python.util import tf_should_use
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.util import nest
 
 # The while_v2 module.
@@ -94,7 +94,7 @@ def _summarize_eager(tensor, summarize=None):
 
 # Assert and Print are special symbols in python, so we must
 # use an upper-case version of them.
-@tf_export("debugging.Assert", "Assert")
+#@tf_export("debugging.Assert", "Assert")
 @tf_should_use.should_use_result
 def Assert(condition, data, summarize=None, name=None):
   """Asserts that the given condition is true.
@@ -1948,7 +1948,7 @@ def _UnpackIfSingleton(res):
 
 # pylint: disable=redefined-outer-name
 # pylint: disable=g-doc-args
-@tf_export("cond")
+#@tf_export("cond")
 @deprecation.deprecated_args(
     None, "fn1/fn2 are deprecated in favor of the true_fn/false_fn arguments.",
     "fn1", "fn2")
@@ -3036,7 +3036,7 @@ class WhileContext(ControlFlowContext):
 
 
 # pylint: disable=redefined-outer-name
-@tf_export("while_loop")
+#@tf_export("while_loop")
 def while_loop(cond,
                body,
                loop_vars,
@@ -3373,7 +3373,7 @@ def _GroupControlDeps(dev, deps, name=None):
 
 
 # TODO(touts): Accept "inputs" as a list.
-@tf_export("group")
+#@tf_export("group")
 def group(*inputs, **kwargs):
   """Create an op that groups multiple operations.
 
@@ -3434,7 +3434,7 @@ def group(*inputs, **kwargs):
       return no_op(name=name)
 
 
-@tf_export("tuple")
+#@tf_export("tuple")
 def tuple(tensors, name=None, control_inputs=None):  # pylint: disable=redefined-builtin
   """Group tensors together.
 
@@ -3653,7 +3653,7 @@ def _case_helper(cond_fn, pred_fn_pairs, default,
       return fn()
 
 
-@tf_export("case")
+#@tf_export("case")
 def case(pred_fn_pairs,
          default=None,
          exclusive=False,

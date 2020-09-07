@@ -24,7 +24,7 @@ from __future__ import print_function
 
 
 from tensorflow.python.ops import gen_state_ops
-from tensorflow.python.util.tf_export import tf_export
+#from tensorflow.python.util.tf_export import tf_export
 
 
 # pylint: disable=protected-access,g-doc-return-or-yield,g-doc-args
@@ -123,7 +123,7 @@ def is_variable_initialized(ref, name=None):
   return ref.is_initialized(name=name)
 
 
-@tf_export(v1=["assign_sub"])
+#@tf_export(v1=["assign_sub"])
 def assign_sub(ref, value, use_locking=None, name=None):
   """Update 'ref' by subtracting 'value' from it.
 
@@ -152,7 +152,7 @@ def assign_sub(ref, value, use_locking=None, name=None):
   return ref.assign_sub(value)
 
 
-@tf_export(v1=["assign_add"])
+#@tf_export(v1=["assign_add"])
 def assign_add(ref, value, use_locking=None, name=None):
   """Update 'ref' by adding 'value' to it.
 
@@ -181,7 +181,7 @@ def assign_add(ref, value, use_locking=None, name=None):
   return ref.assign_add(value)
 
 
-@tf_export(v1=["assign"])
+#@tf_export(v1=["assign"])
 def assign(ref, value, validate_shape=None, use_locking=None, name=None):
   """Update 'ref' by assigning 'value' to it.
 
@@ -214,7 +214,7 @@ def assign(ref, value, validate_shape=None, use_locking=None, name=None):
   return ref.assign(value, name=name)
 
 
-@tf_export(v1=["count_up_to"])
+#@tf_export(v1=["count_up_to"])
 def count_up_to(ref, limit, name=None):
   r"""Increments 'ref' until it reaches 'limit'.
 
@@ -237,7 +237,7 @@ def count_up_to(ref, limit, name=None):
       ref.handle, limit, T=ref.dtype, name=name)
 
 
-@tf_export(v1=["scatter_update"])
+#@tf_export(v1=["scatter_update"])
 def scatter_update(ref, indices, updates, use_locking=True, name=None):
   # pylint: disable=line-too-long
   r"""Applies sparse updates to a variable reference.
@@ -291,7 +291,7 @@ def scatter_update(ref, indices, updates, use_locking=True, name=None):
       name=name))
 
 
-@tf_export(v1=["scatter_nd_update"])
+#@tf_export(v1=["scatter_nd_update"])
 def scatter_nd_update(ref, indices, updates, use_locking=True, name=None):
   r"""Applies sparse `updates` to individual values or slices in a Variable.
 
@@ -353,7 +353,7 @@ def scatter_nd_update(ref, indices, updates, use_locking=True, name=None):
       name=name))
 
 
-@tf_export(v1=["scatter_add"])
+#@tf_export(v1=["scatter_add"])
 def scatter_add(ref, indices, updates, use_locking=False, name=None):
   # pylint: disable=line-too-long
   r"""Adds sparse updates to the variable referenced by `resource`.
@@ -405,7 +405,7 @@ def scatter_add(ref, indices, updates, use_locking=False, name=None):
       name=name))
 
 
-@tf_export(v1=["scatter_nd_add"])
+#@tf_export(v1=["scatter_nd_add"])
 def scatter_nd_add(ref, indices, updates, use_locking=False, name=None):
   r"""Applies sparse addition to individual values or slices in a Variable.
 
@@ -469,7 +469,7 @@ def scatter_nd_add(ref, indices, updates, use_locking=False, name=None):
       name=name))
 
 
-@tf_export(v1=["scatter_sub"])
+#@tf_export(v1=["scatter_sub"])
 def scatter_sub(ref, indices, updates, use_locking=False, name=None):
   r"""Subtracts sparse updates to a variable reference.
 
@@ -523,7 +523,7 @@ def scatter_sub(ref, indices, updates, use_locking=False, name=None):
       name=name))
 
 
-@tf_export(v1=["scatter_nd_sub"])
+#@tf_export(v1=["scatter_nd_sub"])
 def scatter_nd_sub(ref, indices, updates, use_locking=False, name=None):
   r"""Applies sparse subtraction to individual values or slices in a Variable.
 
@@ -587,7 +587,7 @@ def scatter_nd_sub(ref, indices, updates, use_locking=False, name=None):
       name=name))
 
 
-@tf_export("batch_scatter_update")
+#@tf_export("batch_scatter_update")
 def batch_scatter_update(ref, indices, updates, use_locking=True, name=None):
   """Generalization of `tf.scatter_update` to axis different than 0.
 
