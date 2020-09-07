@@ -14,7 +14,6 @@ import six
 from tensorflow.python import context
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
-from tensorflow.python.training import saveable_object
 from tensorflow.python.util import tf_decorator
 
 CheckpointableReference = collections.namedtuple(
