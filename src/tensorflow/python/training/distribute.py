@@ -36,27 +36,16 @@ class UpdateContext(object):
     del exception_type, exception_value, traceback
     _update_device.current = self._old_device
 
-
-# ------------------------------------------------------------------------------
-# Public utility functions.
-
-
 def get_loss_reduction():
-  loss_reduction = ops.get_default_graph()._last_loss_reduction  # pylint: disable=protected-access
+  loss_reduction = ops.get_default_graph()._last_loss_reduction  
   return variable_scope.VariableAggregation.MEAN
-
-
-# ------------------------------------------------------------------------------
-# Internal API for validating the current thread mode
-
 
 def _require_cross_tower_context(distribution_strategy):
   context = _get_per_thread_mode()
   if context.cross_tower_context is distribution_strategy: return
-  # We have an error to report, figure out the right message.
   if context.distribution_strategy is not distribution_strategy:
     if (context.distribution_strategy is
-        distribution_strategy_context._get_default_distribution_strategy()):  # pylint: disable=protected-access
+        distribution_strategy_context._get_default_distribution_strategy()):  
       raise RuntimeError(
           'Need to be inside "with distribution_strategy.scope()" for %s' %
           (distribution_strategy,))
@@ -68,27 +57,22 @@ def _require_cross_tower_context(distribution_strategy):
   raise RuntimeError("Method requires being in cross-tower context, use "
                      "get_tower_context().merge_call()")
 
-
 def require_tower_context(tower_ctx):
   context = _get_per_thread_mode()
   if context.tower_context is tower_ctx: return
-  # We have an error to report, figure out the right message.
   if context.tower_context is None:
     raise RuntimeError("Need to be inside `call_for_each_tower()`")
   if context.distribution_strategy is tower_ctx.distribution_strategy:
-    # Two different TowerContexts with the same DistributionStrategy.
     raise RuntimeError("Mismatching tower context.")
   raise RuntimeError(
       "Mismatching DistributionStrategy objects: %s is not %s." %
       (context.distribution_strategy, tower_ctx.distribution_strategy))
 
-
 def _require_distribution_strategy_scope(distribution_strategy):
   context = _get_per_thread_mode()
   if context.distribution_strategy is distribution_strategy: return
-  # We have an error to report, figure out the right message.
   if (context.distribution_strategy is
-      distribution_strategy_context._get_default_distribution_strategy()):  # pylint: disable=protected-access
+      distribution_strategy_context._get_default_distribution_strategy()):  
     raise RuntimeError(
         'Need to be inside "with distribution_strategy.scope()" for %s' %
         (distribution_strategy,))
@@ -97,9 +81,6 @@ def _require_distribution_strategy_scope(distribution_strategy):
         "Mixing different DistributionStrategy objects: %s is not %s" %
         (context.distribution_strategy, distribution_strategy))
 
-
-
-
 class _CurrentDistributionContext(object):
 
   def __init__(self,
@@ -107,7 +88,7 @@ class _CurrentDistributionContext(object):
                var_creator_scope,
                var_scope=None,
                default_device=None):
-    self._context = distribution_strategy_context._CrossTowerThreadMode(  # pylint: disable=protected-access
+    self._context = distribution_strategy_context._CrossTowerThreadMode(  
         distribution_strategy)
     self._var_creator_scope = var_creator_scope
     self._var_scope = var_scope
@@ -133,7 +114,6 @@ class _CurrentDistributionContext(object):
       self._var_scope.__exit__(exception_type, exception_value, traceback)
     _pop_per_thread_mode()
 
-
 class _SameScopeAgainContext(object):
 
   def __init__(self, distribution_strategy):
@@ -144,11 +124,6 @@ class _SameScopeAgainContext(object):
 
   def __exit__(self, exception_type, exception_value, traceback):
     del exception_type, exception_value, traceback
-
-
-# ------------------------------------------------------------------------------
-# Base classes for all distribution strategies.
-
 
 class DistributionStrategy(object):
   def __init__(self):
@@ -179,7 +154,6 @@ class DistributionStrategy(object):
         self._default_device)
 
   def _create_variable(self, next_creator, *args, **kwargs):
-    # Note: should support "colocate_with" argument.
     raise NotImplementedError("must be implemented in descendants")
 
   def read_var(self, v):
@@ -300,7 +274,6 @@ class DistributionStrategy(object):
 
     if len(value) != 1 or name is not None:
       return control_flow_ops.group(value, name=name)
-    # Special handling for the common case of one op.
     v, = value
     if hasattr(v, "op"):
       v = v.op
@@ -362,7 +335,7 @@ class TowerContext(object):
 
   def __init__(self, distribution_strategy, tower_id):
     self._distribution_strategy = distribution_strategy
-    self._thread_context = distribution_strategy_context._InTowerThreadMode(  # pylint: disable=protected-access
+    self._thread_context = distribution_strategy_context._InTowerThreadMode(  
         self)
     self._tower_id = tower_id
 
@@ -377,8 +350,8 @@ class TowerContext(object):
     return self._merge_call(merge_fn, *args, **kwargs)
 
   def _merge_call(self, merge_fn, *args, **kwargs):
-    _push_per_thread_mode(  # thread-local, so not needed with multiple threads
-        distribution_strategy_context._CrossTowerThreadMode(  # pylint: disable=protected-access
+    _push_per_thread_mode(
+        distribution_strategy_context._CrossTowerThreadMode(  
             self._distribution_strategy))
     try:
       return merge_fn(self._distribution_strategy, *args, **kwargs)
@@ -408,19 +381,6 @@ class TowerContext(object):
     require_tower_context(self)
     return device_util.current()
 
-  # TODO(josh11b): Implement `start_all_reduce(method, t)` for efficient
-  # all-reduce. It would return a function returning the result of reducing `t`
-  # across all towers. The caller would wait to call this function until they
-  # needed the reduce result, allowing an efficient implementation:
-  # * With eager execution, the reduction could be performed asynchronously
-  #   in the background, not blocking until the result was needed.
-  # * When constructing a graph, it could batch up all reduction requests up
-  #   to that point that the first result is needed. Most likely this can be
-  #   implemented in terms of `merge_call()` and `batch_reduce()`.
-
-# ------------------------------------------------------------------------------
-
-
 class _DefaultDistributionStrategy(DistributionStrategy):
 
   def scope(self):
@@ -448,26 +408,20 @@ class _DefaultDistributionStrategy(DistributionStrategy):
       raise NotImplementedError("TODO")
 
   def _call_for_each_tower(self, fn, *args, **kwargs):
-    # We don't run `fn` in multiple threads in _DefaultDistributionStrategy.
     kwargs.pop("run_concurrently", None)
     with TowerContext(self, tower_id=0):
       return fn(*args, **kwargs)
 
   def _reduce(self, aggregation, value, destinations):
-    # TODO(josh11b): Use destinations?
     del aggregation, destinations
     return value
 
   def _update(self, var, options, fn, *args, **kwargs):
-    # The implementations of _update() and _update_non_slot() are identical
-    # except _update() passes `var` as the first argument to `fn()`.
     return self._update_non_slot(var, options, fn, var, *args, **kwargs)
 
   def _update_non_slot(self, colocate_with, options, fn, *args, **kwargs):
     should_group = options.pop("grouped")
-    assert not options  # Validate that we are processing all of the options.
-    # TODO(josh11b): Figure out what we should be passing to UpdateContext()
-    # once that value is used for something.
+    assert not options 
     with ops.colocate_with(colocate_with), UpdateContext(colocate_with):
       result = fn(*args, **kwargs)
       if should_group:
@@ -509,13 +463,6 @@ class _DefaultDistributionStrategy(DistributionStrategy):
     raise RuntimeError("worker_device_index() method unsupported by "
                        "_DefaultDistributionStrategy.")
 
-
-# ------------------------------------------------------------------------------
-# Deprecated, use v.assign_add(amount) instead.  Internal API, so expect
-# it to be deleted soon.
-
-
-
 def increment_var(v, amount=1):
   def update(vu):
     return vu.assign_add(amount, read_value=False)
@@ -526,14 +473,7 @@ def increment_var(v, amount=1):
   tower_context = distribution_strategy_context.get_tower_context()
   return tower_context.merge_call(merge_fn, v)
 
-
-# ------------------------------------------------------------------------------
-# We haven't yet implemented deserialization for DistributedVariables.
-# So here we catch any attempts to deserialize variables
-# when using distribution strategies.
-# pylint: disable=protected-access
 _original_from_proto = resource_variable_ops._from_proto_fn
-
 
 def _from_proto_fn(v, import_scope=None):
   if distribution_strategy_context.has_distribution_strategy():
@@ -544,11 +484,6 @@ def _from_proto_fn(v, import_scope=None):
     return _original_from_proto(v, import_scope=import_scope)
 
 resource_variable_ops._from_proto_fn = _from_proto_fn
-# pylint: enable=protected-access
-
-
-#-------------------------------------------------------------------------------
-# Shorthand for some methods from distribution_strategy_context.
-_push_per_thread_mode = distribution_strategy_context._push_per_thread_mode  # pylint: disable=protected-access
-_get_per_thread_mode = distribution_strategy_context._get_per_thread_mode  # pylint: disable=protected-access
-_pop_per_thread_mode = distribution_strategy_context._pop_per_thread_mode  # pylint: disable=protected-access
+_push_per_thread_mode = distribution_strategy_context._push_per_thread_mode  
+_get_per_thread_mode = distribution_strategy_context._get_per_thread_mode  
+_pop_per_thread_mode = distribution_strategy_context._pop_per_thread_mode  
