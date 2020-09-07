@@ -15,71 +15,6 @@ from tensorflow.python.training import distribution_strategy_context
 _update_device = threading.local()
 
 
-def get_update_device():
-  try:
-    return _update_device.current
-  except AttributeError:
-    return None
-
-
-class UpdateContext(object):
-
-  def __init__(self, device):
-    self._device = device
-    self._old_device = None
-
-  def __enter__(self):
-    self._old_device = get_update_device()
-    _update_device.current = self._device
-
-  def __exit__(self, exception_type, exception_value, traceback):
-    del exception_type, exception_value, traceback
-    _update_device.current = self._old_device
-
-def get_loss_reduction():
-  loss_reduction = ops.get_default_graph()._last_loss_reduction  
-  return variable_scope.VariableAggregation.MEAN
-
-def _require_cross_tower_context(distribution_strategy):
-  context = _get_per_thread_mode()
-  if context.cross_tower_context is distribution_strategy: return
-  if context.distribution_strategy is not distribution_strategy:
-    if (context.distribution_strategy is
-        distribution_strategy_context._get_default_distribution_strategy()):  
-      raise RuntimeError(
-          'Need to be inside "with distribution_strategy.scope()" for %s' %
-          (distribution_strategy,))
-    else:
-      raise RuntimeError(
-          "Mixing different DistributionStrategy objects: %s is not %s" %
-          (context.distribution_strategy, distribution_strategy))
-  assert context.cross_tower_context is None
-  raise RuntimeError("Method requires being in cross-tower context, use "
-                     "get_tower_context().merge_call()")
-
-def require_tower_context(tower_ctx):
-  context = _get_per_thread_mode()
-  if context.tower_context is tower_ctx: return
-  if context.tower_context is None:
-    raise RuntimeError("Need to be inside `call_for_each_tower()`")
-  if context.distribution_strategy is tower_ctx.distribution_strategy:
-    raise RuntimeError("Mismatching tower context.")
-  raise RuntimeError(
-      "Mismatching DistributionStrategy objects: %s is not %s." %
-      (context.distribution_strategy, tower_ctx.distribution_strategy))
-
-def _require_distribution_strategy_scope(distribution_strategy):
-  context = _get_per_thread_mode()
-  if context.distribution_strategy is distribution_strategy: return
-  if (context.distribution_strategy is
-      distribution_strategy_context._get_default_distribution_strategy()):  
-    raise RuntimeError(
-        'Need to be inside "with distribution_strategy.scope()" for %s' %
-        (distribution_strategy,))
-  else:
-    raise RuntimeError(
-        "Mixing different DistributionStrategy objects: %s is not %s" %
-        (context.distribution_strategy, distribution_strategy))
 
 class _CurrentDistributionContext(object):
 
@@ -131,11 +66,11 @@ class DistributionStrategy(object):
 
   def scope(self):
     if distribution_strategy_context.has_distribution_strategy():
-      _require_cross_tower_context(self)
+      context = _get_per_thread_mode()
       return _SameScopeAgainContext(self)
 
     def creator_with_resource_vars(*args, **kwargs):
-      _require_distribution_strategy_scope(self)
+      context = _get_per_thread_mode()
       kwargs["use_resource"] = True
       return self._create_variable(*args, **kwargs)
 
@@ -153,20 +88,12 @@ class DistributionStrategy(object):
             custom_getter=disable_partitioned_variables),
         self._default_device)
 
-  def _create_variable(self, next_creator, *args, **kwargs):
-    raise NotImplementedError("must be implemented in descendants")
-
-  def read_var(self, v):
-    raise NotImplementedError("must be implemented in descendants")
 
   def colocate_vars_with(self, colocate_with_variable):
     def create_colocated_variable(next_creator, *args, **kwargs):
-      _require_distribution_strategy_scope(self)
       kwargs["use_resource"] = True
       kwargs["colocate_with"] = colocate_with_variable
       return next_creator(*args, **kwargs)
-
-    _require_distribution_strategy_scope(self)
     return variable_scope.variable_creator_scope(create_colocated_variable)
 
   def _call_dataset_fn(self, dataset_fn):
@@ -177,15 +104,11 @@ class DistributionStrategy(object):
           "DistributionStrategy.")
     return result
 
-  def distribute_dataset(self, dataset_fn):
-    raise NotImplementedError("must be implemented in descendants")
 
   def broadcast(self, tensor, destinations=None):
-    _require_cross_tower_context(self)
+    context = _get_per_thread_mode()
     return self._broadcast(tensor, destinations)
 
-  def _broadcast(self, tensor, destinations):
-    raise NotImplementedError("must be implemented in descendants")
 
   def initialize(self):
     if eager_context.executing_eagerly():
@@ -201,23 +124,18 @@ class DistributionStrategy(object):
 
   def run_steps_on_dataset(self, fn, iterator, iterations=1,
                            initial_loop_values=None):
-    _require_cross_tower_context(self)
+    context = _get_per_thread_mode()
     return self._run_steps_on_dataset(fn, iterator, iterations,
                                       initial_loop_values)
 
-  def _run_steps_on_dataset(self, fn, iterator, iterations,
-                            initial_loop_values):
-    raise NotImplementedError("must be implemented in descendants")
 
   def call_for_each_tower(self, fn, *args, **kwargs):
-    _require_cross_tower_context(self)
+    context = _get_per_thread_mode()
     return self._call_for_each_tower(fn, *args, **kwargs)
 
-  def _call_for_each_tower(self, fn, *args, **kwargs):
-    raise NotImplementedError("must be implemented in descendants")
 
   def reduce(self, aggregation, value, destinations):
-    _require_cross_tower_context(self)
+    context = _get_per_thread_mode()
     assert aggregation in [
         variable_scope.VariableAggregation.SUM,
         variable_scope.VariableAggregation.MEAN,
@@ -225,12 +143,10 @@ class DistributionStrategy(object):
     ]
     return self._reduce(aggregation, value, destinations)
 
-  def _reduce(self, aggregation, value, destinations):
-    raise NotImplementedError("must be implemented in descendants")
 
   def batch_reduce(self, aggregation, value_destination_pairs):
     
-    _require_cross_tower_context(self)
+    context = _get_per_thread_mode()
     assert aggregation in [
         variable_scope.VariableAggregation.SUM,
         variable_scope.VariableAggregation.MEAN,
@@ -245,29 +161,20 @@ class DistributionStrategy(object):
     ]
 
   def update(self, var, fn, *args, **kwargs):
-    _require_cross_tower_context(self)
+    context = _get_per_thread_mode()
     options = {"grouped": kwargs.pop("grouped", True)}
     return self._update(var, options, fn, *args, **kwargs)
 
-  def _update(self, var, options, fn, *args, **kwargs):
-    raise NotImplementedError("must be implemented in descendants")
 
   def update_non_slot(self, colocate_with, fn, *args, **kwargs):
-    _require_cross_tower_context(self)
+    context = _get_per_thread_mode()
     options = {"grouped": kwargs.pop("grouped", True)}
     return self._update_non_slot(colocate_with, options, fn, *args, **kwargs)
 
-  def _update_non_slot(self, colocate_with, options, fn, *args, **kwargs):
-    raise NotImplementedError("must be implemented in descendants")
 
   def unwrap(self, value):
     return self._unwrap(value)
 
-  def value_container(self, value):
-    raise NotImplementedError("must be implemented in descendants")
-
-  def _unwrap(self, distributed_value):
-    raise NotImplementedError("must be implemented in descendants")
 
   def group(self, value, name=None):
     value = nest.flatten(self.unwrap(value))
@@ -279,38 +186,11 @@ class DistributionStrategy(object):
       v = v.op
     return v
 
-  @property
-  def is_single_tower(self):
-    raise NotImplementedError("must be implemented in descendants")
-
-  @property
-  def num_towers(self):
-    raise NotImplementedError("must be implemented in descendants")
-
-  @property
-  def worker_devices(self):
-    
-    raise NotImplementedError("must be implemented in descendants")
-
-  @property
-  def parameter_devices(self):
-    
-    raise NotImplementedError("must be implemented in descendants")
-
-  def non_slot_devices(self, var_list):
-    raise NotImplementedError("must be implemented in descendants")
 
   @property
   def worker_device_index(self):
-    _require_cross_tower_context(self)
+    context = _get_per_thread_mode()
     return self._worker_device_index()
-
-  def _worker_device_index(self):
-    raise NotImplementedError("must be implemented in descendants")
-
-  @property
-  def between_graph(self):
-    raise NotImplementedError("must be implemented in descendants")
 
   def configure(self,
                 session_config=None,
@@ -318,18 +198,6 @@ class DistributionStrategy(object):
                 task_type=None,
                 task_id=None):
     del session_config, cluster_spec, task_type, task_id
-
-  @property
-  def should_init(self):
-    raise NotImplementedError("must be implemented in descendants")
-
-  @property
-  def should_checkpoint(self):
-    raise NotImplementedError("must be implemented in descendants")
-
-  @property
-  def should_save_summary(self):
-    raise NotImplementedError("must be implemented in descendants")
 
 class TowerContext(object):
 
@@ -346,7 +214,7 @@ class TowerContext(object):
     _pop_per_thread_mode()
 
   def merge_call(self, merge_fn, *args, **kwargs):
-    require_tower_context(self)
+    context = _get_per_thread_mode()
     return self._merge_call(merge_fn, *args, **kwargs)
 
   def _merge_call(self, merge_fn, *args, **kwargs):
@@ -360,7 +228,7 @@ class TowerContext(object):
 
   @property
   def is_single_tower(self):
-    require_tower_context(self)
+    context = _get_per_thread_mode()
     return self._distribution_strategy.is_single_tower
 
   @property
@@ -369,7 +237,7 @@ class TowerContext(object):
 
   @property
   def tower_id(self):
-    require_tower_context(self)
+    context = _get_per_thread_mode()
     return self._tower_id
 
   @property
@@ -378,34 +246,25 @@ class TowerContext(object):
 
   @property
   def device(self):
-    require_tower_context(self)
+    context = _get_per_thread_mode()
     return device_util.current()
 
 class _DefaultDistributionStrategy(DistributionStrategy):
 
   def scope(self):
-    if distribution_strategy_context.has_distribution_strategy():
-      raise RuntimeError("Must not nest DistributionStrategy scopes.")
-
     def creator(next_creator, *args, **kwargs):
-      _require_distribution_strategy_scope(self)
+      context = _get_per_thread_mode()
       return next_creator(*args, **kwargs)
 
     return _CurrentDistributionContext(
         self, variable_scope.variable_creator_scope(creator))
 
   def colocate_vars_with(self, colocate_with_variable):
-    _require_distribution_strategy_scope(self)
+    context = _get_per_thread_mode()
     return ops.colocate_with(colocate_with_variable)
 
   def distribute_dataset(self, dataset_fn):
     return self._call_dataset_fn(dataset_fn)
-
-  def _broadcast(self, tensor, destinations):
-    if destinations is None:
-      return tensor
-    else:
-      raise NotImplementedError("TODO")
 
   def _call_for_each_tower(self, fn, *args, **kwargs):
     kwargs.pop("run_concurrently", None)
@@ -419,16 +278,7 @@ class _DefaultDistributionStrategy(DistributionStrategy):
   def _update(self, var, options, fn, *args, **kwargs):
     return self._update_non_slot(var, options, fn, var, *args, **kwargs)
 
-  def _update_non_slot(self, colocate_with, options, fn, *args, **kwargs):
-    should_group = options.pop("grouped")
-    assert not options 
-    with ops.colocate_with(colocate_with), UpdateContext(colocate_with):
-      result = fn(*args, **kwargs)
-      if should_group:
-        return result
-      else:
-        return nest.map_structure(self._unwrap, result)
-
+  
   def read_var(self, tower_local_var):
     return array_ops.identity(tower_local_var)
 
@@ -446,22 +296,9 @@ class _DefaultDistributionStrategy(DistributionStrategy):
   def num_towers(self):
     return 1
 
-  @property
-  def worker_devices(self):
-    raise RuntimeError(
-        "worker_devices() method unsupported by _DefaultDistributionStrategy.")
-
-  @property
-  def parameter_devices(self):
-    raise RuntimeError("parameter_devices() method unsupported by "
-                       "_DefaultDistributionStrategy.")
-
   def non_slot_devices(self, var_list):
     return min(var_list, key=lambda x: x.name)
 
-  def _worker_device_index(self):
-    raise RuntimeError("worker_device_index() method unsupported by "
-                       "_DefaultDistributionStrategy.")
 
 def increment_var(v, amount=1):
   def update(vu):
@@ -476,12 +313,7 @@ def increment_var(v, amount=1):
 _original_from_proto = resource_variable_ops._from_proto_fn
 
 def _from_proto_fn(v, import_scope=None):
-  if distribution_strategy_context.has_distribution_strategy():
-    raise NotImplementedError(
-        "Deserialization of variables is not yet supported when using"
-        "distributed strategies.")
-  else:
-    return _original_from_proto(v, import_scope=import_scope)
+  return _original_from_proto(v, import_scope=import_scope)
 
 resource_variable_ops._from_proto_fn = _from_proto_fn
 _push_per_thread_mode = distribution_strategy_context._push_per_thread_mode  

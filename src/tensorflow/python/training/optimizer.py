@@ -33,10 +33,11 @@ from tensorflow.python.ops import variables
 from tensorflow.python.ops import variable_scope
 from tensorflow.python.training import slot_creator
 from tensorflow.python.training import distribution_strategy_context
-from tensorflow.python.training import distribute as distribute_lib
 from tensorflow.python.training import base as checkpointable
-#from tensorflow.python.util.tf_export import tf_export
 
+def get_loss_reduction():
+  loss_reduction = ops.get_default_graph()._last_loss_reduction  
+  return variable_scope.VariableAggregation.MEAN
 
 def get_filtered_grad_fn(grad_fn):
   # `distributed_context.join()` requires that its arguments are parallel
@@ -480,7 +481,7 @@ class Optimizer(
           "be a function when eager execution is enabled.")
 
     # Scale loss if using a "mean" loss reduction and multiple towers.
-    if (distribute_lib.get_loss_reduction() ==
+    if (get_loss_reduction() ==
         variable_scope.VariableAggregation.MEAN):
       num_towers = distribution_strategy_context.get_distribution_strategy(
       ).num_towers
