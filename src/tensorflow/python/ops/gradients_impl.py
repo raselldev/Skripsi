@@ -37,7 +37,7 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import resource_variable_ops
-#from tensorflow.python.ops import cond_v2_impl
+
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import constant_op

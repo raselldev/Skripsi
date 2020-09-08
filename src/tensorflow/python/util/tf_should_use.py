@@ -31,13 +31,7 @@ class _TFShouldUseHelper(object):
       return
     creation_stack = ''.join(
         [line.rstrip() for line in traceback.format_stack(self._stack_frame)])
-    logger(
-        '==================================\n'
-        'Object was never used (type %s):\n%s\nIf you want to mark it as '
-        'used call its "mark_used()" method.\nIt was originally created '
-        'here:\n%s\n'
-        '==================================' %
-        (self._type, self._repr, creation_stack))
+    return
 
 
 def _new__init__(self, true_value, tf_should_use_helper):

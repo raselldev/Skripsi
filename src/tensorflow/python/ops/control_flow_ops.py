@@ -45,7 +45,6 @@ from tensorflow.python.ops import control_flow_util as util
 from tensorflow.python.ops.gen_control_flow_ops import *
 from tensorflow.python.util import deprecation
 from tensorflow.python.util import tf_should_use
-#from tensorflow.python.util.tf_export import tf_export
 from tensorflow.python.util import nest
 
 # The while_v2 module.

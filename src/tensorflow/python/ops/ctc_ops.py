@@ -25,7 +25,7 @@ from tensorflow.python.framework import sparse_tensor
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import gen_ctc_ops
 from tensorflow.python.ops.nn_grad import _BroadcastMul
-#from tensorflow.python.util.tf_export import tf_export
+
 
 
 # pylint: disable=protected-access, invalid-name
