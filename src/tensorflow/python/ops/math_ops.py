@@ -58,13 +58,7 @@ def _set_doc(doc):
   return _decorator
 
 
-# pylint: disable=redefined-builtin
-#@tf_export("math.argmax", "argmax")
-@deprecation.deprecated_args(None, "Use the `axis` argument instead",
-                             "dimension")
-@_set_doc(
-    gen_math_ops.arg_max.__doc__.replace("dimensions", "axes").replace(
-        "dimension", "axis"))
+
 def argmax(input,
            axis=None,
            name=None,
@@ -77,12 +71,7 @@ def argmax(input,
   return gen_math_ops.arg_max(input, axis, name=name, output_type=output_type)
 
 
-#@tf_export("math.argmin", "argmin")
-@deprecation.deprecated_args(None, "Use the `axis` argument instead",
-                             "dimension")
-@_set_doc(
-    gen_math_ops.arg_min.__doc__.replace("dimensions", "axes").replace(
-        "dimension", "axis"))
+
 def argmin(input,
            axis=None,
            name=None,
@@ -192,7 +181,7 @@ def multiply(x, y, name=None):
   return gen_math_ops.mul(x, y, name)
 
 
-multiply.__doc__ = gen_math_ops.mul.__doc__.replace("Multiply", "`tf.multiply`")
+#multiply.__doc__ = gen_math_ops.mul.__doc__.replace("Multiply", "`tf.multiply`")
 
 
 # TODO(aselle): put deprecation in after another round of global code changes
@@ -203,8 +192,7 @@ def _mul(x, y, name=None):
   return gen_math_ops.mul(x, y, name)
 
 
-_mul.__doc__ = (
-    gen_math_ops.mul.__doc__ + ("" if _mul.__doc__ is None else _mul.__doc__))
+#_mul.__doc__ = (   gen_math_ops.mul.__doc__ + ("" if _mul.__doc__ is None else _mul.__doc__))
 
 
 #@tf_export("math.subtract", "subtract")
@@ -212,7 +200,7 @@ def subtract(x, y, name=None):
   return gen_math_ops.sub(x, y, name)
 
 
-subtract.__doc__ = gen_math_ops.sub.__doc__.replace("`Sub`", "`tf.subtract`")
+#subtract.__doc__ = gen_math_ops.sub.__doc__.replace("`Sub`", "`tf.subtract`")
 
 
 # TODO(aselle): put deprecation in after another round of global code changes
@@ -223,8 +211,7 @@ def _sub(x, y, name=None):
   return gen_math_ops.sub(x, y, name)
 
 
-_sub.__doc__ = (
-    gen_math_ops.sub.__doc__ + ("" if _sub.__doc__ is None else _sub.__doc__))
+#_sub.__doc__ = (  gen_math_ops.sub.__doc__ + ("" if _sub.__doc__ is None else _sub.__doc__))
 
 
 # pylint: disable=g-docstring-has-escape
