@@ -9,6 +9,134 @@ from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.python.framework import dtypes as _dtypes
 
+def lin_space(start, stop, num, name=None):
+  _ctx = _context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "LinSpace", start=start, stop=stop, num=num, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"), "Tidx", _op.get_attr("Tidx"))
+    _execute.record_gradient(
+      "LinSpace", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "LinSpace",
+        name, _ctx._post_execution_callbacks, start, stop, num)
+      return _result
+    except _core._FallbackException:
+      return lin_space_eager_fallback(
+          start, stop, num, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def arg_max(input, dimension, output_type=_dtypes.int64, name=None):
+  _ctx = _context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    if output_type is None:
+      output_type = _dtypes.int64
+    output_type = _execute.make_type(output_type, "output_type")
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "ArgMax", input=input, dimension=dimension, output_type=output_type,
+        name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"), "Tidx", _op.get_attr("Tidx"),
+              "output_type", _op.get_attr("output_type"))
+    _execute.record_gradient(
+      "ArgMax", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "ArgMax", name,
+        _ctx._post_execution_callbacks, input, dimension, "output_type",
+        output_type)
+      return _result
+    except _core._FallbackException:
+      return arg_max_eager_fallback(
+          input, dimension, output_type=output_type, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def arg_min(input, dimension, output_type=_dtypes.int64, name=None):
+  _ctx = _context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    if output_type is None:
+      output_type = _dtypes.int64
+    output_type = _execute.make_type(output_type, "output_type")
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "ArgMin", input=input, dimension=dimension, output_type=output_type,
+        name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"), "Tidx", _op.get_attr("Tidx"),
+              "output_type", _op.get_attr("output_type"))
+    _execute.record_gradient(
+      "ArgMin", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "ArgMin", name,
+        _ctx._post_execution_callbacks, input, dimension, "output_type",
+        output_type)
+      return _result
+    except _core._FallbackException:
+      return arg_min_eager_fallback(
+          input, dimension, output_type=output_type, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def mul(x, y, name=None):
+  _ctx = _context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Mul", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    _execute.record_gradient(
+      "Mul", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Mul", name,
+        _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return mul_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
 def sub(x, y, name=None):
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:

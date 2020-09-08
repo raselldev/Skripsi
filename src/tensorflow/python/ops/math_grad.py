@@ -939,9 +939,9 @@ def _MulGrad(op, grad):
   x = math_ops.conj(x)
   y = math_ops.conj(y)
   return (array_ops.reshape(
-      math_ops.reduce_sum(gen_math_ops.mul(grad, y), rx), sx),
+      math_ops.reduce_sum(math_ops.mul(grad, y), rx), sx),
           array_ops.reshape(
-              math_ops.reduce_sum(gen_math_ops.mul(x, grad), ry), sy))
+              math_ops.reduce_sum(math_ops.mul(x, grad), ry), sy))
 
 
 @ops.RegisterGradient("Div")
