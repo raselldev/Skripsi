@@ -16,13 +16,9 @@ from tensorflow.python.ops.gen_array_ops import *
 from tensorflow.python.ops.gen_array_ops import reverse_v2 as reverse
 from tensorflow.python.ops import gen_array_ops
 
-
-
 newaxis = None
-#tf_export("newaxis").export_constant(__name__, "newaxis")
 
 _BaseSlice = slice
-
 
 def shape_internal(input, name=None, optimize=True, out_type=dtypes.int32):
   with ops.name_scope(name, "Shape", [input]) as name:
@@ -36,7 +32,6 @@ def shape_internal(input, name=None, optimize=True, out_type=dtypes.int32):
         if optimize and input_shape.is_fully_defined():
           return constant(input_shape.as_list(), out_type, name=name)
       return gen_array_ops.shape(input, name=name, out_type=out_type)
-
 
 def _slice_helper(tensor, slice_spec, var=None):
   if not isinstance(slice_spec, (list, tuple)):
@@ -111,13 +106,9 @@ def _slice_helper(tensor, slice_spec, var=None):
         var=var,
         name=name)
 
-
-#@tf_export("slice")
 def slice(input_, begin, size, name=None):
   return gen_array_ops._slice(input_, begin, size, name=name)
 
-
-#@tf_export("strided_slice")
 def strided_slice(input_,
                   begin,
                   end,
@@ -171,16 +162,11 @@ def strided_slice(input_,
     op.assign = assign
   return op
 
-
 def _SliceHelperVar(var, slice_spec):
   return _slice_helper(var._AsTensor(), slice_spec, var)
 
-
 ops.Tensor._override_operator("__getitem__", _slice_helper)
 
-
-
-#@tf_export("stack")
 def stack(values, axis=0, name="stack"):
   if axis == 0:
     try:
@@ -197,7 +183,6 @@ def stack(values, axis=0, name="stack"):
 
   return gen_array_ops.pack(values, axis=axis, name=name)
 
-
 def _get_dtype_from_nested_lists(list_or_tuple):
   for elem in list_or_tuple:
     if ops.is_dense_tensor_like(elem):
@@ -207,7 +192,6 @@ def _get_dtype_from_nested_lists(list_or_tuple):
       if maybe_dtype is not None:
         return maybe_dtype
   return None
-
 
 def _autopacking_conversion_function(v, dtype=None, name=None, as_ref=False):
   if as_ref:
@@ -221,10 +205,8 @@ def _autopacking_conversion_function(v, dtype=None, name=None, as_ref=False):
     v = nest.map_structure(_cast_nested_seqs_to_dtype(dtype), v)
   return _autopacking_helper(v, dtype, name or "packed")
 
-
 ops.register_tensor_conversion_function((list, tuple),
                                         _autopacking_conversion_function, 99)
-
 
 def concat(values, axis, name="concat"):
   
@@ -238,7 +220,6 @@ def concat(values, axis, name="concat"):
               tensor_shape.scalar())
       return identity(values[0], name=scope)
   return gen_array_ops.concat_v2(values=values, axis=axis, name=name)
-
 
 def split(value, num_or_size_splits, axis=0, num=None, name="split"):
   
@@ -257,7 +238,6 @@ def split(value, num_or_size_splits, axis=0, num=None, name="split"):
   return gen_array_ops.split_v(
       value=value, size_splits=size_splits, axis=axis, num_split=num, name=name)
 
-
 def _constant_if_small(value, shape, dtype, name):
   try:
     if np.prod(shape) < 1000:
@@ -265,7 +245,6 @@ def _constant_if_small(value, shape, dtype, name):
   except TypeError:
     pass
   return None
-
 
 def zeros(shape, dtype=dtypes.float32, name=None):
   dtype = dtypes.as_dtype(dtype).base_dtype
@@ -294,7 +273,6 @@ def zeros(shape, dtype=dtypes.float32, name=None):
   assert output.dtype.base_dtype == dtype
   return output
 
-
 def zeros_like(tensor, dtype=None, name=None, optimize=True):
   with ops.name_scope(name, "zeros_like", [tensor]) as name:
     tensor = ops.convert_to_tensor(tensor, name="tensor")
@@ -316,7 +294,6 @@ def zeros_like(tensor, dtype=None, name=None, optimize=True):
     else:
       return gen_array_ops.zeros_like(tensor, name=name)
 
-
 def ones(shape, dtype=dtypes.float32, name=None):
   dtype = dtypes.as_dtype(dtype).base_dtype
   with ops.name_scope(name, "ones", [shape]) as name:
@@ -337,3 +314,4 @@ def ones(shape, dtype=dtypes.float32, name=None):
     output = fill(shape, constant(one, dtype=dtype), name=name)
   assert output.dtype.base_dtype == dtype
   return output
+

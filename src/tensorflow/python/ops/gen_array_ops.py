@@ -4,16 +4,12 @@ import six as _six
 from tensorflow.python import pywrap_tensorflow as _pywrap_tensorflow
 from tensorflow.python import context as _context
 from tensorflow.python import execute as _execute
-#from tensorflow.python.framework.errors_impl import *
 
 from tensorflow.core import op_def_pb2 as _op_def_pb2
 from tensorflow.python.framework import op_def_library as _op_def_library
 from tensorflow.python.framework import op_def_registry as _op_def_registry
 from tensorflow.python.framework import dtypes as _dtypes
-from tensorflow.python.util.deprecation import deprecated_endpoints
 
-#@tf_export('reverse', 'manip.reverse', 'reverse_v2')
-@deprecated_endpoints('manip.reverse', 'reverse_v2')
 def reverse_v2(tensor, axis, name=None):
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
@@ -354,7 +350,6 @@ def strided_slice(input, begin, end, strides, begin_mask=0, end_mask=0, ellipsis
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-#@tf_export('fill')
 def fill(dims, value, name=None):
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
@@ -414,8 +409,6 @@ def split(axis, value, num_split, name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-#@tf_export('reshape', 'manip.reshape')
-@deprecated_endpoints('manip.reshape')
 def reshape(tensor, shape, name=None):
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
@@ -445,8 +438,6 @@ def reshape(tensor, shape, name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-#@tf_export('tile', 'manip.tile')
-@deprecated_endpoints('manip.tile')
 def tile(input, multiples, name=None):
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
@@ -539,8 +530,6 @@ def prevent_gradient(input, message="", name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-#@tf_export('math.invert_permutation', 'invert_permutation')
-@deprecated_endpoints('invert_permutation')
 def invert_permutation(x, name=None):
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
@@ -702,8 +691,6 @@ def broadcast_gradient_args(s0, s1, name=None):
 _broadcast_gradient_args_outputs = ["r0", "r1"]
 _BroadcastGradientArgsOutput = _collections.namedtuple(
     "BroadcastGradientArgs", _broadcast_gradient_args_outputs)
-
-
 
 def _InitOpDefLibrary(op_list_proto_bytes):
   op_list = _op_def_pb2.OpList()
