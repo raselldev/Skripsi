@@ -21,7 +21,6 @@ from __future__ import print_function
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import nn as nn_ops
-from tensorflow.python.ops import gen_nn_ops
 
 
 
@@ -151,7 +150,7 @@ def _Conv3DBackpropFilterGrad(op, grad):
 
 @ops.RegisterGradient("AvgPool3D")
 def _AvgPool3DGrad(op, grad):
-  return gen_nn_ops.avg_pool3d_grad(
+  return nn_ops.avg_pool3d_grad(
       array_ops.shape(op.inputs[0]),
       grad,
       ksize=op.get_attr("ksize"),
@@ -163,7 +162,7 @@ def _AvgPool3DGrad(op, grad):
 @ops.RegisterGradient("AvgPool3DGrad")
 def _AvgPool3DGradGrad(op, grad):
   return (array_ops.stop_gradient(op.inputs[0]),
-          gen_nn_ops.avg_pool3d(
+          nn_ops.avg_pool3d(
               grad,
               op.get_attr("ksize"),
               op.get_attr("strides"),
@@ -173,7 +172,7 @@ def _AvgPool3DGradGrad(op, grad):
 
 @ops.RegisterGradient("MaxPool3D")
 def _MaxPool3DGrad(op, grad):
-  return gen_nn_ops.max_pool3d_grad(
+  return nn_ops.max_pool3d_grad(
       op.inputs[0],
       op.outputs[0],
       grad,
@@ -189,7 +188,7 @@ def _MaxPool3DGradGrad(op, grad):
       shape=array_ops.shape(op.inputs[0]), dtype=op.inputs[0].dtype),
           array_ops.zeros(
               shape=array_ops.shape(op.inputs[1]), dtype=op.inputs[1].dtype),
-          gen_nn_ops.max_pool3d_grad_grad(
+          nn_ops.max_pool3d_grad_grad(
               op.inputs[0],
               op.inputs[1],
               grad,
@@ -205,7 +204,7 @@ def _MaxPool3DGradGradGrad(op, grad):
       shape=array_ops.shape(op.inputs[0]), dtype=op.inputs[0].dtype),
           array_ops.zeros(
               shape=array_ops.shape(op.inputs[1]), dtype=op.inputs[1].dtype),
-          gen_nn_ops.max_pool3d_grad(
+          nn_ops.max_pool3d_grad(
               op.inputs[0],
               op.inputs[1],
               grad,
@@ -282,7 +281,7 @@ def _BiasAddGrad(op, received_grad):
   except ValueError:
     data_format = None
   return (received_grad,
-          gen_nn_ops.bias_add_grad(
+          nn_ops.bias_add_grad(
               out_backprop=received_grad, data_format=data_format))
 
 
@@ -349,13 +348,13 @@ def _BiasAddGradV1(unused_bias_op, received_grad):
 
 @ops.RegisterGradient("Relu")
 def _ReluGrad(op, grad):
-  return gen_nn_ops.relu_grad(grad, op.outputs[0])
+  return nn_ops.relu_grad(grad, op.outputs[0])
 
 
 @ops.RegisterGradient("EluGrad")
 def _EluGradGrad(op, grad):
   elu_x = op.inputs[1]
-  return (gen_nn_ops.elu_grad(grad, op.outputs[0]),
+  return (nn_ops.elu_grad(grad, op.outputs[0]),
           array_ops.where(elu_x < 0, grad * op.inputs[0],
                           array_ops.zeros(
                               shape=array_ops.shape(elu_x), dtype=elu_x.dtype)))
@@ -365,9 +364,9 @@ def _EluGradGrad(op, grad):
 def _SeluGradGrad(op, grad):
   x = op.inputs[1]
   scale_alpha = 1.7580993408473768599402175208123
-  return (gen_nn_ops.elu_grad(grad, op.outputs[0]),
+  return (nn_ops.elu_grad(grad, op.outputs[0]),
           array_ops.where(x < 0.,
-                          gen_nn_ops.elu_grad(grad,
+                          nn_ops.elu_grad(grad,
                                               op.outputs[0] + scale_alpha),
                           array_ops.zeros(
                               shape=array_ops.shape(x), dtype=x.dtype)))
@@ -375,53 +374,53 @@ def _SeluGradGrad(op, grad):
 
 @ops.RegisterGradient("Relu6")
 def _Relu6Grad(op, grad):
-  return gen_nn_ops.relu6_grad(grad, op.outputs[0])
+  return nn_ops.relu6_grad(grad, op.outputs[0])
 
 
 @ops.RegisterGradient("Relu6Grad")
 def _Relu6GradGrad(op, grad):
   x = op.inputs[1]
-  return (gen_nn_ops.relu6_grad(grad, x),
+  return (nn_ops.relu6_grad(grad, x),
           array_ops.zeros(shape=array_ops.shape(x), dtype=x.dtype))
 
 
 @ops.RegisterGradient("Elu")
 def _EluGrad(op, grad):
-  return gen_nn_ops.elu_grad(grad, op.outputs[0])
+  return nn_ops.elu_grad(grad, op.outputs[0])
 
 
 @ops.RegisterGradient("Selu")
 def _SeluGrad(op, grad):
-  return gen_nn_ops.selu_grad(grad, op.outputs[0])
+  return nn_ops.selu_grad(grad, op.outputs[0])
 
 
 @ops.RegisterGradient("Softplus")
 def _SoftplusGrad(op, grad):
-  return gen_nn_ops.softplus_grad(grad, op.inputs[0])
+  return nn_ops.softplus_grad(grad, op.inputs[0])
 
 
 @ops.RegisterGradient("SoftplusGrad")
 def _SoftplusGradGrad(op, grad):
   # Let:
   #   y = tf.nn.softplus(x)
-  #   dx = gen_nn_ops.softplus_grad(dy, x) = dy / (1 + exp(-x))
+  #   dx = nn_ops.softplus_grad(dy, x) = dy / (1 + exp(-x))
   # This op computes (ddy, d2x) from op.inputs == [dy, x] and grad == ddx.
   dy, x = op.inputs
   with ops.control_dependencies([grad]):
-    ddy = gen_nn_ops.softplus_grad(grad, x)
+    ddy = nn_ops.softplus_grad(grad, x)
     d2x = grad * dy / (math_ops.exp(-x) + 2.0 + math_ops.exp(x))
     return (ddy, d2x)
 
 
 @ops.RegisterGradient("Softsign")
 def _SoftsignGrad(op, grad):
-  return gen_nn_ops.softsign_grad(grad, op.inputs[0])
+  return nn_ops.softsign_grad(grad, op.inputs[0])
 
 
 @ops.RegisterGradient("ReluGrad")
 def _ReluGradGrad(op, grad):
   x = op.inputs[1]
-  return (gen_nn_ops.relu_grad(grad, x),
+  return (nn_ops.relu_grad(grad, x),
           array_ops.zeros(shape=array_ops.shape(x), dtype=x.dtype))
 
 
@@ -564,14 +563,14 @@ def _LRNGrad(op, grad):
   alpha = op.get_attr("alpha")
   beta = op.get_attr("beta")
   return [
-      gen_nn_ops.lrn_grad(grad, op.inputs[0], op.outputs[0], depth_radius, bias,
+      nn_ops.lrn_grad(grad, op.inputs[0], op.outputs[0], depth_radius, bias,
                           alpha, beta)
   ]
 
 
 @ops.RegisterGradient("AvgPool")
 def _AvgPoolGrad(op, grad):
-  return gen_nn_ops.avg_pool_grad(
+  return nn_ops.avg_pool_grad(
       array_ops.shape(op.inputs[0]),
       grad,
       op.get_attr("ksize"),
@@ -583,7 +582,7 @@ def _AvgPoolGrad(op, grad):
 @ops.RegisterGradient("AvgPoolGrad")
 def _AvgPoolGradGrad(op, grad):
   return (array_ops.stop_gradient(op.inputs[0]),
-          gen_nn_ops.avg_pool(
+          nn_ops.avg_pool(
               grad,
               op.get_attr("ksize"),
               op.get_attr("strides"),
@@ -593,7 +592,7 @@ def _AvgPoolGradGrad(op, grad):
 
 @ops.RegisterGradient("MaxPool")
 def _MaxPoolGrad(op, grad):
-  return gen_nn_ops.max_pool_grad(
+  return nn_ops.max_pool_grad(
       op.inputs[0],
       op.outputs[0],
       grad,
@@ -607,7 +606,7 @@ def _MaxPoolGrad(op, grad):
 def _MaxPoolGradV2(op, grad):
   ksize = op.inputs[1]
   strides = op.inputs[2]
-  return gen_nn_ops.max_pool_grad_v2(
+  return nn_ops.max_pool_grad_v2(
       op.inputs[0],
       op.outputs[0],
       grad,
@@ -619,7 +618,7 @@ def _MaxPoolGradV2(op, grad):
 
 @ops.RegisterGradient("MaxPoolWithArgmax")
 def _MaxPoolGradWithArgmax(op, grad, unused_argmax_grad):
-  return gen_nn_ops.max_pool_grad_with_argmax(
+  return nn_ops.max_pool_grad_with_argmax(
       op.inputs[0],
       grad,
       op.outputs[1],
@@ -634,7 +633,7 @@ def _MaxPoolGradGrad(op, grad):
       shape=array_ops.shape(op.inputs[0]), dtype=op.inputs[0].dtype),
           array_ops.zeros(
               shape=array_ops.shape(op.inputs[1]), dtype=op.inputs[1].dtype),
-          gen_nn_ops.max_pool_grad_grad(
+          nn_ops.max_pool_grad_grad(
               op.inputs[0],
               op.inputs[1],
               grad,
@@ -652,7 +651,7 @@ def _MaxPoolGradGradV2(op, grad):
       shape=array_ops.shape(op.inputs[0]), dtype=op.inputs[0].dtype),
           array_ops.zeros(
               shape=array_ops.shape(op.inputs[1]), dtype=op.inputs[1].dtype),
-          gen_nn_ops.max_pool_grad_grad_v2(
+          nn_ops.max_pool_grad_grad_v2(
               op.inputs[0],
               op.inputs[1],
               grad,
@@ -668,7 +667,7 @@ def _MaxPoolGradGradGrad(op, grad):
       shape=array_ops.shape(op.inputs[0]), dtype=op.inputs[0].dtype),
           array_ops.zeros(
               shape=array_ops.shape(op.inputs[1]), dtype=op.inputs[1].dtype),
-          gen_nn_ops.max_pool_grad(
+          nn_ops.max_pool_grad(
               op.inputs[0],
               op.inputs[1],
               grad,
@@ -695,7 +694,7 @@ def _FractionalMaxPoolGrad(op, grad_0, unused_grad_1, unused_grad_2):
   Returns:
     Input backprop for FractionalMaxPool op.
   """
-  return gen_nn_ops.fractional_max_pool_grad(
+  return nn_ops.fractional_max_pool_grad(
       op.inputs[0], op.outputs[0], grad_0, op.outputs[1], op.outputs[2],
       op.get_attr("overlapping"))
 
@@ -717,7 +716,7 @@ def _FractionalAvgPoolGrad(op, grad_0, unused_grad_1, unused_grad_2):
   Returns:
     Input backprop for FractionalAvgPool op.
   """
-  return gen_nn_ops.fractional_avg_pool_grad(op.inputs[0].get_shape(), grad_0,
+  return nn_ops.fractional_avg_pool_grad(op.inputs[0].get_shape(), grad_0,
                                              op.outputs[1], op.outputs[2],
                                              op.get_attr("overlapping"))
 
@@ -743,7 +742,7 @@ def _BatchNormWithGlobalNormalizationGrad(op, grad):
         last dimension.
     dg: Backprop for gamma, which is (grad * ((x - m) * rsqrt(v + epsilon)))
   """
-  dx, dm, dv, db, dg = gen_nn_ops.batch_norm_with_global_normalization_grad(
+  dx, dm, dv, db, dg = nn_ops.batch_norm_with_global_normalization_grad(
       op.inputs[0], op.inputs[1], op.inputs[2], op.inputs[4], grad,
       op.get_attr("variance_epsilon"), op.get_attr("scale_after_normalization"))
   return dx, dm, dv, db, dg
@@ -781,8 +780,8 @@ def _BaseFusedBatchNormGrad(op, use_v2, *grad):
   data_format = op.get_attr("data_format")
   is_training = op.get_attr("is_training")
   grad_fun = (
-      gen_nn_ops.fused_batch_norm_grad_v2
-      if use_v2 else gen_nn_ops.fused_batch_norm_grad)
+      nn_ops.fused_batch_norm_grad_v2
+      if use_v2 else nn_ops.fused_batch_norm_grad)
   if is_training:
     return grad_fun(
         grad_y,

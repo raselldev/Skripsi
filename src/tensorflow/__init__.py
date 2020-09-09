@@ -9,8 +9,8 @@ from tensorflow.python.ops import rnn
 nn.bidirectional_dynamic_rnn = rnn.bidirectional_dynamic_rnn
 
 #nn
-from tensorflow.python.ops.gen_nn_ops import conv2d
-from tensorflow.python.ops.gen_nn_ops import relu
+from tensorflow.python.ops.nn import conv2d
+from tensorflow.python.ops.nn import relu
 from tensorflow.python.ops.nn import max_pool
 from tensorflow.python.ops.nn import bidirectional_dynamic_rnn
 from tensorflow.python.ops.nn import atrous_conv2d

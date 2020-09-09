@@ -25,7 +25,7 @@ from tensorflow.python.framework import function
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import dtypes
 from tensorflow.python.util.deprecation import deprecated_args
-from tensorflow.python.ops import gen_nn_ops
+from tensorflow.python.ops import nn
 #from tensorflow.python.util.tf_export import tf_export
 
 
@@ -885,9 +885,9 @@ def fused_batch_norm(
   # currently only use the V2 version for float16 inputs, which is not supported
   # by the V1 version.
   if x.dtype == dtypes.float16 or x.dtype == dtypes.bfloat16:
-    fused_batch_norm_func = gen_nn_ops.fused_batch_norm_v2
+    fused_batch_norm_func = nn.fused_batch_norm_v2
   else:
-    fused_batch_norm_func = gen_nn_ops._fused_batch_norm  # pylint: disable=protected-access
+    fused_batch_norm_func = nn._fused_batch_norm  # pylint: disable=protected-access
   y, batch_mean, batch_var, _, _ = fused_batch_norm_func(
       x,
       scale,
