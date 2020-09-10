@@ -392,7 +392,6 @@ class OpDefLibrary(object):
     inputs = []
     input_types = []
     with g.as_default(), ops.name_scope(name) as scope:
-
       # Perform input type inference
       inferred_from = {}
       for input_arg in op_def.input_arg:
