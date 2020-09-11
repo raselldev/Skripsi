@@ -658,12 +658,6 @@ def _GradientsHelper(ys,
     # cluster ops for compilation.
     gradient_uid = ops.get_default_graph().unique_name("uid")
     ys = ops.convert_n_to_tensor_or_indexed_slices(ys, name="y")
-    xs = [
-        x.handle if resource_variable_ops.is_resource_variable(x) else x
-        for x in xs
-    ]
-    xs = ops.internal_convert_n_to_tensor_or_indexed_slices(
-        xs, name="x", as_ref=True)
     grad_ys = _DefaultGradYs(grad_ys, ys, colocate_gradients_with_ops,
                              gradient_uid)
 

@@ -2212,39 +2212,33 @@ def ZerosLikeOutsideLoop(op, index):
     else:
       return array_ops.zeros_like(val, optimize=False)
 
-def tuple(tensors, name=None, control_inputs=None):  
+
+
+
+#edit
+
+def with_dependencies(dependencies, output_tensor, name=None):
   if context.executing_eagerly():
-    return tensors
-  with ops.name_scope(name, "tuple", tensors) as name:
-    tensors = [t if (isinstance(t, ops.Operation)
-                     or tensor_util.is_tensor(t)
-                     or t is None)
-               else ops.convert_to_tensor(t) for t in tensors]
-    gating_ops = [t if isinstance(t, ops.Operation) else t.op for t in tensors
-                  if t is not None]
-    if control_inputs:
-      for c in control_inputs:
-        if isinstance(c, ops.Tensor):
-          c = c.op
-        elif not isinstance(c, ops.Operation):
-          raise TypeError("Control input must be Operation or Tensor: %s" % c)
-        gating_ops.append(c)
-    # Note that in order to ensure ordering in the pbtxt, we must take care to
-    # ensure the order here.
-    gating_ops = sorted(set(gating_ops), key=lambda op: op._id)  # Uniquify ops.
-    if not gating_ops:
-      raise ValueError("Must have at least one Tensor: %s" % tensors)
-    gate = group(*gating_ops)
-    tpl = []
-    for t in tensors:
-      if tensor_util.is_tensor(t):
-        tpl.append(with_dependencies([gate], t))
-      elif isinstance(t, ops.Operation):
-        with ops.control_dependencies([gate]):
-          tpl.append(group(t))
-      else:
-        tpl.append(None)
-    return tpl
+    return output_tensor
+  with ops.name_scope(name, "control_dependency",
+                      list(dependencies) + [output_tensor]) as name:
+    with ops.colocate_with(output_tensor):
+      with ops.control_dependencies(dependencies):
+        output_tensor = ops.convert_to_tensor_or_indexed_slices(output_tensor)
+        if isinstance(output_tensor, ops.Tensor):
+          return _Identity(output_tensor, name=name)
+        else:
+          return ops.IndexedSlices(
+              _Identity(output_tensor.values, name=name), output_tensor.indices,
+              output_tensor.dense_shape)
+
+def _GroupControlDeps(dev, deps, name=None):
+  with ops.control_dependencies(deps):
+    if dev is None:
+      return no_op(name=name)
+    else:
+      with ops.device(dev):
+        return no_op(name=name)
 
 def group(*inputs, **kwargs):
   if context.executing_eagerly():
@@ -2286,26 +2280,37 @@ def group(*inputs, **kwargs):
     with ops.control_dependencies(deps):
       return no_op(name=name)
 
-def _GroupControlDeps(dev, deps, name=None):
-  with ops.control_dependencies(deps):
-    if dev is None:
-      return no_op(name=name)
-    else:
-      with ops.device(dev):
-        return no_op(name=name)
-
-def with_dependencies(dependencies, output_tensor, name=None):
+def tuple(tensors, name=None, control_inputs=None):  
   if context.executing_eagerly():
-    return output_tensor
-  with ops.name_scope(name, "control_dependency",
-                      list(dependencies) + [output_tensor]) as name:
-    with ops.colocate_with(output_tensor):
-      with ops.control_dependencies(dependencies):
-        output_tensor = ops.convert_to_tensor_or_indexed_slices(output_tensor)
-        if isinstance(output_tensor, ops.Tensor):
-          return _Identity(output_tensor, name=name)
-        else:
-          return ops.IndexedSlices(
-              _Identity(output_tensor.values, name=name), output_tensor.indices,
-              output_tensor.dense_shape)
+    return tensors
+  with ops.name_scope(name, "tuple", tensors) as name:
+    tensors = [t if (isinstance(t, ops.Operation)
+                     or tensor_util.is_tensor(t)
+                     or t is None)
+               else ops.convert_to_tensor(t) for t in tensors]
+    gating_ops = [t if isinstance(t, ops.Operation) else t.op for t in tensors
+                  if t is not None]
+    if control_inputs:
+      for c in control_inputs:
+        if isinstance(c, ops.Tensor):
+          c = c.op
+        elif not isinstance(c, ops.Operation):
+          raise TypeError("Control input must be Operation or Tensor: %s" % c)
+        gating_ops.append(c)
+    # Note that in order to ensure ordering in the pbtxt, we must take care to
+    # ensure the order here.
+    gating_ops = sorted(set(gating_ops), key=lambda op: op._id)  # Uniquify ops.
+    if not gating_ops:
+      raise ValueError("Must have at least one Tensor: %s" % tensors)
+    gate = group(*gating_ops)
+    tpl = []
+    for t in tensors:
+      if tensor_util.is_tensor(t):
+        tpl.append(with_dependencies([gate], t))
+      elif isinstance(t, ops.Operation):
+        with ops.control_dependencies([gate]):
+          tpl.append(group(t))
+      else:
+        tpl.append(None)
+    return tpl
 
