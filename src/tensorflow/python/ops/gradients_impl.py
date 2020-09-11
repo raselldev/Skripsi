@@ -29,7 +29,6 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 
 #from tensorflow.python import tf_logging as logging
 from tensorflow.python import context
-from tensorflow.python.ops import array_grad
 from tensorflow.python.ops import control_flow_grad
 from tensorflow.python.ops import control_flow_util
 from tensorflow.python.ops import math_grad
