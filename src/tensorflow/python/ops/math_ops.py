@@ -14,9 +14,9 @@ from tensorflow.python.framework import ops
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import sparse_tensor
 
-from tensorflow.python.ops import gen_math_ops
+#from tensorflow.python.ops import gen_math_ops
 from tensorflow.python.ops import gen_spectral_ops
-from tensorflow.python.ops.gen_math_ops import *
+#from tensorflow.python.ops.gen_math_ops import *
 from tensorflow.python.util import deprecation
 from tensorflow.core import op_def_pb2
 from tensorflow.python.framework import op_def_library
@@ -26,17 +26,846 @@ from tensorflow.python.framework import op_def_registry
 
 _resource_variable_type = None
 
-def subtract(x, y, name=None):
-  return gen_math_ops.sub(x, y, name)
 
-def negative(x, name=None):
-  with ops.name_scope(name, "Neg", [x]) as name:
-    if isinstance(x, sparse_tensor.SparseTensor):
-      x_neg = gen_math_ops.neg(x.values, name=name)
-      return sparse_tensor.SparseTensor(
-          indices=x.indices, values=x_neg, dense_shape=x.dense_shape)
-    else:
-      return gen_math_ops.neg(x, name=name)
+def sigmoid(x, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Sigmoid", x=x, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "Sigmoid", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Sigmoid",
+        name, _ctx._post_execution_callbacks, x)
+      return _result
+    except _core._FallbackException:
+      return sigmoid_eager_fallback(
+          x, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def tanh(x, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Tanh", x=x, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "Tanh", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Tanh", name,
+        _ctx._post_execution_callbacks, x)
+      return _result
+    except _core._FallbackException:
+      return tanh_eager_fallback(
+          x, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def mean(input, axis, keep_dims=False, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    if keep_dims is None:
+      keep_dims = False
+    keep_dims = execute.make_bool(keep_dims, "keep_dims")
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Mean", input=input, reduction_indices=axis, keep_dims=keep_dims,
+        name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("keep_dims", _op.get_attr("keep_dims"), "T", _op.get_attr("T"),
+              "Tidx", _op.get_attr("Tidx"))
+    execute.record_gradient(
+      "Mean", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Mean", name,
+        _ctx._post_execution_callbacks, input, axis, "keep_dims", keep_dims)
+      return _result
+    except _core._FallbackException:
+      return mean_eager_fallback(
+          input, axis, keep_dims=keep_dims, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def prod(input, axis, keep_dims=False, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    if keep_dims is None:
+      keep_dims = False
+    keep_dims = execute.make_bool(keep_dims, "keep_dims")
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Prod", input=input, reduction_indices=axis, keep_dims=keep_dims,
+        name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("keep_dims", _op.get_attr("keep_dims"), "T", _op.get_attr("T"),
+              "Tidx", _op.get_attr("Tidx"))
+    execute.record_gradient(
+      "Prod", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Prod", name,
+        _ctx._post_execution_callbacks, input, axis, "keep_dims", keep_dims)
+      return _result
+    except _core._FallbackException:
+      return prod_eager_fallback(
+          input, axis, keep_dims=keep_dims, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def cast1(x, DstT, Truncate=False, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    DstT = execute.make_type(DstT, "DstT")
+    if Truncate is None:
+      Truncate = False
+    Truncate = execute.make_bool(Truncate, "Truncate")
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Cast", x=x, DstT=DstT, Truncate=Truncate, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("SrcT", _op.get_attr("SrcT"), "DstT", _op.get_attr("DstT"),
+              "Truncate", _op.get_attr("Truncate"))
+    execute.record_gradient(
+      "Cast", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Cast", name,
+        _ctx._post_execution_callbacks, x, "DstT", DstT, "Truncate", Truncate)
+      return _result
+    except _core._FallbackException:
+      return cast_eager_fallback(
+          x, DstT=DstT, Truncate=Truncate, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def add_n(inputs, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    if not isinstance(inputs, (list, tuple)):
+      raise TypeError(
+          "Expected list for 'inputs' argument to "
+          "'add_n' Op, not %r." % inputs)
+    _attr_N = len(inputs)
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "AddN", inputs=inputs, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("N", _op.get_attr("N"), "T", _op.get_attr("T"))
+    execute.record_gradient(
+      "AddN", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "AddN", name,
+        _ctx._post_execution_callbacks, inputs)
+      return _result
+    except _core._FallbackException:
+      return add_n_eager_fallback(
+          inputs, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def _sum(input, axis, keep_dims=False, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    if keep_dims is None:
+      keep_dims = False
+    keep_dims = execute.make_bool(keep_dims, "keep_dims")
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Sum", input=input, reduction_indices=axis, keep_dims=keep_dims,
+        name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("keep_dims", _op.get_attr("keep_dims"), "T", _op.get_attr("T"),
+              "Tidx", _op.get_attr("Tidx"))
+    execute.record_gradient(
+      "Sum", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Sum", name,
+        _ctx._post_execution_callbacks, input, axis, "keep_dims", keep_dims)
+      return _result
+    except _core._FallbackException:
+      return _sum_eager_fallback(
+          input, axis, keep_dims=keep_dims, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def sigmoid_grad(y, dy, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "SigmoidGrad", y=y, dy=dy, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "SigmoidGrad", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "SigmoidGrad",
+        name, _ctx._post_execution_callbacks, y, dy)
+      return _result
+    except _core._FallbackException:
+      return sigmoid_grad_eager_fallback(
+          y, dy, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def tanh_grad(y, dy, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "TanhGrad", y=y, dy=dy, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "TanhGrad", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "TanhGrad",
+        name, _ctx._post_execution_callbacks, y, dy)
+      return _result
+    except _core._FallbackException:
+      return tanh_grad_eager_fallback(
+          y, dy, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def greater_equal(x, y, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "GreaterEqual", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "GreaterEqual", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "GreaterEqual",
+        name, _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return greater_equal_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def greater(x, y, name=None):
+  _ctx = _context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Greater", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    _execute.record_gradient(
+      "Greater", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Greater",
+        name, _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return greater_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def sparse_mat_mul(a, b, transpose_a=False, transpose_b=False, a_is_sparse=False, b_is_sparse=False, name=None):
+  _ctx = _context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    if transpose_a is None:
+      transpose_a = False
+    transpose_a = _execute.make_bool(transpose_a, "transpose_a")
+    if transpose_b is None:
+      transpose_b = False
+    transpose_b = _execute.make_bool(transpose_b, "transpose_b")
+    if a_is_sparse is None:
+      a_is_sparse = False
+    a_is_sparse = _execute.make_bool(a_is_sparse, "a_is_sparse")
+    if b_is_sparse is None:
+      b_is_sparse = False
+    b_is_sparse = _execute.make_bool(b_is_sparse, "b_is_sparse")
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "SparseMatMul", a=a, b=b, transpose_a=transpose_a,
+        transpose_b=transpose_b, a_is_sparse=a_is_sparse,
+        b_is_sparse=b_is_sparse, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("transpose_a", _op.get_attr("transpose_a"), "transpose_b",
+              _op.get_attr("transpose_b"), "a_is_sparse",
+              _op.get_attr("a_is_sparse"), "b_is_sparse",
+              _op.get_attr("b_is_sparse"), "Ta", _op.get_attr("Ta"), "Tb",
+              _op.get_attr("Tb"))
+    _execute.record_gradient(
+      "SparseMatMul", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "SparseMatMul",
+        name, _ctx._post_execution_callbacks, a, b, "transpose_a",
+        transpose_a, "transpose_b", transpose_b, "a_is_sparse", a_is_sparse,
+        "b_is_sparse", b_is_sparse)
+      return _result
+    except _core._FallbackException:
+      return sparse_mat_mul_eager_fallback(
+          a, b, transpose_a=transpose_a, transpose_b=transpose_b,
+          a_is_sparse=a_is_sparse, b_is_sparse=b_is_sparse, name=name,
+          ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def _range(start, limit, delta, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Range", start=start, limit=limit, delta=delta, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("Tidx", _op.get_attr("Tidx"))
+    execute.record_gradient(
+      "Range", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Range", name,
+        _ctx._post_execution_callbacks, start, limit, delta)
+      return _result
+    except _core._FallbackException:
+      return _range_eager_fallback(
+          start, limit, delta, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def minimum(x, y, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Minimum", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "Minimum", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Minimum",
+        name, _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return minimum_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def maximum(x, y, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Maximum", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "Maximum", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Maximum",
+        name, _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return maximum_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def mat_mul(a, b, transpose_a=False, transpose_b=False, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    if transpose_a is None:
+      transpose_a = False
+    transpose_a = execute.make_bool(transpose_a, "transpose_a")
+    if transpose_b is None:
+      transpose_b = False
+    transpose_b = execute.make_bool(transpose_b, "transpose_b")
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "MatMul", a=a, b=b, transpose_a=transpose_a, transpose_b=transpose_b,
+        name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("transpose_a", _op.get_attr("transpose_a"), "transpose_b",
+              _op.get_attr("transpose_b"), "T", _op.get_attr("T"))
+    execute.record_gradient(
+      "MatMul", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "MatMul", name,
+        _ctx._post_execution_callbacks, a, b, "transpose_a", transpose_a,
+        "transpose_b", transpose_b)
+      return _result
+    except _core._FallbackException:
+      return mat_mul_eager_fallback(
+          a, b, transpose_a=transpose_a, transpose_b=transpose_b, name=name,
+          ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def add(x, y, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Add", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "Add", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Add", name,
+        _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return add_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def logical_and(x, y, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "LogicalAnd", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = None
+    execute.record_gradient(
+      "LogicalAnd", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "LogicalAnd",
+        name, _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return logical_and_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def logical_or(x, y, name=None):
+  _ctx = _context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "LogicalOr", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = None
+    _execute.record_gradient(
+      "LogicalOr", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "LogicalOr",
+        name, _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return logical_or_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def less(x, y, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Less", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "Less", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Less", name,
+        _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return less_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def less_equal(x, y, name=None):
+  _ctx = _context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "LessEqual", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    _execute.record_gradient(
+      "LessEqual", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "LessEqual",
+        name, _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return less_equal_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def floor_div(x, y, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "FloorDiv", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "FloorDiv", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "FloorDiv",
+        name, _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return floor_div_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def real_div(x, y, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "RealDiv", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "RealDiv", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "RealDiv",
+        name, _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return real_div_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def floor_mod(x, y, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "FloorMod", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "FloorMod", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "FloorMod",
+        name, _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return floor_mod_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def logical_not(x, name=None):
+  _ctx = _context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "LogicalNot", x=x, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = None
+    _execute.record_gradient(
+      "LogicalNot", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "LogicalNot",
+        name, _ctx._post_execution_callbacks, x)
+      return _result
+    except _core._FallbackException:
+      return logical_not_eager_fallback(
+          x, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def neg(x, name=None):
+  _ctx = _context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Neg", x=x, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    _execute.record_gradient(
+      "Neg", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Neg", name,
+        _ctx._post_execution_callbacks, x)
+      return _result
+    except _core._FallbackException:
+      return neg_eager_fallback(
+          x, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def sub(x, y, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Sub", x=x, y=y, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "Sub", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Sub", name,
+        _ctx._post_execution_callbacks, x, y)
+      return _result
+    except _core._FallbackException:
+      return sub_eager_fallback(
+          x, y, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
 
 def _neg(x, name=None):
   return negative(x, name)
@@ -151,7 +980,7 @@ def cast(x, dtype, name=None):
     else:
       x = ops.convert_to_tensor(x, name="x")
       if x.dtype.base_dtype != base_type:
-        x = gen_math_ops.cast(x, base_type, name=name)
+        x = cast1(x, base_type, name=name)
     if x.dtype.is_complex and base_type.is_floating:
       logging.warn("Casting complex to real discards imaginary part.")
     return x
@@ -193,9 +1022,9 @@ def to_complex64(x, name="ToComplex64"):
 def to_complex128(x, name="ToComplex128"):
   return cast(x, dtypes.complex128, name=name)
 
-ops.Tensor._override_operator("__neg__", gen_math_ops.neg)
+ops.Tensor._override_operator("__neg__", neg)
 ops.Tensor._override_operator("__abs__", abs)
-ops.Tensor._override_operator("__invert__", gen_math_ops.logical_not)
+ops.Tensor._override_operator("__invert__", logical_not)
 
 def _OverrideBinaryOperatorHelper(func, op_name, clazz_object=ops.Tensor):
   def binary_op_wrapper(x, y):
@@ -290,7 +1119,7 @@ def _truediv_python3(x, y, name=None):
     if dtype is not None:
       x = cast(x, dtype)
       y = cast(y, dtype)
-    return gen_math_ops.real_div(x, y, name=name)
+    return real_div(x, y, name=name)
 
 def _div_python2(x, y, name=None):
   with ops.name_scope(name, "div", [x, y]) as name:
@@ -323,17 +1152,14 @@ def div_no_nan(x, y, name=None):
                       (x_dtype, y_dtype))
     return gen_math_ops.div_no_nan(x, y, name=name)
 
-mod = gen_math_ops.floor_mod
+mod = floor_mod
 
-def floordiv(x, y, name=None):
-  with ops.name_scope(name, "floordiv", [x, y]) as name:
-    return gen_math_ops.floor_div(x, y, name=name)
 
-realdiv = gen_math_ops.real_div
-truncatediv = gen_math_ops.truncate_div
-floor_div = gen_math_ops.floor_div
-truncatemod = gen_math_ops.truncate_mod
-floormod = gen_math_ops.floor_mod
+realdiv = real_div
+#truncatediv = truncate_div
+floor_div = floor_div
+#truncatemod = truncate_mod
+floormod = floor_mod
 
 def _mul_dispatch(x, y, name=None):
   is_tensor_y = isinstance(y, ops.Tensor)
@@ -344,8 +1170,6 @@ def _mul_dispatch(x, y, name=None):
     new_vals = gen_sparse_ops.sparse_dense_cwise_mul(y.indices, y.values,
                                                      y.dense_shape, x, name)
     return sparse_tensor.SparseTensor(y.indices, new_vals, y.dense_shape)
-
-
 
 def sparse_dense_cwise_div(sp_indices, sp_values, sp_shape, dense, name=None):
   r"""Component-wise divides a SparseTensor by a dense Tensor.
@@ -460,13 +1284,13 @@ _OverrideBinaryOperatorHelper(_sparse_dense_truediv, "truediv",
 _OverrideBinaryOperatorHelper(sparse_dense_cwise_mul, "mul",
                               sparse_tensor.SparseTensor)
 
-_OverrideBinaryOperatorHelper(gen_math_ops.add, "add")
-_OverrideBinaryOperatorHelper(gen_math_ops.sub, "sub")
+_OverrideBinaryOperatorHelper(add, "add")
+_OverrideBinaryOperatorHelper(sub, "sub")
 _OverrideBinaryOperatorHelper(_mul_dispatch, "mul")
 _OverrideBinaryOperatorHelper(_div_python2, "div")
 _OverrideBinaryOperatorHelper(_truediv_python3, "truediv")
-_OverrideBinaryOperatorHelper(floordiv, "floordiv")
-_OverrideBinaryOperatorHelper(gen_math_ops.floor_mod, "mod")
+_OverrideBinaryOperatorHelper(floor_div, "floordiv")
+_OverrideBinaryOperatorHelper(floor_mod, "mod")
 _OverrideBinaryOperatorHelper(pow, "pow")
 
 def logical_xor(x, y, name="LogicalXor"):
@@ -475,14 +1299,14 @@ def logical_xor(x, y, name="LogicalXor"):
       gen_math_ops.logical_not(gen_math_ops.logical_and(x, y)),
       name=name)
 
-_OverrideBinaryOperatorHelper(gen_math_ops.logical_and, "and")
-_OverrideBinaryOperatorHelper(gen_math_ops.logical_or, "or")
+_OverrideBinaryOperatorHelper(logical_and, "and")
+_OverrideBinaryOperatorHelper(logical_or, "or")
 _OverrideBinaryOperatorHelper(logical_xor, "xor")
 
-ops.Tensor._override_operator("__lt__", gen_math_ops.less)
-ops.Tensor._override_operator("__le__", gen_math_ops.less_equal)
-ops.Tensor._override_operator("__gt__", gen_math_ops.greater)
-ops.Tensor._override_operator("__ge__", gen_math_ops.greater_equal)
+ops.Tensor._override_operator("__lt__", less)
+ops.Tensor._override_operator("__le__", less_equal)
+ops.Tensor._override_operator("__gt__", greater)
+ops.Tensor._override_operator("__ge__", greater_equal)
 
 def range(start, limit=None, delta=1, dtype=None, name="range"):
   if limit is None:
@@ -506,7 +1330,7 @@ def range(start, limit=None, delta=1, dtype=None, name="range"):
       limit = cast(limit, inferred_dtype)
       delta = cast(delta, inferred_dtype)
 
-    return gen_math_ops._range(start, limit, delta, name=name)
+    return _range(start, limit, delta, name=name)
 
 def _ReductionDims(x, axis, reduction_indices):
   if reduction_indices is not None:
@@ -551,7 +1375,7 @@ def reduce_sum(input_tensor,
     keepdims = False
 
   return _may_reduce_to_scalar(keepdims, axis, reduction_indices,
-                               gen_math_ops._sum(
+                               _sum(
                                    input_tensor,
                                    _ReductionDims(input_tensor, axis,
                                                   reduction_indices),
@@ -593,7 +1417,7 @@ def reduce_mean(input_tensor,
   if keepdims is None:
     keepdims = False
   return _may_reduce_to_scalar(keepdims, axis, reduction_indices,
-                               gen_math_ops.mean(
+                               mean(
                                    input_tensor,
                                    _ReductionDims(input_tensor, axis,
                                                   reduction_indices),
@@ -612,7 +1436,7 @@ def reduce_prod(input_tensor,
   if keepdims is None:
     keepdims = False
   return _may_reduce_to_scalar(keepdims, axis, reduction_indices,
-                               gen_math_ops.prod(
+                               prod(
                                    input_tensor,
                                    _ReductionDims(input_tensor, axis,
                                                   reduction_indices),
@@ -739,12 +1563,12 @@ def matmul(a,
         ret = cast(ret, dtypes.bfloat16)
       return ret
     else:
-      return gen_math_ops.mat_mul(
+      return mat_mul(
           a, b, transpose_a=transpose_a, transpose_b=transpose_b, name=name)
 
 _OverrideBinaryOperatorHelper(matmul, "matmul")
 
-sparse_matmul = gen_math_ops.sparse_mat_mul
+sparse_matmul = sparse_mat_mul
 
 def conj(x, name=None):
   if isinstance(x, ops.Tensor):
