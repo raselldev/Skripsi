@@ -451,7 +451,7 @@ class RefVariable(VariableV1):
                   initial_value(), name="initial_value", dtype=dtype)
               shape = (self._initial_value.get_shape()
                        if validate_shape else tensor_shape.unknown_shape())
-            self._variable = state_ops.variable_op_v2(
+            self._variable = state_ops.variable_v2(
                 shape,
                 self._initial_value.dtype.base_dtype,
                 name=name)
@@ -473,7 +473,7 @@ class RefVariable(VariableV1):
                    if validate_shape else tensor_shape.unknown_shape())
           # In this case, the variable op can't be created until after the
           # initial_value has been converted to a Tensor with a known type.
-          self._variable = state_ops.variable_op_v2(
+          self._variable = state_ops.variable_v2(
               shape,
               self._initial_value.dtype.base_dtype,
               name=name)
