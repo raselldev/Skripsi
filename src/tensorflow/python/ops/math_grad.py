@@ -128,7 +128,7 @@ def _MeanGrad(op, grad):
     output_shape = array_ops.shape(op.outputs[0])
     factor = _safe_shape_div(
         math_ops.reduce_prod(input_shape), math_ops.reduce_prod(output_shape))
-  return math_ops.truediv(sum_grad, math_ops.cast(factor, sum_grad.dtype)), None
+  return math_ops._truediv_python3(sum_grad, math_ops.cast(factor, sum_grad.dtype)), None
 
 
 @ops.RegisterGradient("Prod")
