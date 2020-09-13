@@ -866,74 +866,28 @@ def sub(x, y, name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-def scalar_mul(scalar, x):
-  scalar = ops.convert_to_tensor(
-      scalar, dtype=x.dtype.base_dtype, name="scalar")
-  shape = scalar.get_shape()
-  if shape.ndims == 0:
-    if isinstance(x, ops.IndexedSlices):
-      return ops.IndexedSlices(scalar * x.values, x.indices, x.dense_shape)
-    else:
-      return scalar * x
-  else:
-    raise ValueError("Only scalar multiply works, got shape %s" % shape)
 
 def cast(x, dtype, name=None):
   base_type = dtypes.as_dtype(dtype).base_dtype
-  if isinstance(x,
-                (ops.Tensor, _resource_variable_type)) and base_type == x.dtype:
-    return x
   with ops.name_scope(name, "Cast", [x]) as name:
-    if isinstance(x, sparse_tensor.SparseTensor):
-      values_cast = cast(x.values, base_type, name=name)
-      x = sparse_tensor.SparseTensor(x.indices, values_cast, x.dense_shape)
-    elif isinstance(x, ops.IndexedSlices):
-      values_cast = cast(x.values, base_type, name=name)
-      x = ops.IndexedSlices(values_cast, x.indices, x.dense_shape)
-    else:
-      x = ops.convert_to_tensor(x, name="x")
-      if x.dtype.base_dtype != base_type:
-        x = cast1(x, base_type, name=name)
-    if x.dtype.is_complex and base_type.is_floating:
-      logging.warn("Casting complex to real discards imaginary part.")
+    x = ops.convert_to_tensor(x, name="x")
+    if x.dtype.base_dtype != base_type:
+      x = cast1(x, base_type, name=name)
     return x
 
-ops.Tensor._override_operator("__neg__", neg)
-ops.Tensor._override_operator("__abs__", abs)
-ops.Tensor._override_operator("__invert__", logical_not)
 
 def _OverrideBinaryOperatorHelper(func, op_name, clazz_object=ops.Tensor):
   def binary_op_wrapper(x, y):
     with ops.name_scope(None, op_name, [x, y]) as name:
       if isinstance(x, ops.Tensor) and isinstance(y, ops.Tensor):
         return func(x, y, name=name)
-      elif not isinstance(y, sparse_tensor.SparseTensor):
-        try:
-          y = ops.convert_to_tensor(y, dtype=x.dtype.base_dtype, name="y")
-        except TypeError:
-          if hasattr(type(y), "__r%s__" % op_name):
-            return NotImplemented
-          else:
-            raise
       return func(x, y, name=name)
-
-  def binary_op_wrapper_sparse(sp_x, y):
-    with ops.name_scope(None, op_name, [sp_x, y]) as name:
-      y = ops.convert_to_tensor(y, dtype=sp_x.dtype.base_dtype, name="y")
-      return sparse_tensor.SparseTensor(sp_x.indices,
-                                        func(
-                                            sp_x.indices,
-                                            sp_x.values,
-                                            sp_x.dense_shape,
-                                            y,
-                                            name=name), sp_x.dense_shape)
 
   def r_binary_op_wrapper(y, x):
     with ops.name_scope(None, op_name, [x, y]) as name:
       x = ops.convert_to_tensor(x, dtype=y.dtype.base_dtype, name="x")
       return func(x, y, name=name)
   
-
   if clazz_object is ops.Tensor:
     clazz_object._override_operator("__%s__" % op_name, binary_op_wrapper)
     del binary_op_wrapper
@@ -959,39 +913,14 @@ _TRUEDIV_TABLE = {
     dtypes.complex128: None,
 }
 
-def _sparse_dense_truediv(sp_indices, sp_values, sp_shape, y, name=None):
-  with ops.name_scope(name, "truediv",
-                      [sp_indices, sp_values, sp_shape, y]) as name:
-    sp_values = ops.convert_to_tensor(sp_values, name="sp_values")
-    y = ops.convert_to_tensor(y, name="y")
-    x_dtype = sp_values.dtype.base_dtype
-    y_dtype = y.dtype.base_dtype
-    if x_dtype != y_dtype:
-      raise TypeError("x and y must have the same dtype, got %r != %r" %
-                      (x_dtype, y_dtype))
-    try:
-      dtype = _TRUEDIV_TABLE[x_dtype]
-    except KeyError:
-      raise TypeError("Invalid dtype %r in __truediv__" % x_dtype)
-    if dtype is not None:
-      sp_values = cast(sp_values, dtype)
-      y = cast(y, dtype)
-    return gen_sparse_ops.sparse_dense_cwise_div(
-        sp_indices, sp_values, sp_shape, y, name=name)
-
 def _truediv_python3(x, y, name=None):
   with ops.name_scope(name, "truediv", [x, y]) as name:
     x = ops.convert_to_tensor(x, name="x")
     y = ops.convert_to_tensor(y, name="y")
     x_dtype = x.dtype.base_dtype
     y_dtype = y.dtype.base_dtype
-    if x_dtype != y_dtype:
-      raise TypeError("x and y must have the same dtype, got %r != %r" %
-                      (x_dtype, y_dtype))
-    try:
-      dtype = _TRUEDIV_TABLE[x_dtype]
-    except KeyError:
-      raise TypeError("Invalid dtype %r in __truediv__" % x_dtype)
+    dtype = _TRUEDIV_TABLE[x_dtype]
+
     if dtype is not None:
       x = cast(x, dtype)
       y = cast(y, dtype)
@@ -1019,9 +948,6 @@ def _mul_dispatch(x, y, name=None):
   if is_tensor_y:
     return mul(x, y, name=name)
 
-
-
-
 _OverrideBinaryOperatorHelper(add, "add")
 _OverrideBinaryOperatorHelper(sub, "sub")
 _OverrideBinaryOperatorHelper(_mul_dispatch, "mul")
@@ -1029,7 +955,6 @@ _OverrideBinaryOperatorHelper(_div_python2, "div")
 _OverrideBinaryOperatorHelper(_truediv_python3, "truediv")
 _OverrideBinaryOperatorHelper(floor_div, "floordiv")
 _OverrideBinaryOperatorHelper(floor_mod, "mod")
-
 
 ops.Tensor._override_operator("__gt__", greater)
 ops.Tensor._override_operator("__ge__", greater_equal)
