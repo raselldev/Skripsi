@@ -10,6 +10,7 @@ import os
 import six
 
 from tensorflow.python import context
+from tensorflow.python import execute
 from tensorflow.core import control_flow_pb2
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
@@ -19,11 +20,16 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import tensor_array_ops
-from tensorflow.python.ops import gen_control_flow_ops
+#from tensorflow.python.ops import gen_control_flow_ops
 from tensorflow.python.ops import gen_data_flow_ops
 from tensorflow.python.ops import control_flow_util as util
-from tensorflow.python.ops.gen_control_flow_ops import *
+#from tensorflow.python.ops.gen_control_flow_ops import *
 from tensorflow.python.util import nest
+from tensorflow.python.framework import op_def_library as _op_def_library
+from tensorflow.python.framework import op_def_registry as _op_def_registry
+from tensorflow.core import op_def_pb2 as _op_def_pb2
+
+
 
 ENABLE_COND_V2 = os.getenv("TF_ENABLE_COND_V2", "0") != "0"
 ENABLE_WHILE_V2 = os.getenv("TF_ENABLE_WHILE_V2", "0") != "0"
@@ -33,23 +39,21 @@ _basetuple = tuple
 def exit(data, name=None):  
   data = ops.internal_convert_to_tensor_or_indexed_slices(data, as_ref=True)
   if isinstance(data, ops.Tensor):
-    if data.dtype._is_ref_dtype:  
-      return gen_control_flow_ops.ref_exit(data, name)
-    else:
-      return gen_control_flow_ops._exit(data, name)
-  else:
-    if not isinstance(data, (ops.IndexedSlices, sparse_tensor.SparseTensor)):
-      raise TypeError("Type %s not supported" % type(data))
-    values = exit(data.values, name=name)
-    indices = gen_control_flow_ops._exit(data.indices, name="indices")
-    if isinstance(data, ops.IndexedSlices):
-      dense_shape = data.dense_shape
-      if dense_shape is not None:
-        dense_shape = gen_control_flow_ops._exit(dense_shape, name)
-      return ops.IndexedSlices(values, indices, dense_shape)
-    else:
-      dense_shape = gen_control_flow_ops._exit(data.dense_shape, name)
-      return sparse_tensor.SparseTensor(indices, values, dense_shape)
+      return _exit(data, name)
+
+def _exit(data, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Exit", data=data, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "Exit", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
 
 def cond(pred,
          true_fn=None,
@@ -59,45 +63,13 @@ def cond(pred,
          fn1=None,
          fn2=None):
   if ENABLE_COND_V2 and not context.executing_eagerly():
-    return cond_v2_impl.cond_v2(pred, true_fn, false_fn, name)
-
-  # We needed to make true_fn/false_fn keyword arguments for
-  # backwards-compatibility. This check exists so that we can convert back to
-  # having them be positional arguments.
-  # TODO(josh11b): Make `true_fn` and `false_fn` positional arguments after
-  # `fn1` and `fn2` are deleted.
-  if fn1 is not None:
-    if true_fn is not None:
-      raise TypeError("cond(): true_fn and fn1 may not be set simultaneously.")
-    true_fn = fn1
-  elif true_fn is None:
-    raise TypeError("cond(): true_fn argument required")
-  if fn2 is not None:
-    if false_fn is not None:
-      raise TypeError("cond(): false_fn and fn2 may not be set simultaneously.")
-    false_fn = fn2
-  elif false_fn is None:
-    raise TypeError("cond(): false_fn argument required")
-
-  if not callable(true_fn):
-    raise TypeError("true_fn must be callable.")
-  if not callable(false_fn):
-    raise TypeError("false_fn must be callable.")
+    return cond_v2(pred, true_fn, false_fn, name)
 
   with ops.name_scope(name, "cond", [pred]):
-    if context.executing_eagerly():
-      if pred:
-        return _UnpackIfSingleton(true_fn())
-      return _UnpackIfSingleton(false_fn())
-
-    # Add the Switch to the graph.
-    if isinstance(pred, bool):
-      raise TypeError("pred must not be a Python bool")
     p_2, p_1 = switch(pred, pred)
     pivot_1 = array_ops.identity(p_1, name="switch_t")
     pivot_2 = array_ops.identity(p_2, name="switch_f")
     pred = array_ops.identity(pred, name="pred_id")
-    # Disable the fetching of tensors that are only on one branch of cond.
     for tensor in [p_1, p_2, pivot_1, pivot_2, pred]:
       tensor.op.graph.prevent_fetching(tensor.op)
 
@@ -117,8 +89,6 @@ def cond(pred,
     try:
       context_f.Enter()
       orig_res_f, res_f = context_f.BuildCondBranch(false_fn)
-      if orig_res_f is None:
-        raise ValueError("false_fn must have a return value.")
       context_f.ExitResult(res_f)
     finally:
       context_f.Exit()
@@ -126,20 +96,6 @@ def cond(pred,
     if not strict:
       orig_res_t = _UnpackIfSingleton(orig_res_t)
       orig_res_f = _UnpackIfSingleton(orig_res_f)
-
-    # Check that the return values of the two branches have the same structure.
-    try:
-      nest.assert_same_structure(orig_res_t, orig_res_f)
-    except TypeError as e:
-      raise TypeError(
-          "Incompatible return types of true_fn and false_fn: {}".format(e))
-    except ValueError as e:
-      raise ValueError(
-          "Incompatible return values of true_fn and false_fn: {}".format(e))
-
-    # Add the final merge to the graph.
-    if not res_t:
-      raise ValueError("true_fn and false_fn must return at least one result.")
 
     res_t_flat = nest.flatten(res_t)
     res_f_flat = nest.flatten(res_f)
@@ -819,52 +775,6 @@ class WhileContext(ControlFlowContext):
   def grad_state(self):
     return self._grad_state
 
-  def to_proto(self, export_scope=None):
-    if (export_scope is None or self.name.startswith(export_scope)):
-      context_def = control_flow_pb2.WhileContextDef()
-      context_def.context_name = ops.strip_name_scope(self.name, export_scope)
-      context_def.parallel_iterations = self._parallel_iterations
-      if self._maximum_iterations is not None:
-        context_def.maximum_iterations_name = ops.strip_name_scope(
-            self._maximum_iterations.name, export_scope)
-      context_def.back_prop = self._back_prop
-      context_def.swap_memory = self._swap_memory
-      context_def.pivot_for_pred_name = ops.strip_name_scope(
-          self._pivot_for_pred.name, export_scope)
-      context_def.pivot_for_body_name = ops.strip_name_scope(
-          self._pivot_for_body.name, export_scope)
-      context_def.pivot_name = ops.strip_name_scope(self._pivot.name,
-                                                    export_scope)
-      context_def.loop_exit_names.extend([
-          ops.strip_name_scope(l.name, export_scope) for l in self._loop_exits
-      ])
-      context_def.loop_enter_names.extend([
-          ops.strip_name_scope(l.name, export_scope) for l in self._loop_enters
-      ])
-      context_def.values_def.MergeFrom(
-          super(WhileContext, self)._to_values_def(
-              export_scope=export_scope))
-      for nested in self._nested_contexts:
-        nested_def = context_def.nested_contexts.add()
-        nested.to_control_flow_context_def(nested_def)
-
-      return context_def
-    else:
-      return None
-
-  def to_control_flow_context_def(self, context_def, export_scope=None):
-    context_def.while_ctxt.CopyFrom(self.to_proto(export_scope=export_scope))
-
-  @staticmethod
-  def from_proto(context_def, import_scope=None):
-    ret = WhileContext(context_def=context_def,
-                       import_scope=import_scope)
-    ret.Enter()
-    for nested_def in context_def.nested_contexts:
-      from_control_flow_context_def(nested_def, import_scope=import_scope)
-    ret.Exit()
-    return ret
-
   def GetWhileContext(self):
     return self
 
@@ -890,18 +800,6 @@ class WhileContext(ControlFlowContext):
       # use GetRealValue(), which adds the logic to save the history of
       # val in forward.
       grad_ctxt = ops.get_default_graph()._get_control_flow_context()
-      if grad_ctxt:
-        grad_ctxt = grad_ctxt.GetWhileContext()
-        if grad_ctxt.grad_state:
-          forward_ctxt = _GetWhileContext(val.op)
-          if util.IsLoopExit(val.op):
-            forward_ctxt = forward_ctxt.outer_context
-            if forward_ctxt:
-              forward_ctxt = forward_ctxt.GetWhileContext()
-          if forward_ctxt == grad_ctxt.grad_state.forward_context:
-            real_val = grad_ctxt.grad_state.GetRealValue(val)
-            self._external_values[val.name] = real_val
-            return real_val
 
       if self._outer_context is not None:
         result = self._outer_context.AddValue(val)
@@ -1077,158 +975,6 @@ class WhileContext(ControlFlowContext):
     self.ExitResult([final_zero])
     self.Exit()
     return next_count
-
-  def AddBackpropAccumulator(self, op, grad):
-    self.Exit()
-    # Create a zeros tensor with the right shape for acc. If we don't
-    # know the full shape statically, we will have to get the shape
-    # dynamically from the forward inference. Getting the shape right
-    # for the zeros is only needed for the base case when the loop exits
-    # without running any iterations.
-    shape = grad.get_shape()
-    if shape.is_fully_defined():
-      if self.outer_context:
-        self.outer_context.Enter()
-      acc = constant_op.constant(0, grad.dtype, shape=shape, name="b_acc")
-      if self.outer_context:
-        self.outer_context.Exit()
-    else:
-      value = op.inputs[0]
-      if (isinstance(self.outer_context, WhileContext) and
-          self.outer_context.grad_state is not None):
-        # We are in a nested while loop.
-        forward_ctxt = self.grad_state.forward_context
-        forward_ctxt.outer_context.Enter()
-        zeros_shape = array_ops.shape_internal(value, optimize=False)
-        forward_ctxt.outer_context.Exit()
-        outer_grad_state = self.grad_state.outer_grad_state
-        history_zeros_shape = outer_grad_state.AddForwardAccumulator(
-            zeros_shape)
-        self.outer_context.Enter()
-        real_shape = outer_grad_state.AddBackpropAccumulatedValue(
-            history_zeros_shape, zeros_shape)
-        acc = array_ops.zeros(real_shape, grad.dtype)
-        self.outer_context.Exit()
-      else:
-        if self.outer_context:
-          self.outer_context.Enter()
-        zeros_shape = array_ops.shape_internal(value, optimize=False)
-        acc = array_ops.zeros(zeros_shape, grad.dtype)
-        if self.outer_context:
-          self.outer_context.Exit()
-
-    self.Enter()
-    self.AddName(acc.name)
-    enter_acc = _Enter(
-        acc,
-        self._name,
-        is_constant=False,
-        parallel_iterations=self._parallel_iterations,
-        name="b_acc")
-    self.loop_enters.append(enter_acc)
-
-    merge_acc = merge([enter_acc, enter_acc], name="b_acc")[0]
-    switch_acc_false, switch_acc_true = switch(merge_acc, self._pivot)
-
-    add_acc = math_ops.add(switch_acc_true, grad)
-    next_acc = _NextIteration(add_acc)
-    merge_acc.op._update_input(1, next_acc)  
-
-    result_acc = exit(switch_acc_false, name="b_acc")
-    self.loop_exits.append(result_acc)
-    self.ExitResult([result_acc])
-    return result_acc
-
-  def AddBackpropIndexedSlicesAccumulator(self, op, grad):
-    values = grad.values
-    indices = grad.indices
-    dense_shape = grad.dense_shape
-
-    self.Exit()
-    if self.outer_context:
-      self.outer_context.Enter()
-    if values.get_shape().is_fully_defined():
-      values_shape = tensor_shape.TensorShape(
-          [tensor_shape.Dimension(1)] + values.get_shape().dims[1:])
-      if self.outer_context:
-        self.outer_context.Enter()
-      values_acc = constant_op.constant(
-          0, values.dtype, shape=values_shape, name="b_acc")
-      if self.outer_context:
-        self.outer_context.Exit()
-    else:
-      values_shape = _resource_safe_shape(op.inputs[0])[1:]
-      values_shape = array_ops.concat([[1], values_shape], 0)
-      values_acc = array_ops.zeros(values_shape, dtype=values.dtype)
-    indices_acc = constant_op.constant([0], indices.dtype)
-    shape_acc = None
-    if dense_shape is not None:
-      if dense_shape.get_shape().is_fully_defined():
-        if self.outer_context:
-          self.outer_context.Enter()
-        shape_acc = constant_op.constant(
-            0, dense_shape.dtype, shape=dense_shape.get_shape())
-        if self.outer_context:
-          self.outer_context.Exit()
-      else:
-        shape_acc = array_ops.zeros_like(
-            array_ops.shape_internal(op.inputs[0], optimize=False,
-                                     out_type=dense_shape.dtype),
-            optimize=False)
-
-    if self.outer_context:
-      self.outer_context.Exit()
-
-    self.Enter()
-    self.AddName(values_acc.name)
-    self.AddName(indices_acc.name)
-    init_acc = [indices_acc, values_acc]
-    if shape_acc is not None:
-      self.AddName(shape_acc.name)
-      init_acc.append(shape_acc)
-
-    # Set use_input_shape=False since the accumulator tensors will grow in
-    # size. If use_input_shape=True, the _update_input call below will result in
-    # incompatible shapes.
-    enter_acc = [
-        _Enter(
-            x,
-            self._name,
-            is_constant=False,
-            parallel_iterations=self._parallel_iterations,
-            use_input_shape=False,
-            name="b_acc") for x in init_acc
-    ]
-    # Manually set appropriate partial shapes.
-    enter_acc[0].set_shape([None])
-    if values_acc.shape.dims is not None:
-      enter_acc[1].set_shape([None] + values_acc.shape.as_list()[1:])
-    self.loop_enters.extend(enter_acc)
-
-    merge_acc = [merge([x, x], name="b_acc")[0] for x in enter_acc]
-    switch_acc = [switch(x, self._pivot) for x in merge_acc]
-
-    # The actual accumulation.
-    acc_indexed_slices = [
-        array_ops.concat([xa[1], xv], 0)
-        for xa, xv in zip(switch_acc[:2], [indices, values])
-    ]
-    if shape_acc is not None:
-      # For the shape we just keep the maximum
-      acc_indexed_slices.append(math_ops.maximum(dense_shape, switch_acc[2][1]))
-
-    next_acc = [_NextIteration(x) for x in acc_indexed_slices]
-    for xm, xn in zip(merge_acc, next_acc):
-      xm.op._update_input(1, xn)  
-
-    exit_acc = [exit(x[0], name="b_acc") for x in switch_acc]
-    self.loop_exits.extend(exit_acc)
-
-    self.ExitResult(exit_acc)
-    return ops.IndexedSlices(
-        indices=exit_acc[0],
-        values=exit_acc[1],
-        dense_shape=exit_acc[2] if shape_acc is not None else None)
 
   def _InitializeValues(self, values):
     self._values = set()
@@ -1422,10 +1168,6 @@ class WhileContext(ControlFlowContext):
         x.op._add_control_inputs(outer_control_inputs)
         graph._record_op_seen_by_control_dependencies(x.op)
     
-
-  def IsWhileContext(self):
-    return True
-
 def _Enter(data,
            frame_name,
            is_constant=False,
@@ -1439,7 +1181,7 @@ def _Enter(data,
       result = gen_control_flow_ops.ref_enter(
           data, frame_name, is_constant, parallel_iterations, name=name)
     else:
-      result = gen_control_flow_ops.enter(
+      result = enter(
           data, frame_name, is_constant, parallel_iterations, name=name)
     if use_input_shape:
       result.set_shape(data.get_shape())
@@ -2217,6 +1959,234 @@ def ZerosLikeOutsideLoop(op, index):
 
 #edit
 
+def switch(data, pred, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Switch", data=data, pred=pred, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "Switch", _inputs_flat, _attrs, _result, name)
+    _result = _SwitchOutput._make(_result)
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Switch", name,
+        _ctx._post_execution_callbacks, data, pred)
+      _result = _SwitchOutput._make(_result)
+      return _result
+    except _core._FallbackException:
+      return switch_eager_fallback(
+          data, pred, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+_switch_outputs = ["output_false", "output_true"]
+_SwitchOutput = collections.namedtuple(
+    "Switch", _switch_outputs)
+
+def merge(inputs, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    if not isinstance(inputs, (list, _basetuple)):
+      raise TypeError(
+          "Expected list for 'inputs' argument to "
+          "'merge' Op, not %r." % inputs)
+    _attr_N = len(inputs)
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Merge", inputs=inputs, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"), "N", _op.get_attr("N"))
+    execute.record_gradient(
+      "Merge", _inputs_flat, _attrs, _result, name)
+    _result = _MergeOutput._make(_result)
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Merge", name,
+        _ctx._post_execution_callbacks, inputs)
+      _result = _MergeOutput._make(_result)
+      return _result
+    except _core._FallbackException:
+      return merge_eager_fallback(
+          inputs, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+_merge_outputs = ["output", "value_index"]
+_MergeOutput = collections.namedtuple(
+    "Merge", _merge_outputs)
+
+def enter(data, frame_name, is_constant=False, parallel_iterations=10, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    frame_name = execute.make_str(frame_name, "frame_name")
+    if is_constant is None:
+      is_constant = False
+    is_constant = execute.make_bool(is_constant, "is_constant")
+    if parallel_iterations is None:
+      parallel_iterations = 10
+    parallel_iterations = execute.make_int(parallel_iterations, "parallel_iterations")
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "Enter", data=data, frame_name=frame_name, is_constant=is_constant,
+        parallel_iterations=parallel_iterations, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"), "frame_name",
+              _op.get_attr("frame_name"), "is_constant",
+              _op.get_attr("is_constant"), "parallel_iterations",
+              _op.get_attr("parallel_iterations"))
+    execute.record_gradient(
+      "Enter", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "Enter", name,
+        _ctx._post_execution_callbacks, data, "frame_name", frame_name,
+        "is_constant", is_constant, "parallel_iterations",
+        parallel_iterations)
+      return _result
+    except _core._FallbackException:
+      return enter_eager_fallback(
+          data, frame_name=frame_name, is_constant=is_constant,
+          parallel_iterations=parallel_iterations, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def loop_cond(input, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "LoopCond", input=input, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = None
+    execute.record_gradient(
+      "LoopCond", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "LoopCond",
+        name, _ctx._post_execution_callbacks, input)
+      return _result
+    except _core._FallbackException:
+      return loop_cond_eager_fallback(
+          input, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def next_iteration(data, name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "NextIteration", data=data, name=name)
+    _result = _op.outputs[:]
+    _inputs_flat = _op.inputs
+    _attrs = ("T", _op.get_attr("T"))
+    execute.record_gradient(
+      "NextIteration", _inputs_flat, _attrs, _result, name)
+    _result, = _result
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name,
+        "NextIteration", name, _ctx._post_execution_callbacks, data)
+      return _result
+    except _core._FallbackException:
+      return next_iteration_eager_fallback(
+          data, name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+
+
+def no_op(name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "NoOp", name=name)
+    return _op
+    _result = None
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name, "NoOp", name,
+        _ctx._post_execution_callbacks)
+      return _result
+    except _core._FallbackException:
+      return no_op_eager_fallback(
+          name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+def control_trigger(name=None):
+  _ctx = context._context
+  if _ctx is None or not _ctx._eager_context.is_eager:
+    _, _, _op = _op_def_lib._apply_op_helper(
+        "ControlTrigger", name=name)
+    return _op
+    _result = None
+    return _result
+
+  else:
+    try:
+      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
+        _ctx._context_handle, _ctx._eager_context.device_name,
+        "ControlTrigger", name, _ctx._post_execution_callbacks)
+      return _result
+    except _core._FallbackException:
+      return control_trigger_eager_fallback(
+          name=name, ctx=_ctx)
+    except _core._NotOkStatusException as e:
+      if name is not None:
+        message = e.message + " name: " + name
+      else:
+        message = e.message
+      _six.raise_from(_core._status_to_exception(e.code, message), None)
+
+
+
 def with_dependencies(dependencies, output_tensor, name=None):
   if context.executing_eagerly():
     return output_tensor
@@ -2314,3 +2284,12 @@ def tuple(tensors, name=None, control_inputs=None):
         tpl.append(None)
     return tpl
 
+def _InitOpDefLibrary(op_list_proto_bytes):
+  op_list = _op_def_pb2.OpList()
+  op_list.ParseFromString(op_list_proto_bytes)
+  _op_def_registry.register_op_list(op_list)
+  op_def_lib = _op_def_library.OpDefLibrary()
+  op_def_lib.add_op_list(op_list)
+  return op_def_lib
+
+_op_def_lib = _InitOpDefLibrary(b"\n@\n\005Abort\"\027\n\terror_msg\022\006string\032\002\022\000\"\036\n\022exit_without_error\022\004bool\032\002(\000\n\020\n\016ControlTrigger\ny\n\005Enter\022\t\n\004data\"\001T\032\013\n\006output\"\001T\"\t\n\001T\022\004type\"\024\n\nframe_name\022\006string\"\027\n\013is_constant\022\004bool\032\002(\000\"\036\n\023parallel_iterations\022\003int\032\002\030\n\n)\n\004Exit\022\t\n\004data\"\001T\032\013\n\006output\"\001T\"\t\n\001T\022\004type\n!\n\010LoopCond\022\t\n\005input\030\n\032\n\n\006output\030\n\nN\n\005Merge\022\016\n\006inputs\"\001T*\001N\032\013\n\006output\"\001T\032\017\n\013value_index\030\003\"\t\n\001T\022\004type\"\014\n\001N\022\003int(\0010\001\n2\n\rNextIteration\022\t\n\004data\"\001T\032\013\n\006output\"\001T\"\t\n\001T\022\004type\n\006\n\004NoOp\n\202\001\n\010RefEnter\022\014\n\004data\"\001T\200\001\001\032\016\n\006output\"\001T\200\001\001\"\t\n\001T\022\004type\"\024\n\nframe_name\022\006string\"\027\n\013is_constant\022\004bool\032\002(\000\"\036\n\023parallel_iterations\022\003int\032\002\030\n\n2\n\007RefExit\022\014\n\004data\"\001T\200\001\001\032\016\n\006output\"\001T\200\001\001\"\t\n\001T\022\004type\nW\n\010RefMerge\022\021\n\006inputs\"\001T*\001N\200\001\001\032\016\n\006output\"\001T\200\001\001\032\017\n\013value_index\030\003\"\t\n\001T\022\004type\"\014\n\001N\022\003int(\0010\001\n;\n\020RefNextIteration\022\014\n\004data\"\001T\200\001\001\032\016\n\006output\"\001T\200\001\001\"\t\n\001T\022\004type\nR\n\tRefSelect\022\t\n\005index\030\003\022\021\n\006inputs\"\001T*\001N\200\001\001\032\016\n\006output\"\001T\200\001\001\"\t\n\001T\022\004type\"\014\n\001N\022\003int(\0010\001\n\\\n\tRefSwitch\022\014\n\004data\"\001T\200\001\001\022\010\n\004pred\030\n\032\024\n\014output_false\"\001T\200\001\001\032\023\n\013output_true\"\001T\200\001\001\"\t\n\001T\022\004type\230\001\001\nM\n\006Switch\022\t\n\004data\"\001T\022\010\n\004pred\030\n\032\021\n\014output_false\"\001T\032\020\n\013output_true\"\001T\"\t\n\001T\022\004type")

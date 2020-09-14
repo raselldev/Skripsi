@@ -43,8 +43,7 @@ def smart_cond(pred, true_fn=None, false_fn=None, name=None):
     TypeError: If `true_fn` or `false_fn` is not callable.
   """
   if isinstance(pred, variables.Variable):
-    return control_flow_ops.cond(
-        pred, true_fn=true_fn, false_fn=false_fn, name=name)
+    pass
   return smart_module.smart_cond(
       pred, true_fn=true_fn, false_fn=false_fn, name=name)
 
