@@ -14,7 +14,7 @@ class FilePaths:
 	fnCharList = '../model/charList.txt'
 	fnAccuracy = '../model/accuracy.txt'
 	fnTrain = '../data/'
-	fnInfer = '../data/test.png'
+	fnInfer = '../data/selamanya.jpg'
 	#fnInfer = args(["-i"])
 	#fnInfer = input("Pilih Path : ")
 	fnCorpus = '../data/corpus.txt'

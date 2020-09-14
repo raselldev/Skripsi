@@ -1954,9 +1954,6 @@ def ZerosLikeOutsideLoop(op, index):
     else:
       return array_ops.zeros_like(val, optimize=False)
 
-
-
-
 #edit
 
 def switch(data, pred, name=None):
@@ -2133,8 +2130,6 @@ def next_iteration(data, name=None):
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-
-
 def no_op(name=None):
   _ctx = context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
@@ -2184,8 +2179,6 @@ def control_trigger(name=None):
       else:
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-
 
 def with_dependencies(dependencies, output_tensor, name=None):
   if context.executing_eagerly():

@@ -6,7 +6,7 @@ from tensorflow.python import context
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import tensor_shape
-from tensorflow.python import constraints
+#from tensorflow.python import constraints
 from tensorflow.python import initializers
 from tensorflow.python import regularizers
 from tensorflow.python.base_layer import InputSpec
@@ -19,6 +19,20 @@ from tensorflow.python.ops import nn_impl as nn
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import variables as tf_variables
 from tensorflow.python.training import distribution_strategy_context
+
+def get(identifier):
+  if identifier is None:
+    return None
+  if isinstance(identifier, dict):
+    return deserialize(identifier)
+  elif isinstance(identifier, six.string_types):
+    config = {'class_name': str(identifier), 'config': {}}
+    return deserialize(config)
+  elif callable(identifier):
+    return identifier
+  else:
+    raise ValueError('Could not interpret constraint identifier: ' +
+                     str(identifier))
 
 
 
@@ -64,8 +78,8 @@ class BatchNormalization(Layer):
         moving_variance_initializer)
     self.beta_regularizer = regularizers.get(beta_regularizer)
     self.gamma_regularizer = regularizers.get(gamma_regularizer)
-    self.beta_constraint = constraints.get(beta_constraint)
-    self.gamma_constraint = constraints.get(gamma_constraint)
+    self.beta_constraint = get(beta_constraint)
+    self.gamma_constraint = get(gamma_constraint)
     self.renorm = renorm
     self.virtual_batch_size = virtual_batch_size
     self.adjustment = adjustment

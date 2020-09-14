@@ -9,11 +9,12 @@ import inspect
 import re
 import numpy as np
 from six.moves import zip
+import weakref
 
 
 #from tensorflow.python import function as eager_function
 from tensorflow.python import context
-from tensorflow.python import constraints
+#from tensorflow.python import constraints
 from tensorflow.python import regularizers
 from tensorflow.python import initializers
 from tensorflow.python import backend
@@ -26,6 +27,22 @@ from tensorflow.python.util import function_utils
 from tensorflow.python.util import tf_inspect
 from tensorflow.python.util import nest
 #from tensorflow import doc_controls
+
+PER_GRAPH_LAYER_NAME_UIDS = weakref.WeakKeyDictionary()
+
+def get(identifier):
+  if identifier is None:
+    return None
+  if isinstance(identifier, dict):
+    return deserialize(identifier)
+  elif isinstance(identifier, six.string_types):
+    config = {'class_name': str(identifier), 'config': {}}
+    return deserialize(config)
+  elif callable(identifier):
+    return identifier
+  else:
+    raise ValueError('Could not interpret constraint identifier: ' +
+                     str(identifier))
 
 
 #@tf_export('keras.layers.InputSpec', 'layers.InputSpec')
@@ -248,7 +265,7 @@ class Layer(checkpointable.CheckpointableBase):
     dtype = dtypes.as_dtype(dtype)
     initializer = initializers.get(initializer)
     regularizer = regularizers.get(regularizer)
-    constraint = constraints.get(constraint)
+    constraint = get(constraint)
 
     if synchronization == tf_variables.VariableSynchronization.ON_READ:
       if trainable:
@@ -294,7 +311,7 @@ class Layer(checkpointable.CheckpointableBase):
         collections=collections,
         synchronization=synchronization,
         aggregation=aggregation)
-    backend.track_variable(variable)
+    #track_variable(variable)
 
     if regularizer is not None:
       # TODO(fchollet): in the future, this should be handled at the
@@ -632,12 +649,12 @@ def unique_layer_name(name, name_uid_map=None, avoid_names=None, namespace='',
 
 
 def get_default_graph_uid_map():
-  # TODO(fchollet): refactor this into backend.
+  # TODO(fchollet): refactor this into 
   graph = ops.get_default_graph()
-  name_uid_map = backend.PER_GRAPH_LAYER_NAME_UIDS.get(graph, None)
+  name_uid_map = PER_GRAPH_LAYER_NAME_UIDS.get(graph, None)
   if name_uid_map is None:
     name_uid_map = collections_lib.defaultdict(int)
-    backend.PER_GRAPH_LAYER_NAME_UIDS[graph] = name_uid_map
+    PER_GRAPH_LAYER_NAME_UIDS[graph] = name_uid_map
   return name_uid_map
 
 
