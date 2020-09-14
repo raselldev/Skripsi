@@ -19,7 +19,7 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-from tensorflow.python.framework import random_seed
+#from tensorflow.python.framework import random_seed
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import gen_random_ops
@@ -28,6 +28,31 @@ from tensorflow.python.util import deprecation
 #from tensorflow.python.util.tf_export import tf_export
 
 # pylint: enable=wildcard-import
+
+
+def get_seed(op_seed):
+ 
+  global_seed = ops.get_default_graph().seed
+
+  if global_seed is not None:
+    if op_seed is None:
+      # pylint: disable=protected-access
+      if eager:
+        op_seed = context.internal_operation_seed()
+      else:
+        op_seed = ops.get_default_graph()._last_id
+
+    seeds = _truncate_seed(global_seed), _truncate_seed(op_seed)
+  else:
+    if op_seed is not None:
+      seeds = DEFAULT_GRAPH_SEED, _truncate_seed(op_seed)
+    else:
+      seeds = None, None
+  # Avoid (0, 0) as the C++ ops interpret it as nondeterminism, which would
+  # be unexpected since Python docs say nondeterminism is (None, None).
+  if seeds == (0, 0):
+    return (0, _MAXINT32)
+  return seeds
 
 
 def _ShapeTensor(shape):
@@ -165,7 +190,7 @@ def truncated_normal(shape,
     shape_tensor = _ShapeTensor(shape)
     mean_tensor = ops.convert_to_tensor(mean, dtype=dtype, name="mean")
     stddev_tensor = ops.convert_to_tensor(stddev, dtype=dtype, name="stddev")
-    seed1, seed2 = random_seed.get_seed(seed)
+    seed1, seed2 = get_seed(seed)
     rnd = gen_random_ops.truncated_normal(
         shape_tensor, dtype, seed=seed1, seed2=seed2)
     mul = rnd * stddev_tensor
@@ -230,7 +255,7 @@ def random_uniform(shape,
     shape = _ShapeTensor(shape)
     minval = ops.convert_to_tensor(minval, dtype=dtype, name="min")
     maxval = ops.convert_to_tensor(maxval, dtype=dtype, name="max")
-    seed1, seed2 = random_seed.get_seed(seed)
+    seed1, seed2 = get_seed(seed)
     if dtype.is_integer:
       return gen_random_ops.random_uniform_int(
           shape, minval, maxval, seed=seed1, seed2=seed2, name=name)
