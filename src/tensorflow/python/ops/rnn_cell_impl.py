@@ -42,7 +42,7 @@ from tensorflow.python.ops import variable_scope as vs
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python import initializers
-from tensorflow.python import tf_utils
+#from tensorflow.python import tf_utils
 from tensorflow.python.training import base as checkpointable
 from tensorflow.python.util import nest
 from tensorflow.python.util.deprecation import deprecated
@@ -420,7 +420,7 @@ class BasicRNNCell(LayerRNNCell):
   def output_size(self):
     return self._num_units
 
-  @tf_utils.shape_type_conversion
+#  @tf_utils.shape_type_conversion
   def build(self, inputs_shape):
     if inputs_shape[-1] is None:
       raise ValueError("Expected inputs.shape[-1] to be known, saw shape: %s"
@@ -517,7 +517,7 @@ class GRUCell(LayerRNNCell):
   def output_size(self):
     return self._num_units
 
-  @tf_utils.shape_type_conversion
+#  @tf_utils.shape_type_conversion
   def build(self, inputs_shape):
     if inputs_shape[-1] is None:
       raise ValueError("Expected inputs.shape[-1] to be known, saw shape: %s"
@@ -697,7 +697,7 @@ class BasicLSTMCell(LayerRNNCell):
   def output_size(self):
     return self._num_units
 
-  @tf_utils.shape_type_conversion
+ # @tf_utils.shape_type_conversion
   def build(self, inputs_shape):
     if inputs_shape[-1] is None:
       raise ValueError("Expected inputs.shape[-1] to be known, saw shape: %s"
@@ -900,7 +900,7 @@ class LSTMCell(LayerRNNCell):
   def output_size(self):
     return self._output_size
 
-  @tf_utils.shape_type_conversion
+ # @tf_utils.shape_type_conversion
   def build(self, inputs_shape):
     if inputs_shape[-1] is None:
       raise ValueError("Expected inputs.shape[-1] to be known, saw shape: %s"

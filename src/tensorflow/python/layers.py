@@ -11,7 +11,7 @@ from tensorflow.python import initializers
 from tensorflow.python import regularizers
 from tensorflow.python.base_layer import InputSpec
 from tensorflow.python.base_layer import Layer
-from tensorflow.python import tf_utils
+#from tensorflow.python import tf_utils
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import init_ops
 from tensorflow.python.ops import math_ops
@@ -19,6 +19,7 @@ from tensorflow.python.ops import nn_impl as nn
 from tensorflow.python.ops import state_ops
 from tensorflow.python.ops import variables as tf_variables
 from tensorflow.python.training import distribution_strategy_context
+from tensorflow.python.framework import smart_cond as smart_module
 
 def get(identifier):
   if identifier is None:
@@ -265,7 +266,7 @@ class BatchNormalization(Layer):
           is_training=False,
           data_format=self._data_format)
 
-    output, mean, variance = tf_utils.smart_cond(
+    output, mean, variance = smart_module.smart_cond(
         training, _fused_batch_norm_training, _fused_batch_norm_inference)
     if not self._bessels_correction_test_only:
       # Remove Bessel's correction to be consistent with non-fused batch norm.
@@ -276,9 +277,9 @@ class BatchNormalization(Layer):
       factor = (sample_size - math_ops.cast(1.0, variance.dtype)) / sample_size
       variance *= factor
 
-    training_value = tf_utils.constant_value(training)
+    training_value = smart_module.smart_constant_value(training)
     if training_value is None:
-      momentum = tf_utils.smart_cond(training,
+      momentum = smart_module.smart_cond(training,
                                      lambda: self.momentum,
                                      lambda: 1.0)
     else:
