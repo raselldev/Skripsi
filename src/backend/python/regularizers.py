@@ -37,30 +37,6 @@ class Regularizer(object):
     return cls(**config)
 
 
-#@tf_export('keras.regularizers.L1L2')
-class L1L2(Regularizer):
-  """Regularizer for L1 and L2 regularization.
-
-  Arguments:
-      l1: Float; L1 regularization factor.
-      l2: Float; L2 regularization factor.
-  """
-
-  def __init__(self, l1=0., l2=0.):  # pylint: disable=redefined-outer-name
-    self.l1 = K.cast_to_floatx(l1)
-    self.l2 = K.cast_to_floatx(l2)
-
-  def __call__(self, x):
-    regularization = 0.
-    if self.l1:
-      regularization += math_ops.reduce_sum(self.l1 * math_ops.abs(x))
-    if self.l2:
-      regularization += math_ops.reduce_sum(self.l2 * math_ops.square(x))
-    return regularization
-
-  def get_config(self):
-    return {'l1': float(self.l1), 'l2': float(self.l2)}
-
 
 # Aliases.
 
@@ -105,5 +81,3 @@ def get(identifier):
     return deserialize(config)
   elif callable(identifier):
     return identifier
-  else:
-    raise ValueError('Could not interpret regularizer identifier:', identifier)
