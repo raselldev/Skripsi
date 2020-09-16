@@ -28,7 +28,7 @@ from backend.python.framework import ops
 from backend.python.ops import math_ops
 from backend.python.ops import array_ops
 from backend.python.ops import gen_data_flow_ops
-from backend.python.util import tf_should_use
+#from backend.python.util import tf_should_use
 #from backend.python.util.tf_export import tf_export
 
 
@@ -256,7 +256,7 @@ class _GraphTensorArray(object):
       value.set_shape(self._element_shape[0].dims)
     return value
 
-  @tf_should_use.should_use_result
+#  #@tf_should_use.should_use_result
   def write(self, index, value, name=None):
     """See TensorArray."""
     with ops.name_scope(name, "TensorArrayWrite", [self._handle, index, value]):
@@ -318,7 +318,7 @@ class _GraphTensorArray(object):
       value.set_shape([None] + self._element_shape[0].dims[1:])
     return value
 
-  @tf_should_use.should_use_result
+  #@tf_should_use.should_use_result
   def unstack(self, value, name=None):
     """See TensorArray."""
     with ops.name_scope(name, "TensorArrayUnstack", [self._handle, value]):
@@ -326,7 +326,7 @@ class _GraphTensorArray(object):
       return self.scatter(
           indices=math_ops.range(0, num_elements), value=value, name=name)
 
-  @tf_should_use.should_use_result
+  #@tf_should_use.should_use_result
   def scatter(self, indices, value, name=None):
     """See TensorArray."""
     with ops.name_scope(name, "TensorArrayScatter",
@@ -349,7 +349,7 @@ class _GraphTensorArray(object):
       ta._colocate_with = self._colocate_with
       return ta
 
-  @tf_should_use.should_use_result
+  #@tf_should_use.should_use_result
   def split(self, value, lengths, name=None):
     """See TensorArray."""
     with ops.name_scope(name, "TensorArraySplit",
@@ -383,7 +383,7 @@ class _GraphTensorArray(object):
     return gen_data_flow_ops.tensor_array_size_v3(
         handle=self._handle, flow_in=self.flow, name=name)
 
-  @tf_should_use.should_use_result
+  #@tf_should_use.should_use_result
   def close(self, name=None):
     """See TensorArray."""
     return gen_data_flow_ops.tensor_array_close_v3(
@@ -819,7 +819,7 @@ class TensorArray(object):
     """
     return self._implementation.read(index, name=name)
 
-  @tf_should_use.should_use_result
+  #@tf_should_use.should_use_result
   def write(self, index, value, name=None):
     """Write `value` into index `index` of the TensorArray.
 
@@ -882,7 +882,7 @@ class TensorArray(object):
     """
     return self._implementation.concat(name=name)
 
-  @tf_should_use.should_use_result
+  #@tf_should_use.should_use_result
   def unstack(self, value, name=None):
     """Unstack the values of a `Tensor` in the TensorArray.
 
@@ -902,7 +902,7 @@ class TensorArray(object):
     """
     return self._implementation.unstack(value, name=name)
 
-  @tf_should_use.should_use_result
+  #@tf_should_use.should_use_result
   def scatter(self, indices, value, name=None):
     """Scatter the values of a `Tensor` in specific indices of a `TensorArray`.
 
@@ -921,7 +921,7 @@ class TensorArray(object):
     """
     return self._implementation.scatter(indices, value, name=name)
 
-  @tf_should_use.should_use_result
+  #@tf_should_use.should_use_result
   def split(self, value, lengths, name=None):
     """Split the values of a `Tensor` into the TensorArray.
 
@@ -944,7 +944,7 @@ class TensorArray(object):
     """Return the size of the TensorArray."""
     return self._implementation.size(name=name)
 
-  @tf_should_use.should_use_result
+  #@tf_should_use.should_use_result
   def close(self, name=None):
     """Close the current TensorArray."""
     return self._implementation.close(name=name)
