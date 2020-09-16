@@ -31,7 +31,7 @@ from backend.python.framework import traceable_stack
 from backend.python.framework import registry
 from backend.python.ops import control_flow_util
 from backend.python.util import function_utils
-from backend.python.util import tf_stack
+#from backend.python.util import tf_stack
 from backend.python.util import compat
 from backend.python.util import deprecation
 #from backend.python.util import decorator_utils
@@ -1701,7 +1701,7 @@ class Operation(object):
     
     self._id_value = self._graph._next_id()
     self._original_op = original_op
-    self._traceback = tf_stack.extract_stack()
+#    self._traceback = tf_stack.extract_stack()
     self._device_code_locations = None
     self._colocation_code_locations = None
     self._control_flow_context = self.graph._get_control_flow_context()

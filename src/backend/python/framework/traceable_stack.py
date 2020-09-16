@@ -17,8 +17,32 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+import sys
 
-from backend.python.util import tf_stack
+#from backend.python.util import tf_stack
+
+def extract_stack(extract_frame_info_fn=None):
+  default_fn = lambda f: None
+  extract_frame_info_fn = extract_frame_info_fn or default_fn
+  try:
+    raise ZeroDivisionError
+  except ZeroDivisionError:
+    f = sys.exc_info()[2].tb_frame.f_back
+  ret = []
+  while f is not None:
+    lineno = f.f_lineno
+    co = f.f_code
+    filename = co.co_filename
+    name = co.co_name
+    frame_globals = f.f_globals
+    func_start_lineno = co.co_firstlineno
+    frame_info = extract_frame_info_fn(f)
+    ret.append((filename, lineno, name, frame_globals, func_start_lineno,
+                frame_info))
+    f = f.f_back
+  ret.reverse()
+  return ret
+
 
 
 class TraceableObject(object):
@@ -55,7 +79,7 @@ class TraceableObject(object):
     # beyond the caller.
     local_offset = offset + 1
 
-    frame_records = tf_stack.extract_stack()
+    frame_records = extract_stack()
     if not frame_records:
       return self.FAILURE
     if len(frame_records) >= local_offset:
