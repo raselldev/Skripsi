@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import sys
 import numpy as np
-import tensorflow as b
+import backend as b
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
