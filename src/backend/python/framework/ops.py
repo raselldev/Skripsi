@@ -41,112 +41,8 @@ from backend.python.util.deprecation import deprecated_args
 #from backend.python.util.tf_export import tf_export
 
 
-_USE_C_API = True
-_USE_C_SHAPES = True
 
 
-
-#@contextlib.contextmanager
-def stop_recording():
-  try:
-    pywrap_tensorflow.TFE_Py_TapeSetStopOnThread()
-    yield
-  finally:
-    pywrap_tensorflow.TFE_Py_TapeSetRestartOnThread()
-
-
-
-def tensor_id(tensor):
-  return tensor._id  
-
-
-class _UserDeviceSpec(object):
-  def __init__(self, device_name_or_function):
-    self._device_name_or_function = device_name_or_function
-
-    self.display_name = str(self._device_name_or_function)
-    if callable(self._device_name_or_function):
-      dev_func = self._device_name_or_function
-      func_name = function_utils.get_func_name(dev_func)
-      func_code = function_utils.get_func_code(dev_func)
-      if func_code:
-        fname = func_code.co_filename
-        lineno = func_code.co_firstlineno
-      else:
-        fname = "unknown"
-        lineno = -1
-      self.display_name = "%s<%s, %d>" % (func_name, fname, lineno)
-
-    self.function = self._device_name_or_function
-    if not (self._device_name_or_function is None or
-            callable(self._device_name_or_function)):
-      self.function = pydev.merge_device(self._device_name_or_function)
-
-
-
-def _override_helper(clazz_object, operator, func):
-  existing = getattr(clazz_object, operator, None)
-  if existing is not None:
-    if not isinstance(existing, type(object.__lt__)):
-      raise ValueError("operator %s cannot be overwritten again on class %s." %
-                       (operator, clazz_object))
-  if operator not in Tensor.OVERLOADABLE_OPERATORS:
-    raise ValueError("Overriding %s is disallowed" % operator)
-  setattr(clazz_object, operator, func)
-
-
-def _as_graph_element(obj):
-  conv_fn = getattr(obj, "_as_graph_element", None)
-  if conv_fn and callable(conv_fn):
-    return conv_fn()
-  return None
-
-
-_TENSOR_LIKE_TYPES = tuple()
-
-
-def is_dense_tensor_like(t):
-  return isinstance(t, _TENSOR_LIKE_TYPES)
-
-
-def register_dense_tensor_like_type(tensor_type):
-  try:
-    if not isinstance(tensor_type.name, property):
-      raise TypeError("Type %s does not define a `name` property" %
-                      tensor_type.__name__)
-  except AttributeError:
-    raise TypeError("Type %s does not define a `name` property" %
-                    tensor_type.__name__)
-  try:
-    if not isinstance(tensor_type.dtype, property):
-      raise TypeError("Type %s does not define a `dtype` property" %
-                      tensor_type.__name__)
-  except AttributeError:
-    raise TypeError("Type %s does not define a `dtype` property" %
-                    tensor_type.__name__)
-  global _TENSOR_LIKE_TYPES
-  _TENSOR_LIKE_TYPES = tuple(list(_TENSOR_LIKE_TYPES) + [tensor_type])
-
-
-def uid():
-  return c_api.TFE_Py_UID()
-
-
-def numpy_text(tensor, is_repr=False):
-  if tensor.dtype.is_numpy_compatible:
-    text = repr(tensor.numpy()) if is_repr else str(tensor.numpy())
-  else:
-    text = "<unprintable>"
-  if "\n" in text:
-    text = "\n" + text
-  return text
-
-
-class _TensorLike(object):
-  pass
-
-
-#@tf_export("Tensor")
 class Tensor(object):
   OVERLOADABLE_OPERATORS = {
       "__add__",
@@ -267,18 +163,7 @@ class Tensor(object):
         "Tensor._shape cannot be assigned, use Tensor.set_shape instead.")
 
   def __iter__(self):
-    if not context.executing_eagerly():
-      raise TypeError(
-          "Tensor objects are only iterable when eager execution is "
-          "enabled. To iterate over this tensor use tf.map_fn.")
     shape = self._shape_tuple()
-    if shape is None:
-      raise TypeError("Cannot iterate over a tensor with unknown shape.")
-    if not shape:
-      raise TypeError("Cannot iterate over a scalar tensor.")
-    if shape[0] is None:
-      raise TypeError(
-          "Cannot iterate over a tensor with unknown first dimension.")
     for i in xrange(shape[0]):
       yield self[i]
 
@@ -401,184 +286,6 @@ class Tensor(object):
   def eval(self, feed_dict=None, session=None):
     return _eval_using_default_session(self, feed_dict, self.graph, session)
 
-
-class _EagerTensorBase(Tensor):
-  @property
-  def dtype(self):
-    return dtypes._INTERN_TABLE[self._datatype_enum()]  
-
-  def numpy(self):
-    if self.dtype == dtypes.resource:
-      raise ValueError("Resource handles are not convertible to numpy.")
-    return self._cpu_nograd()._numpy()  
-
-  def __int__(self):
-    return int(self.numpy())
-
-  def __float__(self):
-    return float(self.numpy())
-
-  def __index__(self):
-    return int(self.numpy())
-
-  def __array__(self, dtype=None):
-    return np.array(self.numpy(), dtype=dtype)
-
-  def __format__(self, format_spec):
-    return self.numpy().__format__(format_spec)
-
-  def __reduce__(self):
-    return (convert_to_tensor, (self.numpy(),))
-
-  def _numpy(self):
-    raise NotImplementedError()
-
-  def __copy__(self):
-    return self
-
-  def __deepcopy__(self, memo):
-    del memo
-    return self
-
-  def _datatype_enum(self):
-    raise NotImplementedError()
-
-  def _shape_tuple(self):
-    raise NotImplementedError()
-
-  def _rank(self):
-    raise NotImplementedError()
-
-  def _num_elements(self):
-    raise NotImplementedError()
-
-  def _copy_to_device(self, context, device):  
-    raise NotImplementedError()
-
-  def __str__(self):
-    return "tf.Tensor(%s, shape=%s, dtype=%s)" % (numpy_text(self),
-                                                  self.shape,
-                                                  self.dtype.name)
-
-  def __repr__(self):
-    return "<tf.Tensor: id=%s, shape=%s, dtype=%s, numpy=%s>" % (
-        self._id, self.shape, self.dtype.name, numpy_text(self, is_repr=True))
-
-  @staticmethod
-  def _override_operator(name, func):
-    setattr(_EagerTensorBase, name, func)
-
-  def _copy_nograd(self, ctx=None, device_name=None):
-    if ctx is None:
-      ctx = context.context()
-    if device_name is None:
-      device_name = ctx.device_name
-    
-    try:
-      new_tensor = self._copy_to_device(context=ctx._handle, device=device_name)
-    except core._NotOkStatusException as e:
-      six.raise_from(core._status_to_exception(e.code, e.message), None)
-    return new_tensor
-
-  def _copy(self, ctx=None, device_name=None):
-    new_tensor = self._copy_nograd(ctx, device_name)
-    if context.executing_eagerly():
-      self_device = self.device
-      def grad_fun(dresult):
-        return [dresult._copy(device_name=self_device)]
-      tape.record_operation("_copy", [new_tensor], [self], grad_fun)
-    return new_tensor
-    
-
-  @property
-  def shape(self):
-    if self._tensor_shape is None: 
-      self._tensor_shape = tensor_shape.TensorShape(self._shape_tuple())
-    return self._tensor_shape
-
-  def get_shape(self):
-    return self.shape
-
-  def _shape_as_list(self):
-    return list(self._shape_tuple())
-
-  @property
-  def ndim(self):
-    return self.shape.ndims
-
-  def _cpu_nograd(self):
-    return self._copy_nograd(context.context(), "CPU:0")
-
-  def cpu(self):
-    return self._copy(context.context(), "CPU:0")
-
-  def gpu(self, gpu_index=0):
-    return self._copy(context.context(), "GPU:" + str(gpu_index))
-
-  def __bool__(self):
-    if self._shape_tuple() != (): 
-      raise ValueError(
-          "Non-scalar tensor %s cannot be converted to boolean." % repr(self))
-    if self.dtype != dtypes.bool:
-      raise ValueError(
-          "Non-boolean tensor %s cannot be converted to boolean." % repr(self))
-    return bool(self.cpu().numpy())
-
-  def __nonzero__(self):
-    return self.__bool__()
-
-  def set_shape(self, shape):
-    if not self.shape.is_compatible_with(shape):
-      raise ValueError(
-          "Tensor's shape %s is not compatible with supplied shape %s" %
-          (self.shape, shape))
-
-  @property
-  def op(self):
-    raise AttributeError(
-        "Tensor.op is meaningless when eager execution is enabled.")
-
-  @property
-  def graph(self):
-    raise AttributeError(
-        "Tensor.graph is meaningless when eager execution is enabled.")
-
-  @property
-  def name(self):
-    raise AttributeError(
-        "Tensor.name is meaningless when eager execution is enabled.")
-
-  @property
-  def value_index(self):
-    raise AttributeError(
-        "Tensor.value_index is meaningless when eager execution is enabled.")
-
-  def consumers(self):
-    raise NotImplementedError(
-        "Tensor.consumers is meaningless when eager execution is enabled.")
-
-  def _add_consumer(self, consumer):
-    raise NotImplementedError(
-        "_add_consumer not supported when eager execution is enabled.")
-
-  def _as_node_def_input(self):
-    raise NotImplementedError(
-        "_as_node_def_input not supported when eager execution is enabled.")
-
-  def _as_tf_output(self):
-    raise NotImplementedError(
-        "_as_tf_output not supported when eager execution is enabled.")
-
-  def eval(self, feed_dict=None, session=None):
-    raise NotImplementedError(
-        "eval is not supported when eager execution is enabled, "
-        "is .numpy() what you're looking for?"
-    )
-
-
-EagerTensor = c_api.TFE_Py_InitEagerTensor(_EagerTensorBase)
-
-
 def _TensorTensorConversionFunction(t, dtype=None, name=None, as_ref=False):
   _ = name, as_ref
   if dtype and not dtype.is_compatible_with(t.dtype):
@@ -587,743 +294,38 @@ def _TensorTensorConversionFunction(t, dtype=None, name=None, as_ref=False):
         (dtype.name, t.dtype.name, str(t)))
   return t
 
-
-_tensor_conversion_func_registry = {
-    0: [(Tensor, _TensorTensorConversionFunction)]
-}
-_tensor_conversion_func_cache = {}
-_tensor_conversion_func_lock = threading.Lock()
-register_dense_tensor_like_type(Tensor)
-
-
-#@tf_export("convert_to_tensor")
-def convert_to_tensor(value, dtype=None, name=None, preferred_dtype=None):
-  return internal_convert_to_tensor(
-      value=value,
-      dtype=dtype,
-      name=name,
-      preferred_dtype=preferred_dtype,
-      as_ref=False)
-
-
-def _error_prefix(name):
-  return "" if name is None else "%s: " % name
-
-
-def internal_convert_to_tensor(value,
-                               dtype=None,
-                               name=None,
-                               as_ref=False,
-                               preferred_dtype=None,
-                               ctx=None):
-  if ctx is None: ctx = context.context()
-  if isinstance(value, EagerTensor):
-    if ctx.executing_eagerly():
-      return value
-    else:
-      graph = get_default_graph()
-      if not graph.building_function:
-        raise RuntimeError("Attempting to capture an EagerTensor without "
-                           "building a function.")
-      return graph.capture(value, name=name)
-
-  if dtype is not None:
-    dtype = dtypes.as_dtype(dtype)
-  unwrapped_type = type(value)
-  conversion_func_list = _tensor_conversion_func_cache.get(unwrapped_type, None)
-  if conversion_func_list is None:
-    with _tensor_conversion_func_lock:
-      conversion_func_list = []
-      for _, funcs_at_priority in sorted(
-          _tensor_conversion_func_registry.items()):
-        for base_type, conversion_func in funcs_at_priority:
-          if isinstance(value, base_type):
-            conversion_func_list.append((base_type, conversion_func))
-      _tensor_conversion_func_cache[unwrapped_type] = conversion_func_list
-
-  for base_type, conversion_func in conversion_func_list:
-    ret = None
-    if dtype is None and preferred_dtype is not None:
-      try:
-        ret = conversion_func(
-            value, dtype=preferred_dtype, name=name, as_ref=as_ref)
-      except (TypeError, ValueError, errors.UnimplementedError,
-              errors.InvalidArgumentError):
-        ret = None
-
-      if ret is not None and ret is not NotImplemented:
-        if (ret.dtype.base_dtype !=
-            dtypes.as_dtype(preferred_dtype).base_dtype):
-          raise TypeError("convert_to_tensor did not convert to "
-                          "the preferred dtype: %s vs %s " %
-                          (ret.dtype.base_dtype,
-                           dtypes.as_dtype(preferred_dtype).base_dtype))
-
-    if ret is None:
-      ret = conversion_func(value, dtype=dtype, name=name, as_ref=as_ref)
-
-    if ret is NotImplemented:
-      continue
-
-    if not isinstance(ret, Tensor):
-      raise RuntimeError(
-          "%sConversion function %r for type %s returned non-Tensor: %r" %
-          (_error_prefix(name), conversion_func, base_type, ret))
-    if dtype and not dtype.is_compatible_with(ret.dtype):
-      raise RuntimeError(
-          "%sConversion function %r for type %s returned incompatible "
-          "dtype: requested = %s, actual = %s" %
-          (_error_prefix(name), conversion_func, base_type, dtype.name,
-           ret.dtype.name))
-    return ret
-  raise TypeError("%sCannot convert %r with type %s to Tensor: "
-                  "no conversion function registered." %
-                  (_error_prefix(name), value, unwrapped_type))
-
-
-def internal_convert_n_to_tensor(values,
-                                 dtype=None,
-                                 name=None,
-                                 as_ref=False,
-                                 preferred_dtype=None,
-                                 ctx=None):
-  if not isinstance(values, collections.Sequence):
-    raise TypeError("values must be a list.")
-  ret = []
-  if ctx is None: ctx = context.context()
-  for i, value in enumerate(values):
-    n = None if name is None else "%s_%d" % (name, i)
-    ret.append(
-        internal_convert_to_tensor(
-            value,
-            dtype=dtype,
-            name=n,
-            as_ref=as_ref,
-            preferred_dtype=preferred_dtype,
-            ctx=ctx))
-  return ret
-
-
-def convert_n_to_tensor(values, dtype=None, name=None, preferred_dtype=None):
-  return internal_convert_n_to_tensor(
-      values=values,
-      dtype=dtype,
-      name=name,
-      preferred_dtype=preferred_dtype,
-      as_ref=False)
-
-
-#@tf_export("convert_to_tensor_or_indexed_slices")
-def convert_to_tensor_or_indexed_slices(value, dtype=None, name=None):
-  return internal_convert_to_tensor_or_indexed_slices(
-      value=value, dtype=dtype, name=name, as_ref=False)
-
-
-def internal_convert_to_tensor_or_indexed_slices(value,
-                                                 dtype=None,
-                                                 name=None,
-                                                 as_ref=False):
-  if isinstance(value, EagerTensor) and not context.executing_eagerly():
-    return internal_convert_to_tensor(
-        value, dtype=dtype, name=name, as_ref=as_ref)
-  elif isinstance(value, _TensorLike):
-    if dtype and not dtypes.as_dtype(dtype).is_compatible_with(value.dtype):
-      raise ValueError(
-          "Tensor conversion requested dtype %s for Tensor with dtype %s: %r" %
-          (dtypes.as_dtype(dtype).name, value.dtype.name, str(value)))
-    return value
+def _eval_using_default_session(tensors, feed_dict, graph, session=None):
+  if session is None:
+    session = get_default_session()
+    if session is None:
+      raise ValueError("Cannot evaluate tensor using `eval()`: No default "
+                       "session is registered. Use `with "
+                       "sess.as_default()` or pass an explicit session to "
+                       "`eval(session=sess)`")
+    if session.graph is not graph:
+      raise ValueError("Cannot use the default session to evaluate tensor: "
+                       "the tensor's graph is different from the session's "
+                       "graph. Pass an explicit session to "
+                       "`eval(session=sess)`.")
   else:
-    return internal_convert_to_tensor(
-        value, dtype=dtype, name=name, as_ref=as_ref)
-
-
-def internal_convert_n_to_tensor_or_indexed_slices(values,
-                                                   dtype=None,
-                                                   name=None,
-                                                   as_ref=False):
-  if not isinstance(values, collections.Sequence):
-    raise TypeError("values must be a list.")
-  ret = []
-  for i, value in enumerate(values):
-    if value is None:
-      ret.append(value)
-    else:
-      n = None if name is None else "%s_%d" % (name, i)
-      ret.append(
-          internal_convert_to_tensor_or_indexed_slices(
-              value, dtype=dtype, name=n, as_ref=as_ref))
-  return ret
-
-
-def convert_n_to_tensor_or_indexed_slices(values, dtype=None, name=None):
-  return internal_convert_n_to_tensor_or_indexed_slices(
-      values=values, dtype=dtype, name=name, as_ref=False)
-
-
-def register_tensor_conversion_function(base_type,
-                                        conversion_func,
-                                        priority=100):
-  global _tensor_conversion_func_cache
-  with _tensor_conversion_func_lock:
-    if not (isinstance(base_type, type) or
-            (isinstance(base_type, tuple) and
-             all(isinstance(x, type) for x in base_type))):
-      raise TypeError("base_type must be a type or a tuple of types.")
-    if not callable(conversion_func):
-      raise TypeError("conversion_func must be callable.")
-
-    
-    if context._context is not None and context.executing_eagerly(
-    ) and isinstance(base_type, six.integer_types + (
-        float,
-        np.ndarray,
-    )):
-      raise TypeError(
-          "Cannot register conversions for numpy arrays, python number types "
-          "when executing eagerly.")
-
-    try:
-      funcs_at_priority = _tensor_conversion_func_registry[priority]
-    except KeyError:
-      funcs_at_priority = []
-      _tensor_conversion_func_registry[priority] = funcs_at_priority
-    funcs_at_priority.append((base_type, conversion_func))
-    _tensor_conversion_func_cache = {}
-
-
-#@tf_export("IndexedSlices")
-class IndexedSlices(object):
-  def __init__(self, values, indices, dense_shape=None):
-    _get_graph_from_inputs([values, indices, dense_shape])
-    self._values = values
-    self._indices = indices
-    self._dense_shape = dense_shape
-
-  @property
-  def values(self):
-    return self._values
-
-  @property
-  def indices(self):
-    return self._indices
-
-  @property
-  def dense_shape(self):
-    return self._dense_shape
-
-  @property
-  def name(self):
-    return self.values.name
-
-  @property
-  def device(self):
-    return self.values.device
-
-  @property
-  def op(self):
-    return self.values.op
-
-  @property
-  def dtype(self):
-    return self.values.dtype
-
-  @property
-  def graph(self):
-    return self._values.graph
-
-  def __str__(self):
-    return "IndexedSlices(indices=%s, values=%s%s)" % (
-        self._indices, self._values, (", dense_shape=%s" % self._dense_shape)
-        if self._dense_shape is not None else "")
-
-  def __neg__(self):
-    return IndexedSlices(-self.values, self.indices, self.dense_shape)
-
-
-IndexedSlicesValue = collections.namedtuple(
-    "IndexedSlicesValue", ["values", "indices", "dense_shape"])
-
-
-def _device_string(dev_spec):
-  if isinstance(dev_spec, pydev.DeviceSpec):
-    return dev_spec.to_string()
-  else:
-    return dev_spec
-
-
-def _NodeDef(op_type, name, device=None, attrs=None):  
-  node_def = node_def_pb2.NodeDef()
-  node_def.op = compat.as_bytes(op_type)
-  node_def.name = compat.as_bytes(name)
-  if attrs is not None:
-    for k, v in six.iteritems(attrs):
-      node_def.attr[k].CopyFrom(v)
-  if device is not None:
-    if callable(device):
-      node_def.device = device(node_def)
-    else:
-      node_def.device = _device_string(device)
-  return node_def
-
-
-_VALID_OP_NAME_REGEX = re.compile("^[A-Za-z0-9.][A-Za-z0-9_.\\-/]*$")
-_VALID_SCOPE_NAME_REGEX = re.compile("^[A-Za-z0-9_.\\-/]*$")
-
-
-def _create_c_op(graph, node_def, inputs, control_inputs):
-  op_desc = c_api.TF_NewOperation(graph._c_graph,
-                                  compat.as_str(node_def.op),
-                                  compat.as_str(node_def.name))
-  for op_input in inputs:
-    if isinstance(op_input, (list, tuple)):
-      c_api.TF_AddInputList(op_desc, [t._as_tf_output() for t in op_input])
-    else:
-      c_api.TF_AddInput(op_desc, op_input._as_tf_output())
-
-  for control_input in control_inputs:
-    c_api.TF_AddControlInput(op_desc, control_input._c_op)
-  
-
-  for name, attr_value in node_def.attr.items():
-    serialized = attr_value.SerializeToString()
-    c_api.TF_SetAttrValueProto(op_desc, compat.as_str(name), serialized)
-
-  try:
-    c_op = c_api.TF_FinishOperation(op_desc)
-  except errors.InvalidArgumentError as e:
-    raise ValueError(str(e))
-
-  return c_op
-
-
-#@tf_export("Operation")
-class Operation(object):
-  def __init__(self,
-               node_def,
-               g,
-               inputs=None,
-               output_types=None,
-               control_inputs=None,
-               input_types=None,
-               original_op=None,
-               op_def=None):
-
-    if isinstance(node_def, node_def_pb2.NodeDef):
-      if node_def.ByteSize() >= (1 << 31) or node_def.ByteSize() < 0:
-        raise ValueError(
-            "Cannot create a tensor proto whose content is larger than 2GB.")
-      if not _VALID_OP_NAME_REGEX.match(node_def.name):
-        raise ValueError("'%s' is not a valid node name" % node_def.name)
-      c_op = None
-    elif type(node_def).__name__ == "SwigPyObject":
-      assert inputs is None
-      assert output_types is None
-      assert control_inputs is None
-      assert input_types is None
-      assert original_op is None
-      assert op_def is None
-      c_op = node_def
-    else:
-      raise TypeError("node_def needs to be a NodeDef: %s" % node_def)
-
-    if not isinstance(g, Graph):
-      raise TypeError("g needs to be a Graph: %s" % g)
-    self._graph = g
-
-    if inputs is None:
-      inputs = []
-    elif not isinstance(inputs, list):
-      raise TypeError("inputs needs to be a list of Tensors: %s" % inputs)
-    for a in inputs:
-      if not isinstance(a, Tensor):
-        raise TypeError("input needs to be a Tensor: %s" % a)
-    if input_types is None:
-      input_types = [i.dtype.base_dtype for i in inputs]
-    else:
-      if not all(
-          x.is_compatible_with(i.dtype)
-          for i, x in zip(inputs, input_types)):
-        raise TypeError("In op '%s', input types (%s) are not compatible "
-                        "with expected types (%s)" %
-                        (node_def.name, [i.dtype for i in inputs],
-                         input_types))
-
-    control_input_ops = []
-    if control_inputs:
-      for c in control_inputs:
-        control_op = None
-        if isinstance(c, Operation):
-          control_op = c
-        elif isinstance(c, (Tensor, IndexedSlices)):
-          control_op = c.op
-        else:
-          raise TypeError("Control input must be an Operation, "
-                          "a Tensor, or IndexedSlices: %s" % c)
-        control_input_ops.append(control_op)
-
-    self._inputs_val = None
-
-    
-    self._id_value = self._graph._next_id()
-    self._original_op = original_op
-    self._traceback = tf_stack.extract_stack()
-    self._device_code_locations = None
-    self._colocation_code_locations = None
-    self._control_flow_context = self.graph._get_control_flow_context()
-    
-
-    if c_op:
-      self._c_op = c_op
-    else:
-      if op_def is None:
-        op_def = self._graph._get_op_def(node_def.op)
-
-      grouped_inputs = self._reconstruct_sequence_inputs(
-          op_def, inputs, node_def.attr)
-      self._c_op = _create_c_op(self._graph, node_def, grouped_inputs,
-                                control_input_ops)
-
-    num_outputs = c_api.TF_OperationNumOutputs(self._c_op)
-    output_types = [
-        c_api.TF_OperationOutputType(c_api_util.tf_output(self._c_op, i))
-        for i in range(num_outputs)]
-    self._outputs = [
-        Tensor(self, i, output_type)
-        for i, output_type in enumerate(output_types)
-    ]
-
-    self._graph._add_op(self)  
-
-    if not c_op:
-      self._control_flow_post_processing()
-
-  def _control_flow_post_processing(self):
-    for input_tensor in self.inputs:
-      control_flow_util.CheckInputFromValidContext(self, input_tensor.op)
-    if self._control_flow_context is not None:
-      self._control_flow_context.AddOp(self)
-
-  def _reconstruct_sequence_inputs(self, op_def, inputs, attrs):
-    grouped_inputs = []
-    i = 0
-    for input_arg in op_def.input_arg:
-      if input_arg.number_attr:
-        input_len = attrs[input_arg.number_attr].i
-        is_sequence = True
-      elif input_arg.type_list_attr:
-        input_len = len(attrs[input_arg.type_list_attr].list.type)
-        is_sequence = True
-      else:
-        input_len = 1
-        is_sequence = False
-
-      if is_sequence:
-        grouped_inputs.append(inputs[i:i + input_len])
-      else:
-        grouped_inputs.append(inputs[i])
-      i += input_len
-
-    assert i == len(inputs)
-    return grouped_inputs
-
-  def colocation_groups(self):
-    default_colocation_group = [
-        compat.as_bytes("loc:@%s" % self.name)
-    ]
-    try:
-      class_attr = self.get_attr("_class")
-    except ValueError:
-      return default_colocation_group
-
-    attr_groups = [
-        class_name for class_name in class_attr
-        if class_name.startswith(b"loc:@")
-    ]
-
-    return attr_groups if attr_groups else default_colocation_group
-
-  def values(self):
-    return tuple(self.outputs)
-
-  def _get_control_flow_context(self):
-    return self._control_flow_context
-
-  def _set_control_flow_context(self, ctx):
-    self._control_flow_context = ctx
-
-  @property
-  def name(self):
-    return c_api.TF_OperationName(self._c_op)
-
-  @property
-  def _id(self):
-    return self._id_value
-
-  @property
-  def device(self):
-    return c_api.TF_OperationDevice(self._c_op)
-
-  @property
-  def _device_assignments(self):
-    return self._device_code_locations or []
-
-  @property
-  def _colocation_dict(self):
-    locations_dict = self._colocation_code_locations or {}
-    return locations_dict.copy()
-
-  @property
-  def _output_types(self):
-    num_outputs = c_api.TF_OperationNumOutputs(self._c_op)
-    output_types = [
-        c_api.TF_OperationOutputType(self._tf_output(i))
-        for i in xrange(num_outputs)
-    ]
-    if output_types:
-      assert isinstance(output_types[0], int)
-    return output_types
-
-  def _tf_output(self, output_idx):
-    tf_output = c_api.TF_Output()
-    tf_output.oper = self._c_op
-    tf_output.index = output_idx
-    return tf_output
-
-  def _tf_input(self, input_idx):
-    tf_input = c_api.TF_Input()
-    tf_input.oper = self._c_op
-    tf_input.index = input_idx
-    return tf_input
-
-  def _set_device(self, device):  
-    c_api.SetRequestedDevice(
-        self._graph._c_graph,  
-        self._c_op,  
-        compat.as_str(_device_string(device)))
-
-  def _update_input(self, index, tensor):
-    if not isinstance(tensor, Tensor):
-      raise TypeError("tensor must be a Tensor: %s" % tensor)
-    _assert_same_graph(self, tensor)
-
-    if not _USE_C_SHAPES:
-      set_shape_and_handle_data_for_outputs(self)
-
-    self._inputs_val = None
-    c_api.UpdateEdge(
-        self._graph._c_graph,  
-        tensor._as_tf_output(),  
-        self._tf_input(index))
-
-  def _add_control_inputs(self, ops):
-    for op in ops:
-      if not isinstance(op, Operation):
-        raise TypeError("op must be an Operation: %s" % op)
-      c_api.AddControlInput(self._graph._c_graph, self._c_op, op._c_op)  
-
-  def _add_control_input(self, op):
-    if not isinstance(op, Operation):
-      raise TypeError("op must be an Operation: %s" % op)
-    c_api.AddControlInput(self._graph._c_graph, self._c_op, op._c_op)  
-
-  def _remove_all_control_inputs(self):
-    c_api.RemoveAllControlInputs(self._graph._c_graph, self._c_op)  
-
-  def __str__(self):
-    return str(self.node_def)
-
-  def __repr__(self):
-    return "<tf.Operation '%s' type=%s>" % (self.name, self.type)
-
-  @property
-  def outputs(self):
-    return self._outputs
-
-
-
-  class _InputList(object):
-    def __init__(self, inputs):
-      self._inputs = inputs
-
-    def __iter__(self):
-      return iter(self._inputs)
-
-    def __len__(self):
-      return len(self._inputs)
-
-    def __bool__(self):
-      return bool(self._inputs)
-
-    __nonzero__ = __bool__
-
-    def __getitem__(self, i):
-      return self._inputs[i]
-
-
-
-  @property
-  def inputs(self):
-    if self._inputs_val is None:
-      tf_outputs = c_api.GetOperationInputs(self._c_op)
-      
-      retval = [
-          self.graph._get_tensor_by_tf_output(tf_output)
-          for tf_output in tf_outputs
-      ]
-      
-      self._inputs_val = Operation._InputList(retval)
-    return self._inputs_val
-
-  @property
-  def _inputs(self):
-    logging.warning("Operation._inputs is private, use Operation.inputs "
-                    "instead. Operation._inputs will eventually be removed.")
-    return self.inputs
-
-  @_inputs.setter
-  def _inputs(self, value):
-    raise ValueError("Cannot assign _inputs")
-
-  @property
-  def _input_types(self):
-    num_inputs = c_api.TF_OperationNumInputs(self._c_op)
-    input_types = [
-        dtypes.as_dtype(c_api.TF_OperationInputType(self._tf_input(i)))
-        for i in xrange(num_inputs)
-    ]
-    return input_types
-
-  @_input_types.setter
-  def _input_types(self, value):
-    raise ValueError("Cannot assign _input_types")
-
-  @property
-  def control_inputs(self):
-    control_c_ops = c_api.TF_OperationGetControlInputs_wrapper(self._c_op)
-    
-    return [
-        self.graph._get_operation_by_name_unsafe(
-            c_api.TF_OperationName(c_op)) for c_op in control_c_ops
-    ]
-    
-
-  @property
-  def _control_outputs(self):
-    control_c_ops = c_api.TF_OperationGetControlOutputs_wrapper(self._c_op)
-    
-    return [
-        self.graph._get_operation_by_name_unsafe(
-            c_api.TF_OperationName(c_op)) for c_op in control_c_ops
-    ]
-    
-
-  @property
-  def _control_inputs(self):
-    logging.warning("Operation._control_inputs is private, use "
-                    "Operation.control_inputs instead. "
-                    "Operation._control_inputs will eventually be removed.")
-    return self.control_inputs
-
-  @_control_inputs.setter
-  def _control_inputs(self, value):
-    logging.warning("Operation._control_inputs is private, use "
-                    "Operation.control_inputs instead. "
-                    "Operation._control_inputs will eventually be removed.")
-    value = copy.copy(value)
-    self._remove_all_control_inputs()
-    self._add_control_inputs(value)
-
-  @property
-  def type(self):
-    return c_api.TF_OperationOpType(self._c_op)
-
-  @property
-  def graph(self):
-    return self._graph
-
-  @property
-  def node_def(self):
-    
-    
-    with c_api_util.tf_buffer() as buf:
-      c_api.TF_OperationToNodeDef(self._c_op, buf)
-      data = c_api.TF_GetBuffer(buf)
-    node_def = node_def_pb2.NodeDef()
-    node_def.ParseFromString(compat.as_bytes(data))
-    return node_def
-
-  @property
-  def _node_def(self):
-    logging.warning("Operation._node_def is private, use Operation.node_def "
-                    "instead. Operation._node_def will eventually be removed.")
-    return self.node_def
-
-  @property
-  def op_def(self):
-    return self._graph._get_op_def(self.type)
-
-  @property
-  def _op_def(self):
-    logging.warning("Operation._op_def is private, use Operation.op_def "
-                    "instead. Operation._op_def will eventually be removed.")
-    return self.op_def
-
-  @property
-  def traceback(self):
-    return tf_stack.convert_stack(self._traceback)
-
-  @property
-  def traceback_with_start_lines(self):
-    return tf_stack.convert_stack(self._traceback,
-                                  include_func_start_lineno=True)
-
-  def _set_attr(self, attr_name, attr_value):
-    buf = c_api.TF_NewBufferFromString(
-        compat.as_bytes(attr_value.SerializeToString()))
-    try:
-      
-      c_api.SetAttr(self._graph._c_graph, self._c_op, attr_name, buf)
-      
-    finally:
-      c_api.TF_DeleteBuffer(buf)
-
-  def get_attr(self, name):
-    fields = ["s", "i", "f", "b", "type", "shape", "tensor", "func"]
-    try:
-      with c_api_util.tf_buffer() as buf:
-        c_api.TF_OperationGetAttrValueProto(self._c_op, name, buf)
-        data = c_api.TF_GetBuffer(buf)
-    except errors.InvalidArgumentError as e:
-      raise ValueError(str(e))
-    x = attr_value_pb2.AttrValue()
-    x.ParseFromString(data)
-
-    if not x.WhichOneof("value"):
-      return []
-    if x.HasField("list"):
-      for f in fields:
-        if getattr(x.list, f):
-          if f == "type":
-            return [dtypes.as_dtype(x) for x in list(getattr(x.list, f))]
-          else:
-            return list(getattr(x.list, f))
-      return []
-    else:
-      for f in fields:
-        if x.HasField(f):
-          if f == "type":
-            return dtypes.as_dtype(getattr(x, f))
-          else:
-            return getattr(x, f)
-      assert False, "Unsupported field type in " + str(x)
-
-  def run(self, feed_dict=None, session=None):
-    _run_using_default_session(self, feed_dict, self.graph, session)
+    if session.graph is not graph:
+      raise ValueError("Cannot use the given session to evaluate tensor: "
+                       "the tensor's graph is different from the session's "
+                       "graph.")
+  return session.run(tensors, feed_dict)
+
+def _override_helper(clazz_object, operator, func):
+  existing = getattr(clazz_object, operator, None)
+  if existing is not None:
+    if not isinstance(existing, type(object.__lt__)):
+      raise ValueError("operator %s cannot be overwritten again on class %s." %
+                       (operator, clazz_object))
+  if operator not in Tensor.OVERLOADABLE_OPERATORS:
+    raise ValueError("Overriding %s is disallowed" % operator)
+  setattr(clazz_object, operator, func)
 
 _gradient_registry = registry.Registry("gradient")
 
-
-#@tf_export("RegisterGradient")
 class RegisterGradient(object):
   def __init__(self, op_type):
     if not isinstance(op_type, six.string_types):
@@ -1334,191 +336,12 @@ class RegisterGradient(object):
     _gradient_registry.register(f, self._op_type)
     return f
 
-
-
 def NotDifferentiable(op_type):
   if not isinstance(op_type, six.string_types):
     raise TypeError("op_type must be a string")
   _gradient_registry.register(None, op_type)
 
-
 NoGradient = NotDifferentiable
-
-
-def get_gradient_function(op):
-  if not op.inputs:
-    return None
-  try:
-    op_type = op.get_attr("_gradient_op_type")
-  except ValueError:
-    op_type = op.type
-  return _gradient_registry.lookup(op_type)
-
-
-_shape_registry = registry.Registry("shape functions")
-_default_shape_function_registry = registry.Registry("default shape functions")
-
-_call_cpp_shape_fn = None
-_call_cpp_shape_fn_and_require_op = None
-
-
-def _set_call_cpp_shape_fn(call_cpp_shape_fn):
-  global _call_cpp_shape_fn, _call_cpp_shape_fn_and_require_op
-  if _call_cpp_shape_fn:
-    return 
-
-  def call_without_requiring(op):
-    return call_cpp_shape_fn(op, require_shape_fn=False)
-
-  _call_cpp_shape_fn = call_without_requiring
-
-  def call_with_requiring(op):
-    return call_cpp_shape_fn(op, require_shape_fn=True)
-
-  _call_cpp_shape_fn_and_require_op = call_with_requiring
-
-
-class RegisterShape(object):
-  def __init__(self, op_type):
-    if not isinstance(op_type, six.string_types):
-      raise TypeError("op_type must be a string")
-    self._op_type = op_type
-
-  def __call__(self, f):
-    if f is None:
-      assert _call_cpp_shape_fn
-      try:
-        _default_shape_function_registry.register(_call_cpp_shape_fn,
-                                                  self._op_type)
-      except KeyError:
-        pass
-    else:
-      _shape_registry.register(f, self._op_type)
-    return f
-
-def _set_shape_and_handle_data_for_outputs_c_api(op):
-  assert not _USE_C_SHAPES
-  for output in op.outputs:
-    output._shape_val = output._c_api_shape()
-
-    serialized = c_api.GetHandleShapeAndType(op._graph._c_graph,  
-                                             output._as_tf_output())
-    if serialized:
-      output._handle_data = (
-          cpp_shape_inference_pb2.CppShapeInferenceResult.HandleData
-          .FromString(compat.as_bytes(serialized)))
-    else:
-      output._handle_data = None
-
-
-def set_shape_and_handle_data_for_outputs(op):
-  if _USE_C_SHAPES: return
-
-  if op.graph._is_function(op.type):
-    for output in op.outputs:
-      output._shape_val = tensor_shape.unknown_shape()
-    return
-
-  try:
-    shape_func = _shape_registry.lookup(op.type)
-  except LookupError:
-    try:
-      shape_func = _default_shape_function_registry.lookup(op.type)
-    except LookupError:
-      shape_func = _call_cpp_shape_fn_and_require_op
-
-  shapes = shape_func(op)
-  if shapes is None:
-    raise RuntimeError(
-        "Shape function for op %s did not return any shapes" % op)
-  elif isinstance(shapes, dict):
-    shapes_dict = shapes
-    shapes = shapes_dict["shapes"]
-    handle_datas = shapes_dict["handle_data"]
-    for output, handle_data in zip(op.outputs, handle_datas):
-      
-      if output._handle_data is None:
-        output._handle_data = handle_data
-      
-
-  if len(op.outputs) != len(shapes):
-    raise RuntimeError(
-        "Shape function for op %s returned %d shapes but expected %d %s %s" %
-        (op, len(shapes), len(op.outputs), shape_func.__name__, str(shapes)))
-  for output, s in zip(op.outputs, shapes):
-    output._shape_val = tensor_shape.unknown_shape()
-    output._shape_val = output._shape_val.merge_with(s)
-
-
-class OpStats(object):
-  def __init__(self, statistic_type, value=None):
-    self.statistic_type = statistic_type
-    self.value = value
-
-  @property
-  def statistic_type(self):
-    return self._statistic_type
-
-  @statistic_type.setter
-  def statistic_type(self, statistic_type):
-    self._statistic_type = statistic_type
-
-  @property
-  def value(self):
-    return self._value
-
-  @value.setter
-  def value(self, value):
-    self._value = value
-
-  def __iadd__(self, other):
-    if other.statistic_type != self.statistic_type:
-      raise ValueError("Can't add an OpStat of type %s to one of %s." %
-                       (self.statistic_type, other.statistic_type))
-    if self.value is None:
-      self.value = other.value
-    elif other.value is not None:
-      self._value += other.value
-    return self
-
-
-_stats_registry = registry.Registry("statistical functions")
-
-
-class RegisterStatistics(object):
-  def __init__(self, op_type, statistic_type):
-    if not isinstance(op_type, six.string_types):
-      raise TypeError("op_type must be a string.")
-    if "," in op_type:
-      raise TypeError("op_type must not contain a comma.")
-    self._op_type = op_type
-    if not isinstance(statistic_type, six.string_types):
-      raise TypeError("statistic_type must be a string.")
-    if "," in statistic_type:
-      raise TypeError("statistic_type must not contain a comma.")
-    self._statistic_type = statistic_type
-
-  def __call__(self, f):
-    _stats_registry.register(f, self._op_type + "," + self._statistic_type)
-    return f
-
-
-def get_stats_for_node_def(graph, node, statistic_type):
-  try:
-    stats_func = _stats_registry.lookup(node.op + "," + statistic_type)
-    result = stats_func(graph, node)
-  except LookupError:
-    result = OpStats(statistic_type)
-  return result
-
-
-def _name_from_scope_name(name):
-  return name[:-1] if (name and name[-1] == "/") else name
-
-
-_MUTATION_LOCK_GROUP = 0
-_SESSION_RUN_LOCK_GROUP = 1
-
 
 class Graph(object):
   def __init__(self):
@@ -2476,356 +1299,55 @@ class Graph(object):
   def _session_run_lock(self):
     return self._group_lock.group(_SESSION_RUN_LOCK_GROUP)
 
-
-def device(device_name_or_function):
-  if context.executing_eagerly():
-    if callable(device_name_or_function):
-      raise RuntimeError(
-          "tf.device does not support functions when eager execution "
-          "is enabled.")
-    return context.device(device_name_or_function)
-  else:
-    return get_default_graph().device(device_name_or_function)
-
-
-def container(container_name):
-  return get_default_graph().container(container_name)
-
-
-def _colocate_with_for_gradient(op, gradient_uid, ignore_existing=False):
-  if context.executing_eagerly():
-    if op is not None:
-      return device(op.device)
-    else:
-      return _NullContextmanager()
-  else:
-    default_graph = get_default_graph()
-    if isinstance(op, EagerTensor):
-      if default_graph.building_function:
-        return default_graph.device(op.device)
-      else:
-        raise ValueError("Encountered an Eager-defined Tensor during graph "
-                         "construction, but a function was not being built.")
-    return default_graph._colocate_with_for_gradient(
-        op, gradient_uid=gradient_uid, ignore_existing=ignore_existing)
-
-
-def colocate_with(op, ignore_existing=False):
-  return _colocate_with_for_gradient(op, None, ignore_existing=ignore_existing)
-
-
-def control_dependencies(control_inputs):
-  if context.executing_eagerly():
-    if control_inputs:
-      for control in control_inputs:
-        if callable(control):
-          control()
-    return _NullContextmanager()
-  else:
-    return get_default_graph().control_dependencies(control_inputs)
-
-
-class _DefaultStack(threading.local):
-  def __init__(self):
-    super(_DefaultStack, self).__init__()
-    self._enforce_nesting = True
-    self.stack = []
-
-  def get_default(self):
-    return self.stack[-1] if len(self.stack) >= 1 else None
-
-  def reset(self):
-    self.stack = []
-
-  def is_cleared(self):
-    return not self.stack
+class IndexedSlices(object):
+  def __init__(self, values, indices, dense_shape=None):
+    _get_graph_from_inputs([values, indices, dense_shape])
+    self._values = values
+    self._indices = indices
+    self._dense_shape = dense_shape
 
   @property
-  def enforce_nesting(self):
-    return self._enforce_nesting
+  def values(self):
+    return self._values
 
-  @enforce_nesting.setter
-  def enforce_nesting(self, value):
-    self._enforce_nesting = value
+  @property
+  def indices(self):
+    return self._indices
 
-  @tf_contextlib.contextmanager
-  def get_controller(self, default):
-    self.stack.append(default)
-    try:
-      yield default
-    finally:
-      if self.stack:
-        if self._enforce_nesting:
-          if self.stack[-1] is not default:
-            raise AssertionError(
-                "Nesting violated for default stack of %s objects" %
-                type(default))
-          self.stack.pop()
-        else:
-          self.stack.remove(default)
+  @property
+  def dense_shape(self):
+    return self._dense_shape
 
+  @property
+  def name(self):
+    return self.values.name
 
-_default_session_stack = _DefaultStack()  
+  @property
+  def device(self):
+    return self.values.device
 
+  @property
+  def op(self):
+    return self.values.op
 
-def default_session(session):
-  return _default_session_stack.get_controller(session)
+  @property
+  def dtype(self):
+    return self.values.dtype
 
+  @property
+  def graph(self):
+    return self._values.graph
 
-#@tf_export("get_default_session")
-def get_default_session():
-  return _default_session_stack.get_default()
+  def __str__(self):
+    return "IndexedSlices(indices=%s, values=%s%s)" % (
+        self._indices, self._values, (", dense_shape=%s" % self._dense_shape)
+        if self._dense_shape is not None else "")
 
+  def __neg__(self):
+    return IndexedSlices(-self.values, self.indices, self.dense_shape)
 
-def _eval_using_default_session(tensors, feed_dict, graph, session=None):
-  if session is None:
-    session = get_default_session()
-    if session is None:
-      raise ValueError("Cannot evaluate tensor using `eval()`: No default "
-                       "session is registered. Use `with "
-                       "sess.as_default()` or pass an explicit session to "
-                       "`eval(session=sess)`")
-    if session.graph is not graph:
-      raise ValueError("Cannot use the default session to evaluate tensor: "
-                       "the tensor's graph is different from the session's "
-                       "graph. Pass an explicit session to "
-                       "`eval(session=sess)`.")
-  else:
-    if session.graph is not graph:
-      raise ValueError("Cannot use the given session to evaluate tensor: "
-                       "the tensor's graph is different from the session's "
-                       "graph.")
-  return session.run(tensors, feed_dict)
-
-
-def _run_using_default_session(operation, feed_dict, graph, session=None):
-  if session is None:
-    session = get_default_session()
-    if session is None:
-      raise ValueError("Cannot execute operation using `run()`: No default "
-                       "session is registered. Use `with "
-                       "sess.as_default():` or pass an explicit session to "
-                       "`run(session=sess)`")
-    if session.graph is not graph:
-      raise ValueError("Cannot use the default session to execute operation: "
-                       "the operation's graph is different from the "
-                       "session's graph. Pass an explicit session to "
-                       "run(session=sess).")
-  else:
-    if session.graph is not graph:
-      raise ValueError("Cannot use the given session to execute operation: "
-                       "the operation's graph is different from the session's "
-                       "graph.")
-  session.run(operation, feed_dict)
-
-
-class _DefaultGraphStack(_DefaultStack):  
-  def __init__(self):
-    super(_DefaultGraphStack, self).__init__()
-    self._global_default_graph = None
-
-  def get_default(self):
-    ret = super(_DefaultGraphStack, self).get_default()
-    if ret is None:
-      ret = self._GetGlobalDefaultGraph()
-    return ret
-
-  def _GetGlobalDefaultGraph(self):
-    if self._global_default_graph is None:
-      self._global_default_graph = Graph()
-    return self._global_default_graph
-
-  def reset(self):
-    super(_DefaultGraphStack, self).reset()
-    self._global_default_graph = None
-
-  @tf_contextlib.contextmanager
-  def get_controller(self, default):
-    context.context().context_switches.push(
-        default.building_function, default.as_default)
-    try:
-      with super(_DefaultGraphStack, self).get_controller(
-          default) as g, context.graph_mode():
-        yield g
-    finally:
-      context.context().context_switches.pop()
-
-
-_default_graph_stack = _DefaultGraphStack()
-
-
-@tf_contextlib.contextmanager
-def init_scope():
-  if context.executing_eagerly():
-    with stop_recording():
-      yield
-  else:
-    default_graph = get_default_graph()
-    scope = default_graph.get_name_scope()
-    if scope and scope[-1] != "/":
-      scope = scope + "/"
-    inner_device_stack = default_graph._device_function_stack  
-
-    outer_context = None
-    if not _default_graph_stack.stack:
-      if default_graph.building_function:
-        raise RuntimeError("The global graph is building a function.")
-      outer_context = default_graph.as_default
-    else:
-      for stack_entry in reversed(context.context().context_switches.stack):
-        if not stack_entry.is_building_function:
-          outer_context = stack_entry.enter_context_fn
-          break
-
-      if outer_context is None:
-        outer_context = _default_graph_stack._GetGlobalDefaultGraph().as_default  
-
-    if outer_context is None:
-      raise RuntimeError("All graphs are building functions, and no "
-                         "eager context was previously active.")
-
-    outer_graph = None
-    outer_device_stack = None
-    try:
-      with outer_context(), name_scope(scope), control_dependencies(
-          None):#stop_recording():
-        if not context.executing_eagerly():
-          outer_graph = get_default_graph()
-          outer_device_stack = outer_graph._device_function_stack  
-          outer_graph._device_function_stack = inner_device_stack  
-        yield
-    finally:
-      if outer_graph is not None:
-        outer_graph._device_function_stack = outer_device_stack  
-
-
-#@tf_export("enable_eager_execution")
-def enable_eager_execution(config=None,
-                           device_policy=None,
-                           execution_mode=None):
-  if context.default_execution_mode != context.EAGER_MODE:
-    return enable_eager_execution_internal(
-        config=config,
-        device_policy=device_policy,
-        execution_mode=execution_mode,
-        server_def=None)
-
-
-def enable_eager_execution_internal(config=None,
-                                    device_policy=None,
-                                    execution_mode=None,
-                                    server_def=None):
-  if config is not None and not isinstance(config, config_pb2.ConfigProto):
-    raise TypeError(
-        "config must be a tf.ConfigProto, but got %s" % type(config))
-  if device_policy not in (None, context.DEVICE_PLACEMENT_EXPLICIT,
-                           context.DEVICE_PLACEMENT_WARN,
-                           context.DEVICE_PLACEMENT_SILENT,
-                           context.DEVICE_PLACEMENT_SILENT_FOR_INT32):
-    raise ValueError(
-        "device_policy must be one of None, tf.contrib.eager.DEVICE_PLACEMENT_*"
-    )
-  if execution_mode not in (None, context.SYNC, context.ASYNC):
-    raise ValueError(
-        "execution_mode must be one of None, tf.contrib.eager.SYNC, "
-        "tf.contrib.eager.ASYNC")
-  if context.default_execution_mode == context.GRAPH_MODE:
-    graph_mode_has_been_used = (
-        _default_session_stack.stack
-        or len(get_default_graph().get_operations()) > 0)  
-    if graph_mode_has_been_used:
-      raise ValueError(
-          "tf.enable_eager_execution must be called at program startup.")
-  context.default_execution_mode = context.EAGER_MODE
-  
-  if context._context is None:
-    context._context = context.Context(
-        config=config,
-        device_policy=device_policy,
-        execution_mode=execution_mode,
-        server_def=server_def)
-  elif ((config is not None and config is not context._context._config) or
-        (device_policy is not None and
-         device_policy is not context._context._device_policy) or
-        (execution_mode is not None and
-         execution_mode is not context._context._execution_mode)):
-    raise ValueError("Trying to change the options of an active eager"
-                     " execution. Context config: %s, specified config:"
-                     " %s. Context device policy: %s, specified device"
-                     " policy: %s. Context execution mode: %s, "
-                     " specified execution mode %s." %
-                     (context._context._config, config,
-                      context._context._device_policy, device_policy,
-                      context._context._execution_mode, execution_mode))
-  else:
-    raise ValueError(
-        "tf.enable_eager_execution must be called at program startup.")
-
-  context.context = context.context_safe
-
-
-def eager_run(main=None, argv=None):
-  enable_eager_execution()
-  app.run(main, argv)
-
-
-#@tf_export("reset_default_graph")
-def reset_default_graph():
-  if not _default_graph_stack.is_cleared():
-    raise AssertionError("Do not use tf.reset_default_graph() to clear "
-                         "nested graphs. If you need a cleared graph, "
-                         "exit the nesting and create a new graph.")
-  _default_graph_stack.reset()
-
-
-#@tf_export("get_default_graph")
-def get_default_graph():
-  return _default_graph_stack.get_default()
-
-def has_default_graph():
-  return len(_default_graph_stack.stack) >= 1
-
-
-def get_name_scope():
-  if context.executing_eagerly():
-    return context.context().scope_name.rstrip("/")
-  return get_default_graph().get_name_scope()
-
-
-def _assert_same_graph(original_item, item):
-  if original_item.graph is not item.graph:
-    raise ValueError("%s must be from the same graph as %s." % (item,
-                                                                original_item))
-
-
-def _get_graph_from_inputs(op_input_list, graph=None):
-  if get_default_graph().building_function:
-    return get_default_graph()
-
-  op_input_list = tuple(op_input_list)
-  if graph and not isinstance(graph, Graph):
-    raise TypeError("Input graph needs to be a Graph: %s" % graph)
-
-  original_graph_element = None
-  for op_input in op_input_list:
-    graph_element = None
-    if (isinstance(op_input, (Operation, _TensorLike)) and
-        ((not isinstance(op_input, Tensor)) or type(op_input) == Tensor)):
-      graph_element = op_input
-    else:
-      graph_element = _as_graph_element(op_input)
-
-    if graph_element is not None:
-      if not graph:
-        original_graph_element = graph_element
-        graph = graph_element.graph
-      elif original_graph_element is not None:
-        _assert_same_graph(original_graph_element, graph_element)
-      elif graph_element.graph is not graph:
-        raise ValueError("%s is not from the passed-in graph." % graph_element)
-
-  return graph or get_default_graph()
-
+def get_collection(key, scope=None):
+  return get_default_graph().get_collection(key, scope)
 
 class GraphKeys(object):
   GLOBAL_VARIABLES = "variables"
@@ -2883,42 +1405,155 @@ class GraphKeys(object):
   def VARIABLES(cls):
     return cls.GLOBAL_VARIABLES
 
+def control_dependencies(control_inputs):
+  if context.executing_eagerly():
+    if control_inputs:
+      for control in control_inputs:
+        if callable(control):
+          control()
+    return _NullContextmanager()
+  else:
+    return get_default_graph().control_dependencies(control_inputs)
 
-def dismantle_graph(graph):
-  memory.dismantle_ordered_dict(graph._functions)  
+def _get_graph_from_inputs(op_input_list, graph=None):
+  if get_default_graph().building_function:
+    return get_default_graph()
 
+  op_input_list = tuple(op_input_list)
+  if graph and not isinstance(graph, Graph):
+    raise TypeError("Input graph needs to be a Graph: %s" % graph)
 
-  graph_operations = graph.get_operations()
-  for op in graph_operations:
-    op.__dict__ = {}
-  graph.__dict__ = {}
-
-
-#@tf_export("add_to_collection")
-def add_to_collection(name, value):
-  get_default_graph().add_to_collection(name, value)
-
-#@tf_export("add_to_collections")
-def add_to_collections(names, value):
-  get_default_graph().add_to_collections(names, value)
-
-
-#@tf_export("get_collection_ref")
-def get_collection_ref(key):
-  return get_default_graph().get_collection_ref(key)
+  original_graph_element = None
+  for op_input in op_input_list:
+    graph_element = _as_graph_element(op_input)
 
 
-#@tf_export("get_collection")
-def get_collection(key, scope=None):
-  return get_default_graph().get_collection(key, scope)
+    if graph_element is not None:
+      if not graph:
+        original_graph_element = graph_element
+        graph = graph_element.graph
+      elif original_graph_element is not None:
+        _assert_same_graph(original_graph_element, graph_element)
+      elif graph_element.graph is not graph:
+        raise ValueError("%s is not from the passed-in graph." % graph_element)
 
+  return graph or get_default_graph()
 
-def get_all_collection_keys():
-  return get_default_graph().get_all_collection_keys()
+def get_default_graph():
+  return _default_graph_stack.get_default()
 
+class _DefaultStack(threading.local):
+  def __init__(self):
+    super(_DefaultStack, self).__init__()
+    self._enforce_nesting = True
+    self.stack = []
 
-name_scope_cache = {}
+  def get_default(self):
+    return self.stack[-1] if len(self.stack) >= 1 else None
 
+  def reset(self):
+    self.stack = []
+
+  def is_cleared(self):
+    return not self.stack
+
+  @property
+  def enforce_nesting(self):
+    return self._enforce_nesting
+
+  @enforce_nesting.setter
+  def enforce_nesting(self, value):
+    self._enforce_nesting = value
+
+  @tf_contextlib.contextmanager
+  def get_controller(self, default):
+    self.stack.append(default)
+    try:
+      yield default
+    finally:
+      if self.stack:
+        if self._enforce_nesting:
+          if self.stack[-1] is not default:
+            raise AssertionError(
+                "Nesting violated for default stack of %s objects" %
+                type(default))
+          self.stack.pop()
+        else:
+          self.stack.remove(default)
+
+_default_session_stack = _DefaultStack()  
+
+class _DefaultGraphStack(_DefaultStack):  
+  def __init__(self):
+    super(_DefaultGraphStack, self).__init__()
+    self._global_default_graph = None
+
+  def get_default(self):
+    ret = super(_DefaultGraphStack, self).get_default()
+    if ret is None:
+      ret = self._GetGlobalDefaultGraph()
+    return ret
+
+  def _GetGlobalDefaultGraph(self):
+    if self._global_default_graph is None:
+      self._global_default_graph = Graph()
+    return self._global_default_graph
+
+  def reset(self):
+    super(_DefaultGraphStack, self).reset()
+    self._global_default_graph = None
+
+  @tf_contextlib.contextmanager
+  def get_controller(self, default):
+    context.context().context_switches.push(
+        default.building_function, default.as_default)
+    try:
+      with super(_DefaultGraphStack, self).get_controller(
+          default) as g, context.graph_mode():
+        yield g
+    finally:
+      context.context().context_switches.pop()
+
+_default_graph_stack = _DefaultGraphStack()
+
+def register_tensor_conversion_function(base_type,
+                                        conversion_func,
+                                        priority=100):
+  global _tensor_conversion_func_cache
+  with _tensor_conversion_func_lock:
+    if not (isinstance(base_type, type) or
+            (isinstance(base_type, tuple) and
+             all(isinstance(x, type) for x in base_type))):
+      raise TypeError("base_type must be a type or a tuple of types.")
+    if not callable(conversion_func):
+      raise TypeError("conversion_func must be callable.")
+
+    
+    if context._context is not None and context.executing_eagerly(
+    ) and isinstance(base_type, six.integer_types + (
+        float,
+        np.ndarray,
+    )):
+      raise TypeError(
+          "Cannot register conversions for numpy arrays, python number types "
+          "when executing eagerly.")
+
+    try:
+      funcs_at_priority = _tensor_conversion_func_registry[priority]
+    except KeyError:
+      funcs_at_priority = []
+      _tensor_conversion_func_registry[priority] = funcs_at_priority
+    funcs_at_priority.append((base_type, conversion_func))
+    _tensor_conversion_func_cache = {}
+
+def uid():
+  return c_api.TFE_Py_UID()
+
+def _as_graph_element(obj):
+  conv_fn = getattr(obj, "_as_graph_element", None)
+  if conv_fn and callable(conv_fn):
+    return conv_fn()
+  return None
 
 class name_scope(object): 
 
@@ -2978,17 +1613,922 @@ class name_scope(object):
       self._g_manager.__exit__(type_arg, value_arg, traceback_arg)
     return False
 
-_proto_function_registry = registry.Registry("proto functions")
+def _NodeDef(op_type, name, device=None, attrs=None):  
+  node_def = node_def_pb2.NodeDef()
+  node_def.op = compat.as_bytes(op_type)
+  node_def.name = compat.as_bytes(name)
+  if attrs is not None:
+    for k, v in six.iteritems(attrs):
+      node_def.attr[k].CopyFrom(v)
+  if device is not None:
+    if callable(device):
+      node_def.device = device(node_def)
+    else:
+      node_def.device = _device_string(device)
+  return node_def
 
-def register_proto_function(collection_name,
-                            proto_type=None,
-                            to_proto=None,
-                            from_proto=None):
-  if to_proto and not callable(to_proto):
-    raise TypeError("to_proto must be callable.")
-  if from_proto and not callable(from_proto):
-    raise TypeError("from_proto must be callable.")
+_MUTATION_LOCK_GROUP = 0
+_VALID_SCOPE_NAME_REGEX = re.compile("^[A-Za-z0-9_.\\-/]*$")
+_VALID_OP_NAME_REGEX = re.compile("^[A-Za-z0-9.][A-Za-z0-9_.\\-/]*$")
+_USE_C_SHAPES = True
 
-  _proto_function_registry.register((proto_type, to_proto, from_proto),
-                                    collection_name)
+class Operation(object):
+  def __init__(self,
+               node_def,
+               g,
+               inputs=None,
+               output_types=None,
+               control_inputs=None,
+               input_types=None,
+               original_op=None,
+               op_def=None):
 
+    if isinstance(node_def, node_def_pb2.NodeDef):
+      if node_def.ByteSize() >= (1 << 31) or node_def.ByteSize() < 0:
+        raise ValueError(
+            "Cannot create a tensor proto whose content is larger than 2GB.")
+      if not _VALID_OP_NAME_REGEX.match(node_def.name):
+        raise ValueError("'%s' is not a valid node name" % node_def.name)
+      c_op = None
+    elif type(node_def).__name__ == "SwigPyObject":
+      assert inputs is None
+      assert output_types is None
+      assert control_inputs is None
+      assert input_types is None
+      assert original_op is None
+      assert op_def is None
+      c_op = node_def
+    else:
+      raise TypeError("node_def needs to be a NodeDef: %s" % node_def)
+
+    if not isinstance(g, Graph):
+      raise TypeError("g needs to be a Graph: %s" % g)
+    self._graph = g
+
+    if inputs is None:
+      inputs = []
+    elif not isinstance(inputs, list):
+      raise TypeError("inputs needs to be a list of Tensors: %s" % inputs)
+    for a in inputs:
+      if not isinstance(a, Tensor):
+        raise TypeError("input needs to be a Tensor: %s" % a)
+    if input_types is None:
+      input_types = [i.dtype.base_dtype for i in inputs]
+    else:
+      if not all(
+          x.is_compatible_with(i.dtype)
+          for i, x in zip(inputs, input_types)):
+        raise TypeError("In op '%s', input types (%s) are not compatible "
+                        "with expected types (%s)" %
+                        (node_def.name, [i.dtype for i in inputs],
+                         input_types))
+
+    control_input_ops = []
+    if control_inputs:
+      for c in control_inputs:
+        control_op = None
+        if isinstance(c, Operation):
+          control_op = c
+        elif isinstance(c, (Tensor, IndexedSlices)):
+          control_op = c.op
+        else:
+          raise TypeError("Control input must be an Operation, "
+                          "a Tensor, or IndexedSlices: %s" % c)
+        control_input_ops.append(control_op)
+
+    self._inputs_val = None
+
+    
+    self._id_value = self._graph._next_id()
+    self._original_op = original_op
+    self._traceback = tf_stack.extract_stack()
+    self._device_code_locations = None
+    self._colocation_code_locations = None
+    self._control_flow_context = self.graph._get_control_flow_context()
+    
+
+    if c_op:
+      self._c_op = c_op
+    else:
+      if op_def is None:
+        op_def = self._graph._get_op_def(node_def.op)
+
+      grouped_inputs = self._reconstruct_sequence_inputs(
+          op_def, inputs, node_def.attr)
+      self._c_op = _create_c_op(self._graph, node_def, grouped_inputs,
+                                control_input_ops)
+
+    num_outputs = c_api.TF_OperationNumOutputs(self._c_op)
+    output_types = [
+        c_api.TF_OperationOutputType(c_api_util.tf_output(self._c_op, i))
+        for i in range(num_outputs)]
+    self._outputs = [
+        Tensor(self, i, output_type)
+        for i, output_type in enumerate(output_types)
+    ]
+
+    self._graph._add_op(self)  
+
+    if not c_op:
+      self._control_flow_post_processing()
+
+  def _control_flow_post_processing(self):
+    for input_tensor in self.inputs:
+      control_flow_util.CheckInputFromValidContext(self, input_tensor.op)
+    if self._control_flow_context is not None:
+      self._control_flow_context.AddOp(self)
+
+  def _reconstruct_sequence_inputs(self, op_def, inputs, attrs):
+    grouped_inputs = []
+    i = 0
+    for input_arg in op_def.input_arg:
+      if input_arg.number_attr:
+        input_len = attrs[input_arg.number_attr].i
+        is_sequence = True
+      elif input_arg.type_list_attr:
+        input_len = len(attrs[input_arg.type_list_attr].list.type)
+        is_sequence = True
+      else:
+        input_len = 1
+        is_sequence = False
+
+      if is_sequence:
+        grouped_inputs.append(inputs[i:i + input_len])
+      else:
+        grouped_inputs.append(inputs[i])
+      i += input_len
+
+    assert i == len(inputs)
+    return grouped_inputs
+
+  def colocation_groups(self):
+    default_colocation_group = [
+        compat.as_bytes("loc:@%s" % self.name)
+    ]
+    try:
+      class_attr = self.get_attr("_class")
+    except ValueError:
+      return default_colocation_group
+
+    attr_groups = [
+        class_name for class_name in class_attr
+        if class_name.startswith(b"loc:@")
+    ]
+
+    return attr_groups if attr_groups else default_colocation_group
+
+  def values(self):
+    return tuple(self.outputs)
+
+  def _get_control_flow_context(self):
+    return self._control_flow_context
+
+  def _set_control_flow_context(self, ctx):
+    self._control_flow_context = ctx
+
+  @property
+  def name(self):
+    return c_api.TF_OperationName(self._c_op)
+
+  @property
+  def _id(self):
+    return self._id_value
+
+  @property
+  def device(self):
+    return c_api.TF_OperationDevice(self._c_op)
+
+  @property
+  def _device_assignments(self):
+    return self._device_code_locations or []
+
+  @property
+  def _colocation_dict(self):
+    locations_dict = self._colocation_code_locations or {}
+    return locations_dict.copy()
+
+  @property
+  def _output_types(self):
+    num_outputs = c_api.TF_OperationNumOutputs(self._c_op)
+    output_types = [
+        c_api.TF_OperationOutputType(self._tf_output(i))
+        for i in xrange(num_outputs)
+    ]
+    if output_types:
+      assert isinstance(output_types[0], int)
+    return output_types
+
+  def _tf_output(self, output_idx):
+    tf_output = c_api.TF_Output()
+    tf_output.oper = self._c_op
+    tf_output.index = output_idx
+    return tf_output
+
+  def _tf_input(self, input_idx):
+    tf_input = c_api.TF_Input()
+    tf_input.oper = self._c_op
+    tf_input.index = input_idx
+    return tf_input
+
+  def _set_device(self, device):  
+    c_api.SetRequestedDevice(
+        self._graph._c_graph,  
+        self._c_op,  
+        compat.as_str(_device_string(device)))
+
+  def _update_input(self, index, tensor):
+    if not isinstance(tensor, Tensor):
+      raise TypeError("tensor must be a Tensor: %s" % tensor)
+    _assert_same_graph(self, tensor)
+
+    if not _USE_C_SHAPES:
+      set_shape_and_handle_data_for_outputs(self)
+
+    self._inputs_val = None
+    c_api.UpdateEdge(
+        self._graph._c_graph,  
+        tensor._as_tf_output(),  
+        self._tf_input(index))
+
+  def _add_control_inputs(self, ops):
+    for op in ops:
+      if not isinstance(op, Operation):
+        raise TypeError("op must be an Operation: %s" % op)
+      c_api.AddControlInput(self._graph._c_graph, self._c_op, op._c_op)  
+
+  def _add_control_input(self, op):
+    if not isinstance(op, Operation):
+      raise TypeError("op must be an Operation: %s" % op)
+    c_api.AddControlInput(self._graph._c_graph, self._c_op, op._c_op)  
+
+  def _remove_all_control_inputs(self):
+    c_api.RemoveAllControlInputs(self._graph._c_graph, self._c_op)  
+
+  def __str__(self):
+    return str(self.node_def)
+
+  def __repr__(self):
+    return "<tf.Operation '%s' type=%s>" % (self.name, self.type)
+
+  @property
+  def outputs(self):
+    return self._outputs
+
+
+
+  class _InputList(object):
+    def __init__(self, inputs):
+      self._inputs = inputs
+
+    def __iter__(self):
+      return iter(self._inputs)
+
+    def __len__(self):
+      return len(self._inputs)
+
+    def __bool__(self):
+      return bool(self._inputs)
+
+    __nonzero__ = __bool__
+
+    def __getitem__(self, i):
+      return self._inputs[i]
+
+
+
+  @property
+  def inputs(self):
+    if self._inputs_val is None:
+      tf_outputs = c_api.GetOperationInputs(self._c_op)
+      
+      retval = [
+          self.graph._get_tensor_by_tf_output(tf_output)
+          for tf_output in tf_outputs
+      ]
+      
+      self._inputs_val = Operation._InputList(retval)
+    return self._inputs_val
+
+  @property
+  def _inputs(self):
+    logging.warning("Operation._inputs is private, use Operation.inputs "
+                    "instead. Operation._inputs will eventually be removed.")
+    return self.inputs
+
+  @_inputs.setter
+  def _inputs(self, value):
+    raise ValueError("Cannot assign _inputs")
+
+  @property
+  def _input_types(self):
+    num_inputs = c_api.TF_OperationNumInputs(self._c_op)
+    input_types = [
+        dtypes.as_dtype(c_api.TF_OperationInputType(self._tf_input(i)))
+        for i in xrange(num_inputs)
+    ]
+    return input_types
+
+  @_input_types.setter
+  def _input_types(self, value):
+    raise ValueError("Cannot assign _input_types")
+
+  @property
+  def control_inputs(self):
+    control_c_ops = c_api.TF_OperationGetControlInputs_wrapper(self._c_op)
+    
+    return [
+        self.graph._get_operation_by_name_unsafe(
+            c_api.TF_OperationName(c_op)) for c_op in control_c_ops
+    ]
+    
+
+  @property
+  def _control_outputs(self):
+    control_c_ops = c_api.TF_OperationGetControlOutputs_wrapper(self._c_op)
+    
+    return [
+        self.graph._get_operation_by_name_unsafe(
+            c_api.TF_OperationName(c_op)) for c_op in control_c_ops
+    ]
+    
+
+  @property
+  def _control_inputs(self):
+    logging.warning("Operation._control_inputs is private, use "
+                    "Operation.control_inputs instead. "
+                    "Operation._control_inputs will eventually be removed.")
+    return self.control_inputs
+
+  @_control_inputs.setter
+  def _control_inputs(self, value):
+    logging.warning("Operation._control_inputs is private, use "
+                    "Operation.control_inputs instead. "
+                    "Operation._control_inputs will eventually be removed.")
+    value = copy.copy(value)
+    self._remove_all_control_inputs()
+    self._add_control_inputs(value)
+
+  @property
+  def type(self):
+    return c_api.TF_OperationOpType(self._c_op)
+
+  @property
+  def graph(self):
+    return self._graph
+
+  @property
+  def node_def(self):
+    
+    
+    with c_api_util.tf_buffer() as buf:
+      c_api.TF_OperationToNodeDef(self._c_op, buf)
+      data = c_api.TF_GetBuffer(buf)
+    node_def = node_def_pb2.NodeDef()
+    node_def.ParseFromString(compat.as_bytes(data))
+    return node_def
+
+  @property
+  def _node_def(self):
+    logging.warning("Operation._node_def is private, use Operation.node_def "
+                    "instead. Operation._node_def will eventually be removed.")
+    return self.node_def
+
+  @property
+  def op_def(self):
+    return self._graph._get_op_def(self.type)
+
+  @property
+  def _op_def(self):
+    logging.warning("Operation._op_def is private, use Operation.op_def "
+                    "instead. Operation._op_def will eventually be removed.")
+    return self.op_def
+
+  @property
+  def traceback(self):
+    return tf_stack.convert_stack(self._traceback)
+
+  @property
+  def traceback_with_start_lines(self):
+    return tf_stack.convert_stack(self._traceback,
+                                  include_func_start_lineno=True)
+
+  def _set_attr(self, attr_name, attr_value):
+    buf = c_api.TF_NewBufferFromString(
+        compat.as_bytes(attr_value.SerializeToString()))
+    try:
+      
+      c_api.SetAttr(self._graph._c_graph, self._c_op, attr_name, buf)
+      
+    finally:
+      c_api.TF_DeleteBuffer(buf)
+
+  def get_attr(self, name):
+    fields = ["s", "i", "f", "b", "type", "shape", "tensor", "func"]
+    try:
+      with c_api_util.tf_buffer() as buf:
+        c_api.TF_OperationGetAttrValueProto(self._c_op, name, buf)
+        data = c_api.TF_GetBuffer(buf)
+    except errors.InvalidArgumentError as e:
+      raise ValueError(str(e))
+    x = attr_value_pb2.AttrValue()
+    x.ParseFromString(data)
+
+    if not x.WhichOneof("value"):
+      return []
+    if x.HasField("list"):
+      for f in fields:
+        if getattr(x.list, f):
+          if f == "type":
+            return [dtypes.as_dtype(x) for x in list(getattr(x.list, f))]
+          else:
+            return list(getattr(x.list, f))
+      return []
+    else:
+      for f in fields:
+        if x.HasField(f):
+          if f == "type":
+            return dtypes.as_dtype(getattr(x, f))
+          else:
+            return getattr(x, f)
+      assert False, "Unsupported field type in " + str(x)
+
+  def run(self, feed_dict=None, session=None):
+    _run_using_default_session(self, feed_dict, self.graph, session)
+
+def _name_from_scope_name(name):
+  return name[:-1] if (name and name[-1] == "/") else name
+
+def _create_c_op(graph, node_def, inputs, control_inputs):
+  op_desc = c_api.TF_NewOperation(graph._c_graph,
+                                  compat.as_str(node_def.op),
+                                  compat.as_str(node_def.name))
+  for op_input in inputs:
+    if isinstance(op_input, (list, tuple)):
+      c_api.TF_AddInputList(op_desc, [t._as_tf_output() for t in op_input])
+    else:
+      c_api.TF_AddInput(op_desc, op_input._as_tf_output())
+
+  for control_input in control_inputs:
+    c_api.TF_AddControlInput(op_desc, control_input._c_op)
+  
+
+  for name, attr_value in node_def.attr.items():
+    serialized = attr_value.SerializeToString()
+    c_api.TF_SetAttrValueProto(op_desc, compat.as_str(name), serialized)
+
+  try:
+    c_op = c_api.TF_FinishOperation(op_desc)
+  except errors.InvalidArgumentError as e:
+    raise ValueError(str(e))
+
+  return c_op
+
+def internal_convert_to_tensor(value,
+                               dtype=None,
+                               name=None,
+                               as_ref=False,
+                               preferred_dtype=None,
+                               ctx=None):
+  if ctx is None: ctx = context.context()
+  if isinstance(value, EagerTensor):
+    if ctx.executing_eagerly():
+      return value
+    else:
+      graph = get_default_graph()
+      if not graph.building_function:
+        raise RuntimeError("Attempting to capture an EagerTensor without "
+                           "building a function.")
+      return graph.capture(value, name=name)
+
+  if dtype is not None:
+    dtype = dtypes.as_dtype(dtype)
+  unwrapped_type = type(value)
+  conversion_func_list = _tensor_conversion_func_cache.get(unwrapped_type, None)
+  if conversion_func_list is None:
+    with _tensor_conversion_func_lock:
+      conversion_func_list = []
+      for _, funcs_at_priority in sorted(
+          _tensor_conversion_func_registry.items()):
+        for base_type, conversion_func in funcs_at_priority:
+          if isinstance(value, base_type):
+            conversion_func_list.append((base_type, conversion_func))
+      _tensor_conversion_func_cache[unwrapped_type] = conversion_func_list
+
+  for base_type, conversion_func in conversion_func_list:
+    ret = None
+    if dtype is None and preferred_dtype is not None:
+      try:
+        ret = conversion_func(
+            value, dtype=preferred_dtype, name=name, as_ref=as_ref)
+      except (TypeError, ValueError, errors.UnimplementedError,
+              errors.InvalidArgumentError):
+        ret = None
+
+      if ret is not None and ret is not NotImplemented:
+        if (ret.dtype.base_dtype !=
+            dtypes.as_dtype(preferred_dtype).base_dtype):
+          raise TypeError("convert_to_tensor did not convert to "
+                          "the preferred dtype: %s vs %s " %
+                          (ret.dtype.base_dtype,
+                           dtypes.as_dtype(preferred_dtype).base_dtype))
+
+    if ret is None:
+      ret = conversion_func(value, dtype=dtype, name=name, as_ref=as_ref)
+
+    if ret is NotImplemented:
+      continue
+
+    if not isinstance(ret, Tensor):
+      raise RuntimeError(
+          "%sConversion function %r for type %s returned non-Tensor: %r" %
+          (_error_prefix(name), conversion_func, base_type, ret))
+    if dtype and not dtype.is_compatible_with(ret.dtype):
+      raise RuntimeError(
+          "%sConversion function %r for type %s returned incompatible "
+          "dtype: requested = %s, actual = %s" %
+          (_error_prefix(name), conversion_func, base_type, dtype.name,
+           ret.dtype.name))
+    return ret
+  raise TypeError("%sCannot convert %r with type %s to Tensor: "
+                  "no conversion function registered." %
+                  (_error_prefix(name), value, unwrapped_type))
+
+def convert_to_tensor(value, dtype=None, name=None, preferred_dtype=None):
+  return internal_convert_to_tensor(
+      value=value,
+      dtype=dtype,
+      name=name,
+      preferred_dtype=preferred_dtype,
+      as_ref=False)
+
+_TENSOR_LIKE_TYPES = tuple()
+
+def is_dense_tensor_like(t):
+  return isinstance(t, _TENSOR_LIKE_TYPES)
+
+class _EagerTensorBase(Tensor):
+  @property
+  def dtype(self):
+    return dtypes._INTERN_TABLE[self._datatype_enum()]  
+
+  def numpy(self):
+    if self.dtype == dtypes.resource:
+      raise ValueError("Resource handles are not convertible to numpy.")
+    return self._cpu_nograd()._numpy()  
+
+  def __int__(self):
+    return int(self.numpy())
+
+  def __float__(self):
+    return float(self.numpy())
+
+  def __index__(self):
+    return int(self.numpy())
+
+  def __array__(self, dtype=None):
+    return np.array(self.numpy(), dtype=dtype)
+
+  def __format__(self, format_spec):
+    return self.numpy().__format__(format_spec)
+
+  def __reduce__(self):
+    return (convert_to_tensor, (self.numpy(),))
+
+  def _numpy(self):
+    raise NotImplementedError()
+
+  def __copy__(self):
+    return self
+
+  def __deepcopy__(self, memo):
+    del memo
+    return self
+
+  def _datatype_enum(self):
+    raise NotImplementedError()
+
+  def _shape_tuple(self):
+    raise NotImplementedError()
+
+  def _rank(self):
+    raise NotImplementedError()
+
+  def _num_elements(self):
+    raise NotImplementedError()
+
+  def _copy_to_device(self, context, device):  
+    raise NotImplementedError()
+
+  def __str__(self):
+    return "tf.Tensor(%s, shape=%s, dtype=%s)" % (numpy_text(self),
+                                                  self.shape,
+                                                  self.dtype.name)
+
+  def __repr__(self):
+    return "<tf.Tensor: id=%s, shape=%s, dtype=%s, numpy=%s>" % (
+        self._id, self.shape, self.dtype.name, numpy_text(self, is_repr=True))
+
+  @staticmethod
+  def _override_operator(name, func):
+    setattr(_EagerTensorBase, name, func)
+
+  def _copy_nograd(self, ctx=None, device_name=None):
+    if ctx is None:
+      ctx = context.context()
+    if device_name is None:
+      device_name = ctx.device_name
+    
+    try:
+      new_tensor = self._copy_to_device(context=ctx._handle, device=device_name)
+    except core._NotOkStatusException as e:
+      six.raise_from(core._status_to_exception(e.code, e.message), None)
+    return new_tensor
+
+  def _copy(self, ctx=None, device_name=None):
+    new_tensor = self._copy_nograd(ctx, device_name)
+    if context.executing_eagerly():
+      self_device = self.device
+      def grad_fun(dresult):
+        return [dresult._copy(device_name=self_device)]
+      tape.record_operation("_copy", [new_tensor], [self], grad_fun)
+    return new_tensor
+    
+
+  @property
+  def shape(self):
+    if self._tensor_shape is None: 
+      self._tensor_shape = tensor_shape.TensorShape(self._shape_tuple())
+    return self._tensor_shape
+
+  def get_shape(self):
+    return self.shape
+
+  def _shape_as_list(self):
+    return list(self._shape_tuple())
+
+  @property
+  def ndim(self):
+    return self.shape.ndims
+
+  def _cpu_nograd(self):
+    return self._copy_nograd(context.context(), "CPU:0")
+
+  def cpu(self):
+    return self._copy(context.context(), "CPU:0")
+
+  def gpu(self, gpu_index=0):
+    return self._copy(context.context(), "GPU:" + str(gpu_index))
+
+  def __bool__(self):
+    if self._shape_tuple() != (): 
+      raise ValueError(
+          "Non-scalar tensor %s cannot be converted to boolean." % repr(self))
+    if self.dtype != dtypes.bool:
+      raise ValueError(
+          "Non-boolean tensor %s cannot be converted to boolean." % repr(self))
+    return bool(self.cpu().numpy())
+
+  def __nonzero__(self):
+    return self.__bool__()
+
+  def set_shape(self, shape):
+    if not self.shape.is_compatible_with(shape):
+      raise ValueError(
+          "Tensor's shape %s is not compatible with supplied shape %s" %
+          (self.shape, shape))
+
+  @property
+  def op(self):
+    raise AttributeError(
+        "Tensor.op is meaningless when eager execution is enabled.")
+
+  @property
+  def graph(self):
+    raise AttributeError(
+        "Tensor.graph is meaningless when eager execution is enabled.")
+
+  @property
+  def name(self):
+    raise AttributeError(
+        "Tensor.name is meaningless when eager execution is enabled.")
+
+  @property
+  def value_index(self):
+    raise AttributeError(
+        "Tensor.value_index is meaningless when eager execution is enabled.")
+
+  def consumers(self):
+    raise NotImplementedError(
+        "Tensor.consumers is meaningless when eager execution is enabled.")
+
+  def _add_consumer(self, consumer):
+    raise NotImplementedError(
+        "_add_consumer not supported when eager execution is enabled.")
+
+  def _as_node_def_input(self):
+    raise NotImplementedError(
+        "_as_node_def_input not supported when eager execution is enabled.")
+
+  def _as_tf_output(self):
+    raise NotImplementedError(
+        "_as_tf_output not supported when eager execution is enabled.")
+
+  def eval(self, feed_dict=None, session=None):
+    raise NotImplementedError(
+        "eval is not supported when eager execution is enabled, "
+        "is .numpy() what you're looking for?"
+    )
+
+EagerTensor = c_api.TFE_Py_InitEagerTensor(_EagerTensorBase)
+
+def add_to_collection(name, value):
+  get_default_graph().add_to_collection(name, value)
+
+@tf_contextlib.contextmanager
+def init_scope():
+  if context.executing_eagerly():
+    with stop_recording():
+      yield
+  else:
+    default_graph = get_default_graph()
+    scope = default_graph.get_name_scope()
+    if scope and scope[-1] != "/":
+      scope = scope + "/"
+    inner_device_stack = default_graph._device_function_stack  
+
+    outer_context = None
+    if not _default_graph_stack.stack:
+      if default_graph.building_function:
+        raise RuntimeError("The global graph is building a function.")
+      outer_context = default_graph.as_default
+    else:
+      for stack_entry in reversed(context.context().context_switches.stack):
+        if not stack_entry.is_building_function:
+          outer_context = stack_entry.enter_context_fn
+          break
+
+      if outer_context is None:
+        outer_context = _default_graph_stack._GetGlobalDefaultGraph().as_default  
+
+    if outer_context is None:
+      raise RuntimeError("All graphs are building functions, and no "
+                         "eager context was previously active.")
+
+    outer_graph = None
+    outer_device_stack = None
+    try:
+      with outer_context(), name_scope(scope), control_dependencies(
+          None):#stop_recording():
+        if not context.executing_eagerly():
+          outer_graph = get_default_graph()
+          outer_device_stack = outer_graph._device_function_stack  
+          outer_graph._device_function_stack = inner_device_stack  
+        yield
+    finally:
+      if outer_graph is not None:
+        outer_graph._device_function_stack = outer_device_stack  
+
+def colocate_with(op, ignore_existing=False):
+  return _colocate_with_for_gradient(op, None, ignore_existing=ignore_existing)
+
+def _colocate_with_for_gradient(op, gradient_uid, ignore_existing=False):
+  if context.executing_eagerly():
+    if op is not None:
+      return device(op.device)
+    else:
+      return _NullContextmanager()
+  else:
+    default_graph = get_default_graph()
+    if isinstance(op, EagerTensor):
+      if default_graph.building_function:
+        return default_graph.device(op.device)
+      else:
+        raise ValueError("Encountered an Eager-defined Tensor during graph "
+                         "construction, but a function was not being built.")
+    return default_graph._colocate_with_for_gradient(
+        op, gradient_uid=gradient_uid, ignore_existing=ignore_existing)
+
+def internal_convert_to_tensor_or_indexed_slices(value,
+                                                 dtype=None,
+                                                 name=None,
+                                                 as_ref=False):
+  if isinstance(value, EagerTensor) and not context.executing_eagerly():
+    return internal_convert_to_tensor(
+        value, dtype=dtype, name=name, as_ref=as_ref)
+  else:
+    return internal_convert_to_tensor(
+        value, dtype=dtype, name=name, as_ref=as_ref)
+
+def add_to_collections(names, value):
+  get_default_graph().add_to_collections(names, value)
+
+def get_name_scope():
+  if context.executing_eagerly():
+    return context.context().scope_name.rstrip("/")
+  return get_default_graph().get_name_scope()
+
+def device(device_name_or_function):
+  if context.executing_eagerly():
+    if callable(device_name_or_function):
+      raise RuntimeError(
+          "tf.device does not support functions when eager execution "
+          "is enabled.")
+    return context.device(device_name_or_function)
+  else:
+    return get_default_graph().device(device_name_or_function)
+
+class _UserDeviceSpec(object):
+  def __init__(self, device_name_or_function):
+    self._device_name_or_function = device_name_or_function
+
+    self.display_name = str(self._device_name_or_function)
+    if callable(self._device_name_or_function):
+      dev_func = self._device_name_or_function
+      func_name = function_utils.get_func_name(dev_func)
+      func_code = function_utils.get_func_code(dev_func)
+      if func_code:
+        fname = func_code.co_filename
+        lineno = func_code.co_firstlineno
+      else:
+        fname = "unknown"
+        lineno = -1
+      self.display_name = "%s<%s, %d>" % (func_name, fname, lineno)
+
+    self.function = self._device_name_or_function
+    if not (self._device_name_or_function is None or
+            callable(self._device_name_or_function)):
+      self.function = pydev.merge_device(self._device_name_or_function)
+
+def convert_to_tensor_or_indexed_slices(value, dtype=None, name=None):
+  return internal_convert_to_tensor_or_indexed_slices(
+      value=value, dtype=dtype, name=name, as_ref=False)
+
+def _assert_same_graph(original_item, item):
+  if original_item.graph is not item.graph:
+    raise ValueError("%s must be from the same graph as %s." % (item,
+                                                                original_item))
+
+def internal_convert_n_to_tensor(values,
+                                 dtype=None,
+                                 name=None,
+                                 as_ref=False,
+                                 preferred_dtype=None,
+                                 ctx=None):
+  if not isinstance(values, collections.Sequence):
+    raise TypeError("values must be a list.")
+  ret = []
+  if ctx is None: ctx = context.context()
+  for i, value in enumerate(values):
+    n = None if name is None else "%s_%d" % (name, i)
+    ret.append(
+        internal_convert_to_tensor(
+            value,
+            dtype=dtype,
+            name=n,
+            as_ref=as_ref,
+            preferred_dtype=preferred_dtype,
+            ctx=ctx))
+  return ret
+
+def convert_n_to_tensor_or_indexed_slices(values, dtype=None, name=None):
+  return internal_convert_n_to_tensor_or_indexed_slices(
+      values=values, dtype=dtype, name=name, as_ref=False)
+
+def internal_convert_n_to_tensor_or_indexed_slices(values,
+                                                   dtype=None,
+                                                   name=None,
+                                                   as_ref=False):
+  if not isinstance(values, collections.Sequence):
+    raise TypeError("values must be a list.")
+  ret = []
+  for i, value in enumerate(values):
+    if value is None:
+      ret.append(value)
+    else:
+      n = None if name is None else "%s_%d" % (name, i)
+      ret.append(
+          internal_convert_to_tensor_or_indexed_slices(
+              value, dtype=dtype, name=n, as_ref=as_ref))
+  return ret
+
+def _device_string(dev_spec):
+  if isinstance(dev_spec, pydev.DeviceSpec):
+    return dev_spec.to_string()
+  else:
+    return dev_spec
+
+def get_gradient_function(op):
+  if not op.inputs:
+    return None
+  try:
+    op_type = op.get_attr("_gradient_op_type")
+  except ValueError:
+    op_type = op.type
+  return _gradient_registry.lookup(op_type)
+
+_SESSION_RUN_LOCK_GROUP = 1
+
+_tensor_conversion_func_lock = threading.Lock()
+_tensor_conversion_func_registry = {
+    0: [(Tensor, _TensorTensorConversionFunction)]
+}

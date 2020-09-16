@@ -952,5 +952,5 @@ def is_tensor(x):  # pylint: disable=invalid-name
   Returns:
     `True` if `x` is a tensor, `False` if not.
   """
-  return (isinstance(x, ops._TensorLike) or ops.is_dense_tensor_like(x) or  # pylint: disable=protected-access
+  return (ops.is_dense_tensor_like(x) or  # pylint: disable=protected-access
           (hasattr(x, "is_tensor_like") and x.is_tensor_like))
