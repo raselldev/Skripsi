@@ -2138,20 +2138,8 @@ def internal_convert_to_tensor(value,
     if ret is NotImplemented:
       continue
 
-    if not isinstance(ret, Tensor):
-      raise RuntimeError(
-          "%sConversion function %r for type %s returned non-Tensor: %r" %
-          (_error_prefix(name), conversion_func, base_type, ret))
-    if dtype and not dtype.is_compatible_with(ret.dtype):
-      raise RuntimeError(
-          "%sConversion function %r for type %s returned incompatible "
-          "dtype: requested = %s, actual = %s" %
-          (_error_prefix(name), conversion_func, base_type, dtype.name,
-           ret.dtype.name))
     return ret
-  raise TypeError("%sCannot convert %r with type %s to Tensor: "
-                  "no conversion function registered." %
-                  (_error_prefix(name), value, unwrapped_type))
+
 
 def convert_to_tensor(value, dtype=None, name=None, preferred_dtype=None):
   return internal_convert_to_tensor(

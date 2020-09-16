@@ -1,24 +1,3 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-"""Operations that generate constants.
-
-See the [constants guide](https://tensorflow.org/api_guides/python/constant_op).
-"""
-
-# Must be separate from array_ops to avoid a cyclic dependency.
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -33,84 +12,6 @@ from backend.python.framework import ops
 from backend.python.framework import tensor_shape
 from backend.python.framework import tensor_util
 #from backend.python.util.tf_export import tf_export
-
-
-def _eager_reshape(tensor, shape, ctx):
-  """Eager-only version of Reshape op; requires tensor is an eager Tensor."""
-  attr_t = tensor._datatype_enum()  # pylint: disable=protected-access
-  attr_tshape, (shape,) = execute.args_to_matching_eager(
-      [shape], ctx, dtypes.int32)
-  inputs_flat = [tensor, shape]
-  attrs = ("T", attr_t, "Tshape", attr_tshape)
-  result, = execute.execute(
-      b"Reshape", 1, inputs=inputs_flat, attrs=attrs, ctx=ctx)
-  return result
-
-
-def _eager_fill(dims, value, ctx):
-  """Eager-only version of Fill op; requires value is an eager Tensor."""
-  attr_t = value.dtype.as_datatype_enum
-  dims = convert_to_eager_tensor(dims, ctx, dtypes.int32)
-  inputs_flat = [dims, value]
-  attrs = ("T", attr_t, "index_type", types_pb2.DT_INT32)
-  result, = execute.execute(
-      b"Fill", 1, inputs=inputs_flat, attrs=attrs, ctx=ctx)
-  return result
-
-
-def _eager_identity(tensor, ctx):
-  """Eager-only version of Identity op; requires tensor is an eager Tensor."""
-  attrs = ("T", tensor.dtype.as_datatype_enum)
-  result, = execute.execute(
-      b"Identity", 1, inputs=[tensor], attrs=attrs, ctx=ctx)
-  return result
-
-
-def convert_to_eager_tensor(value, ctx, dtype=None):
-  """Converts the given `value` to an `EagerTensor`.
-
-  Note that this function could return cached copies of created constants for
-  performance reasons.
-
-  Args:
-    value: value to convert to EagerTensor.
-    ctx: value of context.context().
-    dtype: optional desired dtype of the converted EagerTensor.
-
-  Returns:
-    EagerTensor created from value.
-
-  Raises:
-    TypeError: if `dtype` is not compatible with the type of t.
-  """
-  if isinstance(value, ops.EagerTensor):
-    if dtype is not None and value.dtype != dtype:
-      raise TypeError("Expected tensor with type %r not %r" % (
-          dtype, value.dtype))
-    return value
-  if dtype is not None:
-    try:
-      dtype = dtype.as_datatype_enum
-    except AttributeError:
-      dtype = dtypes.as_dtype(dtype).as_datatype_enum
-  device = ctx.device_name
-  handle = ctx._handle  # pylint: disable=protected-access
-  if isinstance(value, (float,) + six.integer_types):
-    # Use a scalar cache. This will put each scalar of each type only once on
-    # each device. Scalars don't use much device memory but copying scalars can
-    # trigger memcpys which are slow.
-    cache_key = device, value, dtype, type(value)
-    scalar_cache = ctx.scalar_cache()
-    tensor = scalar_cache.get(cache_key, None)
-    if tensor is not None:
-      return ops.EagerTensor(
-          value, context=handle, device=device, dtype=dtype, other_value=tensor)
-    t = ops.EagerTensor(value, context=handle, device=device, dtype=dtype)
-    scalar_cache[cache_key] = t
-    return t
-  else:
-    return ops.EagerTensor(value, context=handle, device=device, dtype=dtype)
-
 
 #@tf_export("constant")
 def constant(value, dtype=None, shape=None, name="Const", verify_shape=False):
@@ -212,15 +113,6 @@ def constant(value, dtype=None, shape=None, name="Const", verify_shape=False):
       name=name).outputs[0]
   return const_tensor
 
-
-def is_constant(tensor_or_op):
-  if isinstance(tensor_or_op, ops.Tensor):
-    op = tensor_or_op.op
-  else:
-    op = tensor_or_op
-  return op.type == "Const"
-
-
 def _constant_tensor_conversion_function(v, dtype=None, name=None,
                                          as_ref=False):
   _ = as_ref
@@ -266,10 +158,6 @@ def _tensor_shape_tensor_conversion_function(s,
   return constant(s_list, dtype=dtype, name=name)
 
 
-ops.register_tensor_conversion_function(
-    tensor_shape.TensorShape, _tensor_shape_tensor_conversion_function, 100)
-
-
 def _dimension_tensor_conversion_function(d,
                                           dtype=None,
                                           name=None,
@@ -288,5 +176,4 @@ def _dimension_tensor_conversion_function(d,
   return constant(d.value, dtype=dtype, name=name)
 
 
-ops.register_tensor_conversion_function(
-    tensor_shape.Dimension, _dimension_tensor_conversion_function, 100)
+
