@@ -130,7 +130,7 @@ class Model:
 
 
 	def setupTF(self):
-		sess=b.Session() # TF session
+		sess=b.BaseSession() # TF session
 
 		saver = b.Saver(max_to_keep=1) # saver saves model to file
 		modelDir = '../model/'

@@ -38,7 +38,7 @@ from backend.python.ops.math_ops import reduce_mean
 from backend.python.framework.ops import get_collection
 from backend.python.framework.ops import GraphKeys
 from backend.python.framework.ops import control_dependencies
-from backend.python.session import Session
+from backend.python.session import BaseSession
 
 from backend.python.framework.dtypes import bool
 from backend.python.framework.dtypes import float32

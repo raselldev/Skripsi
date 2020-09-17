@@ -24,6 +24,7 @@ from backend.python.training import saveable_object
 from backend.python.training import base as checkpointable
 from backend.python.training import checkpoint_management
 from backend.python.util import compat
+from backend.python.framework import errors_impl as errors
 
 
 get_checkpoint_state = checkpoint_management.get_checkpoint_state

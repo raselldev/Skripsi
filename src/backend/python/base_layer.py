@@ -15,7 +15,7 @@ import weakref
 #from backend.python import function as eager_function
 from backend.python import context
 #from backend.python import constraints
-from backend.python import regularizers
+#from backend.python import regularizers
 from backend.python import initializers
 #from backend.python import backend
 from backend.python.framework import ops
@@ -264,7 +264,7 @@ class Layer(checkpointable.CheckpointableBase):
       dtype = self.dtype or _FLOATX
     dtype = dtypes.as_dtype(dtype)
     initializer = initializers.get(initializer)
-    regularizer = regularizers.get(regularizer)
+#    regularizer = regularizers.get(regularizer)
     constraint = get(constraint)
 
     if synchronization == tf_variables.VariableSynchronization.ON_READ:

@@ -8,7 +8,7 @@ from backend.python.framework import ops
 from backend.python.framework import tensor_shape
 #from backend.python import constraints
 from backend.python import initializers
-from backend.python import regularizers
+#from backend.python import regularizers
 from backend.python.base_layer import InputSpec
 from backend.python.base_layer import Layer
 #from backend.python import tf_utils
@@ -77,8 +77,8 @@ class BatchNormalization(Layer):
     self.moving_mean_initializer = initializers.get(moving_mean_initializer)
     self.moving_variance_initializer = initializers.get(
         moving_variance_initializer)
-    self.beta_regularizer = regularizers.get(beta_regularizer)
-    self.gamma_regularizer = regularizers.get(gamma_regularizer)
+#    self.beta_regularizer = regularizers.get(beta_regularizer)
+#    self.gamma_regularizer = regularizers.get(gamma_regularizer)
     self.beta_constraint = get(beta_constraint)
     self.gamma_constraint = get(gamma_constraint)
     self.renorm = renorm
@@ -153,7 +153,7 @@ class BatchNormalization(Layer):
           shape=param_shape,
           dtype=param_dtype,
           initializer=self.gamma_initializer,
-          regularizer=self.gamma_regularizer,
+#          regularizer=self.gamma_regularizer,
           constraint=self.gamma_constraint,
           trainable=True)
     else:
@@ -168,7 +168,7 @@ class BatchNormalization(Layer):
           shape=param_shape,
           dtype=param_dtype,
           initializer=self.beta_initializer,
-          regularizer=self.beta_regularizer,
+          #regularizer=self.beta_regularizer,
           constraint=self.beta_constraint,
           trainable=True)
     else:
