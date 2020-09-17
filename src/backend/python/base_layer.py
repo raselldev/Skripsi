@@ -17,7 +17,7 @@ from backend.python import context
 #from backend.python import constraints
 from backend.python import regularizers
 from backend.python import initializers
-from backend.python import backend
+#from backend.python import backend
 from backend.python.framework import ops
 from backend.python.framework import dtypes
 from backend.python.ops import variables as tf_variables
