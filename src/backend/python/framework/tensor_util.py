@@ -1,18 +1,3 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-"""Utilities to create TensorProtos."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -204,19 +189,10 @@ def GetNumpyAppendFn(dtype):
 
 
 def TensorShapeProtoToList(shape):
-  """Convert a TensorShape to a list.
-
-  Args:
-    shape: A TensorShapeProto.
-
-  Returns:
-    List of integers representing the dimensions of the tensor.
-  """
   return [dim.size for dim in shape.dim]
 
 
 def _GetDenseDimensions(list_of_lists):
-  """Returns the inferred dense dimensions of a list of lists."""
   if not isinstance(list_of_lists, (list, tuple)):
     return []
   elif not list_of_lists:
@@ -355,49 +331,6 @@ def _AssertCompatible(values, dtype):
 
 #@tf_export("make_tensor_proto")
 def make_tensor_proto(values, dtype=None, shape=None, verify_shape=False):
-  """Create a TensorProto.
-
-  Args:
-    values:         Values to put in the TensorProto.
-    dtype:          Optional tensor_pb2 DataType value.
-    shape:          List of integers representing the dimensions of tensor.
-    verify_shape:   Boolean that enables verification of a shape of values.
-
-  Returns:
-    A `TensorProto`. Depending on the type, it may contain data in the
-    "tensor_content" attribute, which is not directly useful to Python programs.
-    To access the values you should convert the proto back to a numpy ndarray
-    with `tf.make_ndarray(proto)`.
-
-    If `values` is a `TensorProto`, it is immediately returned; `dtype` and
-    `shape` are ignored.
-
-  Raises:
-    TypeError:  if unsupported types are provided.
-    ValueError: if arguments have inappropriate values or if verify_shape is
-     True and shape of values is not equals to a shape from the argument.
-
-  make_tensor_proto accepts "values" of a python scalar, a python list, a
-  numpy ndarray, or a numpy scalar.
-
-  If "values" is a python scalar or a python list, make_tensor_proto
-  first convert it to numpy ndarray. If dtype is None, the
-  conversion tries its best to infer the right numpy data
-  type. Otherwise, the resulting numpy array has a compatible data
-  type with the given dtype.
-
-  In either case above, the numpy ndarray (either the caller provided
-  or the auto converted) must have the compatible type with dtype.
-
-  make_tensor_proto then converts the numpy array to a tensor proto.
-
-  If "shape" is None, the resulting tensor proto represents the numpy
-  array precisely.
-
-  Otherwise, "shape" specifies the tensor's shape and the numpy array
-  can not have more elements than what "shape" specifies.
-
-  """
   if isinstance(values, tensor_pb2.TensorProto):
     return values
 
@@ -463,18 +396,14 @@ def make_tensor_proto(values, dtype=None, shape=None, verify_shape=False):
   # if dtype is provided, it must be compatible with what numpy
   # conversion says.
   numpy_dtype = dtypes.as_dtype(nparray.dtype)
-  if numpy_dtype is None:
-    raise TypeError("Unrecognized data type: %s" % nparray.dtype)
+
 
   # If dtype was specified and is a quantized type, we convert
   # numpy_dtype back into the quantized version.
   if is_quantized:
     numpy_dtype = dtype
 
-  if dtype is not None and (not hasattr(dtype, "base_dtype") or
-                            dtype.base_dtype != numpy_dtype.base_dtype):
-    raise TypeError("Incompatible types: %s vs. %s. Value is %s" %
-                    (dtype, nparray.dtype, values))
+
 
   # If shape is not given, get the shape from the numpy array.
   if shape is None:
@@ -546,20 +475,6 @@ def make_tensor_proto(values, dtype=None, shape=None, verify_shape=False):
 
 #@tf_export("make_ndarray")
 def MakeNdarray(tensor):
-  """Create a numpy ndarray from a tensor.
-
-  Create a numpy ndarray with the same shape and data as the tensor.
-
-  Args:
-    tensor: A TensorProto.
-
-  Returns:
-    A numpy array with the tensor contents.
-
-  Raises:
-    TypeError: if tensor has unsupported type.
-
-  """
   shape = [d.size for d in tensor.tensor_shape.dim]
   num_elements = np.prod(shape, dtype=np.int64)
   tensor_dtype = dtypes.as_dtype(tensor.dtype)
@@ -650,19 +565,6 @@ def MakeNdarray(tensor):
 
 
 def ShapeEquals(tensor_proto, shape):
-  """Returns True if "tensor_proto" has the given "shape".
-
-  Args:
-    tensor_proto: A TensorProto.
-    shape: A tensor shape, expressed as a TensorShape, list, or tuple.
-
-  Returns:
-    True if "tensor_proto" has the given "shape", otherwise False.
-
-  Raises:
-    TypeError: If "tensor_proto" is not a TensorProto, or shape is not a
-      TensorShape, list, or tuple.
-  """
   if not isinstance(tensor_proto, tensor_pb2.TensorProto):
     raise TypeError("tensor_proto is not a tensor_pb2.TensorProto object")
   if isinstance(shape, tensor_shape_pb2.TensorShapeProto):
@@ -785,32 +687,6 @@ def _ConstantValue(tensor, partial):
 
 
 def constant_value(tensor, partial=False):  # pylint: disable=invalid-name
-  """Returns the constant value of the given tensor, if efficiently calculable.
-
-  This function attempts to partially evaluate the given tensor, and
-  returns its value as a numpy ndarray if this succeeds.
-
-  TODO(mrry): Consider whether this function should use a registration
-  mechanism like gradients and ShapeFunctions, so that it is easily
-  extensible.
-
-  NOTE: If `constant_value(tensor)` returns a non-`None` result, it will no
-  longer be possible to feed a different value for `tensor`. This allows the
-  result of this function to influence the graph that is constructed, and
-  permits static shape optimizations.
-
-  Args:
-    tensor: The Tensor to be evaluated.
-    partial: If True, the returned numpy array is allowed to have partially
-      evaluated values. Values that can't be evaluated will be None.
-
-  Returns:
-    A numpy ndarray containing the constant value of the given `tensor`,
-    or None if it cannot be calculated.
-
-  Raises:
-    TypeError: if tensor is not an ops.Tensor.
-  """
   if isinstance(tensor, ops.EagerTensor):
     return tensor.numpy()
   ret = _ConstantValue(tensor, partial)
@@ -822,24 +698,6 @@ def constant_value(tensor, partial=False):  # pylint: disable=invalid-name
 
 
 def constant_value_as_shape(tensor):  # pylint: disable=invalid-name
-  """A version of `constant_value()` that returns a `TensorShape`.
-
-  This version should be used when a constant tensor value is
-  interpreted as a (possibly partial) shape, e.g. in the shape
-  function for `tf.reshape()`. By explicitly requesting a
-  `TensorShape` as the return value, it is possible to represent
-  unknown dimensions; by contrast, `constant_value()` is
-  all-or-nothing.
-
-  Args:
-    tensor: The rank-0 or rank-1 Tensor to be evaluated.
-
-  Returns:
-    A `TensorShape` based on the constant value of the given `tensor`.
-
-  Raises:
-    ValueError: If the shape is rank-0 and is not statically known to be -1.
-  """
   if isinstance(tensor, ops.EagerTensor):
     return tensor_shape.as_shape(
         [dim if dim != -1 else None for dim in tensor.numpy()])
@@ -939,18 +797,5 @@ def constant_value_as_shape(tensor):  # pylint: disable=invalid-name
 
 
 def is_tensor(x):  # pylint: disable=invalid-name
-  """Check whether `x` is of tensor type.
-
-  Check whether an object is a tensor. This check is equivalent to calling
-  `isinstance(x, (tf.Tensor, tf.SparseTensor, tf.Variable))` and also checks
-  if all the component variables of a MirroredVariable or a TowerLocalVariable
-  are tensors.
-
-  Args:
-    x: A python object to check.
-
-  Returns:
-    `True` if `x` is a tensor, `False` if not.
-  """
   return (ops.is_dense_tensor_like(x) or  # pylint: disable=protected-access
           (hasattr(x, "is_tensor_like") and x.is_tensor_like))

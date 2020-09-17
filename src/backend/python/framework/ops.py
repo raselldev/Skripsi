@@ -41,6 +41,18 @@ from backend.python.util.deprecation import deprecated_args
 #from backend.python.util.tf_export import tf_export
 
 
+def register(self, candidate, name=None):
+  if not name:
+    name = candidate.__name__
+  if name in self._registry:
+    (filename, line_number, function_name, _) = (
+        self._registry[name][_LOCATION_TAG])
+    raise KeyError("Registering two %s with name '%s' !"
+                    "(Previous registration was in %s %s:%d)" %
+                    (self._name, name, function_name, filename, line_number))
+  stack = traceback.extract_stack()
+  self._registry[name] = {_TYPE_TAG: candidate, _LOCATION_TAG: stack[2]}
+
 
 
 class Tensor(object):
@@ -325,6 +337,8 @@ def _override_helper(clazz_object, operator, func):
   setattr(clazz_object, operator, func)
 
 _gradient_registry = registry.Registry("gradient")
+
+
 
 class RegisterGradient(object):
   def __init__(self, op_type):
@@ -2512,7 +2526,7 @@ def get_gradient_function(op):
     op_type = op.get_attr("_gradient_op_type")
   except ValueError:
     op_type = op.type
-  return _gradient_registry.lookup(op_type)
+  return None
 
 _SESSION_RUN_LOCK_GROUP = 1
 
