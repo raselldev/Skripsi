@@ -9,26 +9,11 @@ import six as _six
 from backend.python import pywrap_backend as _pywrap_tensorflow
 
 
-def _get_attrs_values(obj):
-  attrs = getattr(obj.__class__, "__attrs_attrs__")
-  return [getattr(obj, a.name) for a in attrs]
-
-
-def _sorted(dict_):
-  try:
-    return sorted(_six.iterkeys(dict_))
-  except TypeError:
-    raise TypeError("nest only supports dicts with sortable keys.")
-
-
 def _is_namedtuple(instance, strict=False):
   return _pywrap_tensorflow.IsNamedtuple(instance, strict)
 
-
-
 _is_mapping = _pywrap_tensorflow.IsMapping
 _is_attrs = _pywrap_tensorflow.IsAttrs
-
 
 def _sequence_like(instance, args):
   if _is_mapping(instance):
@@ -39,7 +24,6 @@ def _sequence_like(instance, args):
   else:
     # Not a namedtuple
     return type(instance)(args)
-
 
 def _yield_value(iterable):
   if _is_mapping(iterable):
@@ -52,16 +36,11 @@ def _yield_value(iterable):
     for value in iterable:
       yield value
 
-
 is_sequence = _pywrap_tensorflow.IsSequence
-
 
 flatten = _pywrap_tensorflow.Flatten
 
-
 _same_namedtuples = _pywrap_tensorflow.SameNamedtuples
-
-
 
 def assert_same_structure(nest1, nest2, check_types=True):
   try:
@@ -73,7 +52,6 @@ def assert_same_structure(nest1, nest2, check_types=True):
                   "Entire first structure:\n%s\n"
                   "Entire second structure:\n%s"
                   % (str(e), str1, str2))
-
 
 def flatten_dict_items(dictionary):
   if not isinstance(dictionary, (dict, _collections.Mapping)):
@@ -101,7 +79,6 @@ def flatten_dict_items(dictionary):
         flat_dictionary[new_i] = new_v
   return flat_dictionary
 
-
 def _packed_nest_with_indices(structure, flat, index):
   packed = []
   for s in _yield_value(structure):
@@ -113,7 +90,6 @@ def _packed_nest_with_indices(structure, flat, index):
       packed.append(flat[index])
       index += 1
   return index, packed
-
 
 def pack_sequence_as(structure, flat_sequence):
   if not is_sequence(flat_sequence):
@@ -138,7 +114,6 @@ def pack_sequence_as(structure, flat_sequence):
           (len(flat_structure), len(flat_sequence), structure, flat_sequence))
   return _sequence_like(structure, packed)
 
-
 def map_structure(func, *structure, **check_types_dict):
   if not callable(func):
     raise TypeError("func must be callable, got: %s" % func)
@@ -161,8 +136,6 @@ def map_structure(func, *structure, **check_types_dict):
 
   return pack_sequence_as(
       structure[0], [func(*x) for x in entries])
-
-
 
 _pywrap_tensorflow.RegisterType("Mapping", _collections.Mapping)
 _pywrap_tensorflow.RegisterType("Sequence", _collections.Sequence)

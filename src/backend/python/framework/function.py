@@ -133,10 +133,7 @@ class Defun(object):
     if argspec.varargs:
       max_args = 1000000
     argnames = argspec.args
-    if tf_inspect.ismethod(func):
-      # 1st argument is the "class" type.
-      min_args -= 1
-      argnames = argnames[1:]
+
 
     if self._input_types:
       # If Defun is given a list of types for the inputs, the number
