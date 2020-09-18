@@ -16,7 +16,7 @@ import weakref
 from backend.python import context
 #from backend.python import constraints
 #from backend.python import regularizers
-from backend.python import initializers
+#from backend.python import initializers
 #from backend.python import backend
 from backend.python.framework import ops
 from backend.python.framework import dtypes
@@ -26,6 +26,7 @@ from backend.python.training import base as checkpointable
 from backend.python.util import function_utils
 from backend.python.util import tf_inspect
 from backend.python.util import nest
+from backend.python.ops.init_ops import GlorotUniform
 #from tensorflow import doc_controls
 
 PER_GRAPH_LAYER_NAME_UIDS = weakref.WeakKeyDictionary()
@@ -263,7 +264,7 @@ class Layer(checkpointable.CheckpointableBase):
     if dtype is None:
       dtype = self.dtype or _FLOATX
     dtype = dtypes.as_dtype(dtype)
-    initializer = initializers.get(initializer)
+#    initializer = initializers.get(initializer)
 #    regularizer = regularizers.get(regularizer)
     constraint = get(constraint)
 
@@ -284,7 +285,7 @@ class Layer(checkpointable.CheckpointableBase):
     if initializer is None:
       # If dtype is DT_FLOAT, provide a uniform unit scaling initializer
       if dtype.is_floating:
-        initializer = initializers.glorot_uniform()
+        initializer = GlorotUniform()
       # If dtype is DT_INT/DT_UINT, provide a default value `zero`
       # If dtype is DT_BOOL, provide a default value `FALSE`
       elif dtype.is_integer or dtype.is_unsigned or dtype.is_bool:

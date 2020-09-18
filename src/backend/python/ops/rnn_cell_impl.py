@@ -41,7 +41,7 @@ from backend.python.ops import variables as tf_variables
 from backend.python.ops import variable_scope as vs
 from backend.python.ops import array_ops
 from backend.python.ops import math_ops
-from backend.python import initializers
+#from backend.python import initializers
 #from backend.python import tf_utils
 from backend.python.training import base as checkpointable
 from backend.python.util import nest
@@ -869,7 +869,7 @@ class LSTMCell(LayerRNNCell):
     self._num_units = num_units
     self._use_peepholes = use_peepholes
     self._cell_clip = cell_clip
-    self._initializer = initializers.get(initializer)
+#    self._initializer = initializers.get(initializer)
     self._num_proj = num_proj
     self._proj_clip = proj_clip
     self._num_unit_shards = num_unit_shards
@@ -915,7 +915,7 @@ class LSTMCell(LayerRNNCell):
     self._kernel = self.add_variable(
         _WEIGHTS_VARIABLE_NAME,
         shape=[input_depth + h_depth, 4 * self._num_units],
-        initializer=self._initializer,
+#        initializer=self._initializer,
         partitioner=maybe_partitioner)
     if self.dtype is None:
       initializer = init_ops.zeros_initializer

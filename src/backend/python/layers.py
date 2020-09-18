@@ -7,7 +7,7 @@ from backend.python.framework import dtypes
 from backend.python.framework import ops
 from backend.python.framework import tensor_shape
 #from backend.python import constraints
-from backend.python import initializers
+#from backend.python import initializers
 #from backend.python import regularizers
 from backend.python.base_layer import InputSpec
 from backend.python.base_layer import Layer
@@ -72,11 +72,10 @@ class BatchNormalization(Layer):
     self.epsilon = epsilon
     self.center = center
     self.scale = scale
-    self.beta_initializer = initializers.get(beta_initializer)
-    self.gamma_initializer = initializers.get(gamma_initializer)
-    self.moving_mean_initializer = initializers.get(moving_mean_initializer)
-    self.moving_variance_initializer = initializers.get(
-        moving_variance_initializer)
+#    self.beta_initializer = initializers.get(beta_initializer)
+#    self.gamma_initializer = initializers.get(gamma_initializer)
+#    self.moving_mean_initializer = initializers.get(moving_mean_initializer)
+#    self.moving_variance_initializer = initializers.get( moving_variance_initializer)
 #    self.beta_regularizer = regularizers.get(beta_regularizer)
 #    self.gamma_regularizer = regularizers.get(gamma_regularizer)
     self.beta_constraint = get(beta_constraint)
@@ -152,7 +151,7 @@ class BatchNormalization(Layer):
           name='gamma',
           shape=param_shape,
           dtype=param_dtype,
-          initializer=self.gamma_initializer,
+#          initializer=self.gamma_initializer,
 #          regularizer=self.gamma_regularizer,
           constraint=self.gamma_constraint,
           trainable=True)
@@ -167,7 +166,7 @@ class BatchNormalization(Layer):
           name='beta',
           shape=param_shape,
           dtype=param_dtype,
-          initializer=self.beta_initializer,
+#          initializer=self.beta_initializer,
           #regularizer=self.beta_regularizer,
           constraint=self.beta_constraint,
           trainable=True)
@@ -188,7 +187,7 @@ class BatchNormalization(Layer):
           name='moving_mean',
           shape=param_shape,
           dtype=param_dtype,
-          initializer=self.moving_mean_initializer,
+#          initializer=self.moving_mean_initializer,
           synchronization=tf_variables.VariableSynchronization.ON_READ,
           trainable=False,
           aggregation=tf_variables.VariableAggregation.MEAN)
@@ -197,7 +196,7 @@ class BatchNormalization(Layer):
           name='moving_variance',
           shape=param_shape,
           dtype=param_dtype,
-          initializer=self.moving_variance_initializer,
+#          initializer=self.moving_variance_initializer,
           synchronization=tf_variables.VariableSynchronization.ON_READ,
           trainable=False,
           aggregation=tf_variables.VariableAggregation.MEAN)
