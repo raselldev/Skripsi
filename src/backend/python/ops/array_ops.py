@@ -16,26 +16,11 @@ from backend.python.framework import ops
 from backend.python.framework import constant_op
 from backend.python.framework import tensor_shape
 from backend.python.framework.constant_op import constant
-from backend.python.framework import sparse_tensor
 from backend.python.framework import op_def_library as _op_def_library
 from backend.python.framework import op_def_registry as _op_def_registry
 
 newaxis = None
 
-_BaseSlice = slice
-
-def shape_internal(input, name=None, optimize=True, out_type=dtypes.int32):
-  with ops.name_scope(name, "Shape", [input]) as name:
-    if isinstance(input, (sparse_tensor.SparseTensor,
-                          sparse_tensor.SparseTensorValue)):
-      return gen_math_ops.cast(input.dense_shape, out_type)
-    else:
-      if not context.executing_eagerly():
-        input_tensor = ops.convert_to_tensor(input)
-        input_shape = input_tensor.get_shape()
-        if optimize and input_shape.is_fully_defined():
-          return constant(input_shape.as_list(), out_type, name=name)
-      return shape(input, name=name, out_type=out_type)
 
 def shape(input, out_type=dtypes.int32, name=None):
   _ctx = context._context
@@ -80,7 +65,7 @@ def _slice_helper(tensor, slice_spec, var=None):
   begin_mask, end_mask = 0, 0
   ellipsis_mask = 0
   for s in slice_spec:
-    if isinstance(s, _BaseSlice):
+    if isinstance(s, slice):
       if s.start is not None and s.start is not sys.maxsize:
         begin.append(s.start)
       else:
@@ -142,34 +127,6 @@ def _slice_helper(tensor, slice_spec, var=None):
         var=var,
         name=name)
 
-def _slice(input, begin, size, name=None):
-  _ctx = _context._context
-  if _ctx is None or not _ctx._eager_context.is_eager:
-    _, _, _op = _op_def_lib._apply_op_helper(
-        "Slice", input=input, begin=begin, size=size, name=name)
-    _result = _op.outputs[:]
-    _inputs_flat = _op.inputs
-    _attrs = ("T", _op.get_attr("T"), "Index", _op.get_attr("Index"))
-    _execute.record_gradient(
-      "Slice", _inputs_flat, _attrs, _result, name)
-    _result, = _result
-    return _result
-
-  else:
-    try:
-      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
-        _ctx._context_handle, _ctx._eager_context.device_name, "Slice", name,
-        _ctx._post_execution_callbacks, input, begin, size)
-      return _result
-    except _core._FallbackException:
-      return _slice_eager_fallback(
-          input, begin, size, name=name, ctx=_ctx)
-    except _core._NotOkStatusException as e:
-      if name is not None:
-        message = e.message + " name: " + name
-      else:
-        message = e.message
-      _six.raise_from(_core._status_to_exception(e.code, message), None)
 
 def strided_slice(input_,
                   begin,
@@ -282,8 +239,6 @@ def strided_slices(input, begin, end, strides, begin_mask=0, end_mask=0, ellipsi
         message = e.message
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
-def _SliceHelperVar(var, slice_spec):
-  return _slice_helper(var._AsTensor(), slice_spec, var)
 
 ops.Tensor._override_operator("__getitem__", _slice_helper)
 
@@ -301,33 +256,7 @@ def stack(values, axis=0, name="stack"):
       raise ValueError("axis = %d not in [%d, %d)" % (axis, -expanded_num_dims,
                                                       expanded_num_dims))
 
-def _get_dtype_from_nested_lists(list_or_tuple):
-  for elem in list_or_tuple:
-    if ops.is_dense_tensor_like(elem):
-      return elem.dtype.base_dtype
-    elif isinstance(elem, (list, tuple)):
-      maybe_dtype = _get_dtype_from_nested_lists(elem)
-      if maybe_dtype is not None:
-        return maybe_dtype
-  return None
-
-def _autopacking_conversion_function(v, dtype=None, name=None, as_ref=False):
-  if as_ref:
-    return NotImplemented
-  inferred_dtype = _get_dtype_from_nested_lists(v)
-  if inferred_dtype is None:
-    return NotImplemented
-  if dtype is None:
-    dtype = inferred_dtype
-  elif dtype != inferred_dtype:
-    v = nest.map_structure(_cast_nested_seqs_to_dtype(dtype), v)
-  return _autopacking_helper(v, dtype, name or "packed")
-
-ops.register_tensor_conversion_function((list, tuple),
-                                        _autopacking_conversion_function, 99)
-
 def concat(values, axis, name="concat"):
-  
   if not isinstance(values, (list, tuple)):
     values = [values]
   if len(values) == 1: 
@@ -508,12 +437,8 @@ def expand_dims(input, axis, name=None):
       _six.raise_from(_core._status_to_exception(e.code, message), None)
 
 def _constant_if_small(value, shape, dtype, name):
-  try:
-    if np.prod(shape) < 1000:
-      return constant(value, shape=shape, dtype=dtype, name=name)
-  except TypeError:
-    pass
-  return None
+  if np.prod(shape) < 1000:
+    return constant(value, shape=shape, dtype=dtype, name=name)
 
 def zeros(shape, dtype=dtypes.float32, name=None):
   dtype = dtypes.as_dtype(dtype).base_dtype
@@ -541,220 +466,6 @@ def zeros(shape, dtype=dtypes.float32, name=None):
     output = fill(shape, constant(zero, dtype=dtype), name=name)
   assert output.dtype.base_dtype == dtype
   return output
-
-def zeros_like(tensor, dtype=None, name=None, optimize=True):
-  with ops.name_scope(name, "zeros_like", [tensor]) as name:
-    tensor = ops.convert_to_tensor(tensor, name="tensor")
-
-    if context.executing_eagerly():
-      if dtype is not None and dtype != tensor.dtype:
-        return zeros(
-            shape_internal(tensor, optimize=optimize), dtype=dtype, name=name)
-      with ops.device(tensor.device):
-        return zeros_likes(tensor, name=name)
-
-    if (optimize and tensor.shape.is_fully_defined() and
-        tensor.dtype != dtypes.variant):
-      return zeros(tensor.shape, dtype=dtype or tensor.dtype, name=name)
-
-    if dtype is not None and dtype != tensor.dtype and dtype != dtypes.variant:
-      return zeros(
-          shape_internal(tensor, optimize=optimize), dtype=dtype, name=name)
-    else:
-      return zeros_likes(tensor, name=name)
-
-def zeros_likes(x, name=None):
-  _ctx = _context._context
-  if _ctx is None or not _ctx._eager_context.is_eager:
-    _, _, _op = _op_def_lib._apply_op_helper(
-        "ZerosLike", x=x, name=name)
-    _result = _op.outputs[:]
-    _inputs_flat = _op.inputs
-    _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
-      "ZerosLike", _inputs_flat, _attrs, _result, name)
-    _result, = _result
-    return _result
-
-  else:
-    try:
-      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
-        _ctx._context_handle, _ctx._eager_context.device_name, "ZerosLike",
-        name, _ctx._post_execution_callbacks, x)
-      return _result
-    except _core._FallbackException:
-      return zeros_like_eager_fallback(
-          x, name=name, ctx=_ctx)
-    except _core._NotOkStatusException as e:
-      if name is not None:
-        message = e.message + " name: " + name
-      else:
-        message = e.message
-      _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-def ones(shape, dtype=dtypes.float32, name=None):
-  dtype = dtypes.as_dtype(dtype).base_dtype
-  with ops.name_scope(name, "ones", [shape]) as name:
-    one = True if dtype == dtypes.bool else 1
-    if not isinstance(shape, ops.Tensor):
-      try:
-        output = _constant_if_small(one, shape, dtype, name)
-        if output is not None:
-          return output
-
-        shape = constant_op._tensor_shape_tensor_conversion_function(
-            tensor_shape.TensorShape(shape))
-      except (TypeError, ValueError):
-
-        shape = ops.convert_to_tensor(shape, dtype=dtypes.int32)
-    if not shape._shape_tuple():
-      shape = reshape(shape, [-1]) 
-    output = fill(shape, constant(one, dtype=dtype), name=name)
-  assert output.dtype.base_dtype == dtype
-  return output
-
-def _ConcatGradHelper(op, grad, start_value_index, end_value_index, dim_index):
-  def _CreateDenseMaskAndBegin(sizes, concat_dim):
-    shape_of_shape = array_ops.shape(sizes[0])
-    mask = array_ops.concat([
-        array_ops.fill(array_ops.expand_dims(concat_dim, 0), 0), [1],
-        array_ops.fill(shape_of_shape - concat_dim - 1, 0)
-    ], 0)
-    begin = array_ops.fill(shape_of_shape, 0)
-    return mask, begin
-
-  def _ExtractInputShapes(inputs):
-    if context.executing_eagerly():
-      return array_ops.shape_n(inputs)
-    sizes = []
-    fully_known = True
-    for x in inputs:
-      input_shape = shape(x)
-      if not isinstance(input_shape,
-                        ops.Tensor) or input_shape.op.type != "Const":
-        fully_known = False
-        break
-      sizes.append(input_shape)
-
-    if fully_known:
-      return sizes
-    else:
-      return shape_n(inputs)
-
-  if len(op.inputs) == 2:
-    return grad + [None] if end_value_index <= dim_index else [None] + grad
-
-  concat_dim = op.inputs[dim_index]
-  input_values = op.inputs[start_value_index:end_value_index]
-
-  out_grads = []
-  if isinstance(grad, ops.Tensor):
-    if context.executing_eagerly():
-      non_neg_concat_dim = (
-          concat_dim._numpy().item(0) % input_values[0]._rank())
-      sizes = pywrap_tensorflow.TFE_Py_TensorShapeSlice(input_values,
-                                                        non_neg_concat_dim)
-      out_grads = split(grad, sizes, non_neg_concat_dim)
-    else:
-      if constant_op.is_constant(concat_dim):
-        grad_context = control_flow_util.GetOutputContext(grad.op)
-        dim_context = control_flow_util.GetOutputContext(concat_dim.op)
-        if dim_context != grad_context:
-          value = tensor_util.constant_value(concat_dim)
-          concat_dim = constant_op.constant(value=value, dtype=concat_dim.dtype)
-
-      non_neg_concat_dim = concat_dim % rank(input_values[0])
-
-      sizes = _ExtractInputShapes(input_values)
-      if len(sizes) > 16:
-        sizes = squeeze(
-            array_ops.slice(
-                array_ops.stack(sizes, axis=1), [non_neg_concat_dim, 0],
-                [1, -1]))
-        out_grads = array_ops.split(grad, sizes, non_neg_concat_dim)
-      else:
-        offset = gen_array_ops.concat_offset(non_neg_concat_dim, sizes)
-        for (begin, size) in zip(offset, sizes):
-          out_grads.append(slice(grad, begin, size))
-  elif isinstance(grad, ops.IndexedSlices):
-    non_neg_concat_dim = concat_dim % rank(input_values[0])
-    concat_dim_static = tensor_util.constant_value(concat_dim)
-    if concat_dim_static is None:
-      raise ValueError("Can only compute IndexedSlices gradient with "
-                       "statically-known concat_dim")
-    if concat_dim_static < 0:
-      rank1 = tensor_util.constant_value(rank(input_values[0]))
-      if rank1 is None:
-        raise ValueError("Can only compute IndexedSlices gradient with "
-                         "negative concat_dim when first value rank is "
-                         "statically-known.")
-      concat_dim_static %= rank1
-    sizes = [shape(x) for x in input_values]
-    if concat_dim_static > 0:
-      mask, begin = _CreateDenseMaskAndBegin(sizes, non_neg_concat_dim)
-      for size in sizes:
-        new_values = array_ops.slice(
-            grad.values, begin,
-            array_ops.concat([[-1], array_ops.slice(size, [1], [-1])], 0))
-        out_grads.append(ops.IndexedSlices(new_values, grad.indices, size))
-        begin = math_ops.add(begin, size * mask)
-    else:
-      start = constant_op.constant(0, dtype=grad.indices.dtype)
-      for size in sizes:
-        size_concat_dim = array_ops.gather(size, non_neg_concat_dim)
-        if size_concat_dim.dtype != grad.indices.dtype:
-          size_concat_dim = math_ops.cast(
-              size_concat_dim, dtype=grad.indices.dtype)
-        end = start + size_concat_dim
-        indices_to_select = array_ops.squeeze(
-            array_ops.where(
-                math_ops.logical_and(grad.indices >= start,
-                                     grad.indices < end)),
-            axis=[1])
-        new_indices = array_ops.gather(grad.indices, indices_to_select) - start
-        new_values = array_ops.gather(grad.values, indices_to_select)
-        out_grads.append(ops.IndexedSlices(new_values, new_indices, size))
-        start = end
-  else:
-    raise TypeError("Expected Tensor or IndexedSlices, got %s" % type(grad))
-
-  return (out_grads + [None]
-          if end_value_index <= dim_index else [None] + out_grads)
-
-#@ops.RegisterGradient("ConcatV2")
-def _ConcatGradV2(op, grad):
-  return _ConcatGradHelper(
-      op, grad, start_value_index=0, end_value_index=-1, dim_index=-1)
-
-#@ops.RegisterGradient("Split")
-def _SplitGrad(op, *grads):
-  return None, concat(list(grads), op.inputs[0])
-
-#@ops.RegisterGradient("ReverseV2")
-def _ReverseV2Grad(op, grad):
-  axis = op.inputs[1]
-  return reverse_v2(grad, axis), None
-
-#@ops.RegisterGradient("PlaceholderWithDefault")
-#@ops.RegisterGradient("Identity")
-def _IdGrad(_, grad):
-  return grad
-
-#@ops.RegisterGradient("ExpandDims")
-def _ExpandDimsGrad(op, grad):
-  return [_ReshapeToInput(op, grad), None]
-
-def _ReshapeToInput(op, grad):
-  return reshape(grad, shape(op.inputs[0]))
-
-#@ops.RegisterGradient("Transpose")
-def _TransposeGrad(op, grad):
-  p = op.inputs[1]
-  return [transpose(grad, invert_permutation(p)), None]
-
-#@ops.RegisterGradient("Squeeze")
-def _SqueezeGrad(op, grad):
-  return _ReshapeToInput(op, grad)
 
 def squeeze(input, axis=[], name=None):
   _ctx = context._context
@@ -903,197 +614,6 @@ def fill(dims, value, name=None):
     except _core._FallbackException:
       return fill_eager_fallback(
           dims, value, name=name, ctx=_ctx)
-    except _core._NotOkStatusException as e:
-      if name is not None:
-        message = e.message + " name: " + name
-      else:
-        message = e.message
-      _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-def reshape(tensor, shape, name=None):
-  _ctx = _context._context
-  if _ctx is None or not _ctx._eager_context.is_eager:
-    _, _, _op = _op_def_lib._apply_op_helper(
-        "Reshape", tensor=tensor, shape=shape, name=name)
-    _result = _op.outputs[:]
-    _inputs_flat = _op.inputs
-    _attrs = ("T", _op.get_attr("T"), "Tshape", _op.get_attr("Tshape"))
-    _execute.record_gradient(
-      "Reshape", _inputs_flat, _attrs, _result, name)
-    _result, = _result
-    return _result
-
-  else:
-    try:
-      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
-        _ctx._context_handle, _ctx._eager_context.device_name, "Reshape",
-        name, _ctx._post_execution_callbacks, tensor, shape)
-      return _result
-    except _core._FallbackException:
-      return reshape_eager_fallback(
-          tensor, shape, name=name, ctx=_ctx)
-    except _core._NotOkStatusException as e:
-      if name is not None:
-        message = e.message + " name: " + name
-      else:
-        message = e.message
-      _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-def tile(input, multiples, name=None):
-  _ctx = _context._context
-  if _ctx is None or not _ctx._eager_context.is_eager:
-    _, _, _op = _op_def_lib._apply_op_helper(
-        "Tile", input=input, multiples=multiples, name=name)
-    _result = _op.outputs[:]
-    _inputs_flat = _op.inputs
-    _attrs = ("T", _op.get_attr("T"), "Tmultiples",
-              _op.get_attr("Tmultiples"))
-    _execute.record_gradient(
-      "Tile", _inputs_flat, _attrs, _result, name)
-    _result, = _result
-    return _result
-
-  else:
-    try:
-      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
-        _ctx._context_handle, _ctx._eager_context.device_name, "Tile", name,
-        _ctx._post_execution_callbacks, input, multiples)
-      return _result
-    except _core._FallbackException:
-      return tile_eager_fallback(
-          input, multiples, name=name, ctx=_ctx)
-    except _core._NotOkStatusException as e:
-      if name is not None:
-        message = e.message + " name: " + name
-      else:
-        message = e.message
-      _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-def prevent_gradient(input, message="", name=None):
-  _ctx = _context._context
-  if _ctx is None or not _ctx._eager_context.is_eager:
-    if message is None:
-      message = ""
-    message = _execute.make_str(message, "message")
-    _, _, _op = _op_def_lib._apply_op_helper(
-        "PreventGradient", input=input, message=message, name=name)
-    _result = _op.outputs[:]
-    _inputs_flat = _op.inputs
-    _attrs = ("T", _op.get_attr("T"), "message", _op.get_attr("message"))
-    _execute.record_gradient(
-      "PreventGradient", _inputs_flat, _attrs, _result, name)
-    _result, = _result
-    return _result
-
-  else:
-    try:
-      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
-        _ctx._context_handle, _ctx._eager_context.device_name,
-        "PreventGradient", name, _ctx._post_execution_callbacks, input,
-        "message", message)
-      return _result
-    except _core._FallbackException:
-      return prevent_gradient_eager_fallback(
-          input, message=message, name=name, ctx=_ctx)
-    except _core._NotOkStatusException as e:
-      if name is not None:
-        message = e.message + " name: " + name
-      else:
-        message = e.message
-      _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-def invert_permutation(x, name=None):
-  _ctx = _context._context
-  if _ctx is None or not _ctx._eager_context.is_eager:
-    _, _, _op = _op_def_lib._apply_op_helper(
-        "InvertPermutation", x=x, name=name)
-    _result = _op.outputs[:]
-    _inputs_flat = _op.inputs
-    _attrs = ("T", _op.get_attr("T"))
-    _execute.record_gradient(
-      "InvertPermutation", _inputs_flat, _attrs, _result, name)
-    _result, = _result
-    return _result
-
-  else:
-    try:
-      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
-        _ctx._context_handle, _ctx._eager_context.device_name,
-        "InvertPermutation", name, _ctx._post_execution_callbacks, x)
-      return _result
-    except _core._FallbackException:
-      return invert_permutation_eager_fallback(
-          x, name=name, ctx=_ctx)
-    except _core._NotOkStatusException as e:
-      if name is not None:
-        message = e.message + " name: " + name
-      else:
-        message = e.message
-      _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-def shape_n(input, out_type=dtypes.int32, name=None):
-  _ctx = _context._context
-  if _ctx is None or not _ctx._eager_context.is_eager:
-    if not isinstance(input, (list, tuple)):
-      raise TypeError(
-          "Expected list for 'input' argument to "
-          "'shape_n' Op, not %r." % input)
-    _attr_N = len(input)
-    if out_type is None:
-      out_type = _dtypes.int32
-    out_type = _execute.make_type(out_type, "out_type")
-    _, _, _op = _op_def_lib._apply_op_helper(
-        "ShapeN", input=input, out_type=out_type, name=name)
-    _result = _op.outputs[:]
-    _inputs_flat = _op.inputs
-    _attrs = ("N", _op.get_attr("N"), "T", _op.get_attr("T"), "out_type",
-              _op.get_attr("out_type"))
-    _execute.record_gradient(
-      "ShapeN", _inputs_flat, _attrs, _result, name)
-    return _result
-
-  else:
-    try:
-      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
-        _ctx._context_handle, _ctx._eager_context.device_name, "ShapeN", name,
-        _ctx._post_execution_callbacks, input, "out_type", out_type)
-      return _result
-    except _core._FallbackException:
-      return shape_n_eager_fallback(
-          input, out_type=out_type, name=name, ctx=_ctx)
-    except _core._NotOkStatusException as e:
-      if name is not None:
-        message = e.message + " name: " + name
-      else:
-        message = e.message
-      _six.raise_from(_core._status_to_exception(e.code, message), None)
-
-def concat_offset(concat_dim, shape, name=None):
-  _ctx = _context._context
-  if _ctx is None or not _ctx._eager_context.is_eager:
-    if not isinstance(shape, (list, tuple)):
-      raise TypeError(
-          "Expected list for 'shape' argument to "
-          "'concat_offset' Op, not %r." % shape)
-    _attr_N = len(shape)
-    _, _, _op = _op_def_lib._apply_op_helper(
-        "ConcatOffset", concat_dim=concat_dim, shape=shape, name=name)
-    _result = _op.outputs[:]
-    _inputs_flat = _op.inputs
-    _attrs = ("N", _op.get_attr("N"))
-    _execute.record_gradient(
-      "ConcatOffset", _inputs_flat, _attrs, _result, name)
-    return _result
-
-  else:
-    try:
-      _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
-        _ctx._context_handle, _ctx._eager_context.device_name, "ConcatOffset",
-        name, _ctx._post_execution_callbacks, concat_dim, shape)
-      return _result
-    except _core._FallbackException:
-      return concat_offset_eager_fallback(
-          concat_dim, shape, name=name, ctx=_ctx)
     except _core._NotOkStatusException as e:
       if name is not None:
         message = e.message + " name: " + name
