@@ -14,7 +14,7 @@ from backend.python.ops import gradients_impl as gradients
 from backend.python.ops import variables
 from backend.python.ops import variable_scope
 #from backend.python.training import slot_creator
-from backend.python.training import distribution_strategy_context
+from backend.python.training import distribute
 from backend.python.training import base as checkpointable
 
 def get_loss_reduction():
@@ -98,7 +98,7 @@ class Optimizer(
 
         if (distribute_lib.get_loss_reduction() ==
             variable_scope.VariableAggregation.MEAN):
-          num_towers = distribution_strategy_context.get_distribution_strategy(
+          num_towers = distribute.get_distribution_strategy(
           ).num_towers
           if num_towers > 1:
             loss_value *= (1. / num_towers)
@@ -112,7 +112,7 @@ class Optimizer(
 
     if (get_loss_reduction() ==
         variable_scope.VariableAggregation.MEAN):
-      num_towers = distribution_strategy_context.get_distribution_strategy(
+      num_towers = distribute.get_distribution_strategy(
       ).num_towers
       if num_towers > 1:
         loss *= (1. / num_towers)
@@ -146,10 +146,9 @@ class Optimizer(
     return grads_and_vars
 
   def apply_gradients(self, grads_and_vars, global_step=None, name=None):
-    if distribution_strategy_context.has_distribution_strategy():
+    if distribute.has_distribution_strategy():
       grads_and_vars = get_filtered_grad_fn(lambda: grads_and_vars)()
-      return distribution_strategy_context.get_tower_context().merge_call(
-          self._distributed_apply, grads_and_vars, global_step, name)
+
 
     grads_and_vars = tuple(grads_and_vars)
     converted_grads_and_vars = []
@@ -274,7 +273,7 @@ class Optimizer(
     if v is None:
       self._maybe_initialize_checkpointable()
       distribution_strategy = (
-          distribution_strategy_context.get_distribution_strategy())
+          distribute.get_distribution_strategy())
       with distribution_strategy.colocate_vars_with(colocate_with):
         if eager:
           restored_initial_value = self._preload_simple_restoration(

@@ -18,7 +18,7 @@ from backend.python.ops import math_ops
 from backend.python.ops import nn_impl as nn
 from backend.python.ops import state_ops
 from backend.python.ops import variables as tf_variables
-from backend.python.training import distribution_strategy_context
+from backend.python.training import distribute
 from backend.python.framework import smart_cond as smart_module
 
 def get(identifier):
