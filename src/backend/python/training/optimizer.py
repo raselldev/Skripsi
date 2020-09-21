@@ -13,7 +13,7 @@ from backend.python.ops import resource_variable_ops
 from backend.python.ops import gradients_impl as gradients
 from backend.python.ops import variables
 from backend.python.ops import variable_scope
-from backend.python.training import slot_creator
+#from backend.python.training import slot_creator
 from backend.python.training import distribution_strategy_context
 from backend.python.training import base as checkpointable
 

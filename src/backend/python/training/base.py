@@ -44,8 +44,6 @@ class CheckpointInitialValue(ops.Tensor):
     self.wrapped_value = checkpoint_position.value_tensors()[
         VARIABLE_VALUE_KEY]
     if shape:
-      # We need to set the static shape information on the initializer if
-      # possible so we don't get a variable with an unknown shape.
       self.wrapped_value.set_shape(shape)
     self._checkpoint_position = checkpoint_position
 
