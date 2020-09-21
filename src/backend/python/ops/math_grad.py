@@ -20,7 +20,7 @@ from __future__ import print_function
 import numpy as np
 from backend.python.ops import array_ops
 from backend.python.ops import math_ops
-from backend.python.ops import gen_array_ops
+#from backend.python.ops import gen_array_ops
 #from backend.python.ops import gen_math_ops
 from backend.python.framework import ops
 from backend.python.framework import tensor_util

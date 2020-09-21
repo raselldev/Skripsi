@@ -449,7 +449,7 @@ def bidirectional_dynamic_rnn(cell_fw, cell_bw, inputs, sequence_length=None,
             input=input_, seq_lengths=seq_lengths,
             seq_axis=seq_axis, batch_axis=batch_axis)
       else:
-        return array_ops.reverse(input_, axis=[seq_axis])
+        return array_ops.reverse_v2(input_, axis=[seq_axis])
 
     with vs.variable_scope("bw") as bw_scope:
 
