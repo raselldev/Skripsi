@@ -20,7 +20,7 @@ from backend.python.ops import control_flow_ops
 from backend.python.ops import io_ops
 from backend.python.ops import resource_variable_ops
 from backend.core import saver_pb2
-from backend.python.training import saveable_object
+#from backend.python.training import saveable_object
 from backend.python.training import base as checkpointable
 from backend.python.training import checkpoint_management
 from backend.python.util import compat
@@ -44,15 +44,45 @@ _VARIABLE_OPS = set(["Variable",
                      "ReadVariableOp"])
 
 
+class SaveableObject(object):
+  def __init__(self, op, specs, name):
+    self.op = op
+    self.specs = specs
+    self.name = name
+    self._device = None
+
+  @property
+  def device(self):
+    if self._device is None:
+      self._device = self.specs[0].tensor.device
+    return self._device
+
+class SaveSpec(object):
+  def __init__(self, tensor, slice_spec, name, dtype=None):
+    self._tensor = tensor
+    self.slice_spec = slice_spec
+    self.name = name
+    if callable(self._tensor):
+      if dtype is None:
+        raise AssertionError(
+            "When passing a callable `tensor` to a SaveSpec, an explicit "
+            "dtype must be provided.")
+      self.dtype = dtype
+    else:
+      self.dtype = tensor.dtype
+
+  @property
+  def tensor(self):
+    return self._tensor() if callable(self._tensor) else self._tensor
 
 class BaseSaverBuilder(object):
-  SaveSpec = saveable_object.SaveSpec
-  SaveableObject = saveable_object.SaveableObject
+  #SaveSpec = saveable_object.SaveSpec
+  #SaveableObject = saveable_object.SaveableObject
 
   class VariableSaveable(SaveableObject):
 
     def __init__(self, var, slice_spec, name):
-      spec = BaseSaverBuilder.SaveSpec(var, slice_spec, name, dtype=var.dtype)
+      spec = SaveSpec(var, slice_spec, name, dtype=var.dtype)
       super(BaseSaverBuilder.VariableSaveable, self).__init__(var, [spec], name)
 
     def restore(self, restored_tensors, restored_shapes):
@@ -89,7 +119,7 @@ class BaseSaverBuilder(object):
         raise ValueError(
             "Saveable is neither a resource variable nor a read operation."
             " Got: %s" % repr(var))
-      spec = BaseSaverBuilder.SaveSpec(tensor, slice_spec, name,
+      spec = SaveSpec(tensor, slice_spec, name,
                                        dtype=var.dtype)
       super(BaseSaverBuilder.ResourceVariableSaveable, self).__init__(
           var, [spec], name)
@@ -264,7 +294,7 @@ class BaseSaverBuilder(object):
     names_to_saveables = {}
     
     for var in op_list:
-      if isinstance(var, BaseSaverBuilder.SaveableObject):
+      if isinstance(var, SaveableObject):
         names_to_saveables[var.name] = var
       elif isinstance(var, variables.PartitionedVariable):
         if var.name in names_to_saveables:
@@ -327,7 +357,7 @@ class BaseSaverBuilder(object):
       raise TypeError(
           "names_to_saveables must be a dict mapping string names to "
           "checkpointable operations. Name is not a string: %s" % name)
-    if isinstance(op, BaseSaverBuilder.SaveableObject):
+    if isinstance(op, SaveableObject):
       yield op
     elif isinstance(op, (list, tuple, variables.PartitionedVariable)):
       if isinstance(op, variables.PartitionedVariable):
@@ -490,7 +520,6 @@ class BaseSaverBuilder(object):
           keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours,
           version=self._write_version)
 
-
 class BulkSaverBuilder(BaseSaverBuilder):
   def bulk_restore(self, filename_tensor, saveables, preferred_shard,
                    restore_sequentially):
@@ -503,7 +532,6 @@ class BulkSaverBuilder(BaseSaverBuilder):
     names, slices, dtypes = zip(*restore_specs)
     with ops.device("cpu:0"):
       return io_ops.restore_v2(filename_tensor, names, slices, dtypes)
-
 
 class Saver(object):
   def __init__(self,
@@ -829,4 +857,3 @@ class Saver(object):
     except errors.InvalidArgumentError as err:
       raise _wrap_restore_error_with_msg(
           err, "a mismatch between the current graph and the graph")
-
