@@ -7,7 +7,7 @@ from backend.python import pywrap_backend
 from backend.python.framework import ops
 from backend.core import variable_pb2
 from backend.python.ops import array_ops
-from backend.python.ops import math_ops
+#from backend.python.ops import math_ops
 from backend.python.ops import variables
 
 

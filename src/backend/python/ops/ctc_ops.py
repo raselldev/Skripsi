@@ -7,7 +7,7 @@ from backend.python.framework import sparse_tensor
 
 from backend.python.ops import array_ops
 from backend.python.ops import gen_ctc_ops
-from backend.python.ops.nn_grad import _BroadcastMul
+#from backend.python.ops.nn_grad import _BroadcastMul
 
 def ctc_loss(labels, inputs, sequence_length,
              preprocess_collapse_repeated=False,

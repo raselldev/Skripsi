@@ -5,9 +5,9 @@ from __future__ import print_function
 from six.moves import xrange
 
 from backend.python.framework import ops
-from backend.python.ops import control_flow_ops
-from backend.python.ops import control_flow_util
-from backend.python.ops.control_flow_ops import *
+#from backend.python.ops import control_flow_ops
+#from backend.python.ops import control_flow_util
+#from backend.python.ops.control_flow_ops import *
 
 
 def _SwitchGrad(op, *grad):

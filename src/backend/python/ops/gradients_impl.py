@@ -12,13 +12,13 @@ import six
 from six.moves import xrange
 
 from backend.python import context
-from backend.python.ops import control_flow_grad
+#from backend.python.ops import control_flow_grad
 from backend.python.ops import control_flow_util
-from backend.python.ops import math_grad
-from backend.python.ops import math_ops
+#from backend.python.ops import math_grad
+#from backend.python.ops import math_ops
 from backend.python.ops import array_ops
 from backend.python.ops import control_flow_ops
-from backend.python.ops import resource_variable_ops
+#from backend.python.ops import resource_variable_ops
 from backend.python.framework import tensor_shape
 from backend.python.framework import dtypes
 from backend.python.framework import constant_op
