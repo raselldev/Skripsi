@@ -19,12 +19,9 @@ from backend.python.ops import variables as tf_variables
 from backend.python.ops import variable_scope as vs
 from backend.python.ops import array_ops
 from backend.python.ops import math_ops
-#from backend.python import initializers
-#from backend.python import tf_utils
 from backend.python.training import base as checkpointable
 from backend.python.util import nest
 from backend.python.util.deprecation import deprecated
-#from backend.python.util.tf_export import tf_export
 
 _LSTMStateTuple = collections.namedtuple("LSTMStateTuple", ("c", "h"))
 _WEIGHTS_VARIABLE_NAME = "kernel"
