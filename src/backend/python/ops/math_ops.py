@@ -15,7 +15,7 @@ from backend.python.framework import dtypes
 from backend.python.framework import sparse_tensor
 
 
-from backend.python.ops import gen_spectral_ops
+#from backend.python.ops import gen_spectral_ops
 from backend.python.util import deprecation
 from backend.core import op_def_pb2
 from backend.python.framework import op_def_library
