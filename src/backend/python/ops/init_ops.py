@@ -8,9 +8,7 @@ import numpy as np
 from backend.python.ops import array_ops
 from backend.python.ops import random_ops
 from backend.python.framework import dtypes
-#from backend.python.util import deprecation
-#from backend.python.util.deprecation import deprecated
-#from backend.python.util.deprecation import  deprecated_arg_values
+
 
 
 class Initializer(object):

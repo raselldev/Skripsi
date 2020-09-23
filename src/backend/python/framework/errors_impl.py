@@ -25,11 +25,11 @@ from backend.core import error_codes_pb2
 from backend.python import pywrap_backend as c_api
 from backend.python.framework import c_api_util
 #from backend.python.util.tf_export import tf_export
-from backend.python.util import deprecation
+#from backend.python.util import deprecation
 
 
 #@tf_export("errors.OpError", "OpError")
-@deprecation.deprecated_endpoints("OpError")
+#@deprecation.deprecated_endpoints("OpError")
 class OpError(Exception):
   """A generic error that is raised when TensorFlow execution fails.
 

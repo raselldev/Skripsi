@@ -13,20 +13,16 @@ from backend.python import context
 from backend.python import execute
 from backend.core import control_flow_pb2
 from backend.python.framework import constant_op
-from backend.python.framework import dtypes
 from backend.python.framework import sparse_tensor
-from backend.python.framework import tensor_util
 from backend.python.framework import ops
+from backend.python.framework import op_def_library as _op_def_library
+from backend.python.framework import op_def_registry as _op_def_registry
 from backend.python.ops import array_ops
 from backend.python.ops import math_ops
 from backend.python.ops import tensor_array_ops
-#from backend.python.ops import gen_control_flow_ops
-#from backend.python.ops import gen_data_flow_ops
 from backend.python.ops import control_flow_util as util
-#from backend.python.ops.gen_control_flow_ops import *
 from backend.python.util import nest
-from backend.python.framework import op_def_library as _op_def_library
-from backend.python.framework import op_def_registry as _op_def_registry
+
 from backend.core import op_def_pb2 as _op_def_pb2
 
 

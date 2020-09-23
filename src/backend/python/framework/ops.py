@@ -33,11 +33,11 @@ from backend.python.ops import control_flow_util
 from backend.python.util import function_utils
 #from backend.python.util import tf_stack
 from backend.python.util import compat
-from backend.python.util import deprecation
+#from backend.python.util import deprecation
 #from backend.python.util import decorator_utils
 from backend.python.util import tf_contextlib
 from backend.python.util import lock_util
-from backend.python.util.deprecation import deprecated_args
+#from backend.python.util.deprecation import deprecated_args
 #from backend.python.util.tf_export import tf_export
 
 
@@ -549,9 +549,7 @@ class Graph(object):
   def building_function(self):
     return self._building_function
 
-  @deprecated_args(None,
-                   "Shapes are always computed; don't use the compute_shapes "
-                   "as it has no effect.", "compute_shapes")
+
   def create_op(
       self,
       op_type,
@@ -1415,7 +1413,7 @@ class GraphKeys(object):
 
   _STREAMING_MODEL_PORTS = "streaming_model_ports"
 
-  @deprecation.deprecated(None, "Use `tf.GraphKeys.GLOBAL_VARIABLES` instead.")
+
   def VARIABLES(cls):
     return cls.GLOBAL_VARIABLES
 

@@ -12,8 +12,6 @@ from backend.python import execute
 from backend.python.framework import tensor_util
 from backend.python.framework import dtypes
 from backend.python.framework import ops
-#from backend.python.ops import gen_nn_ops
-#from backend.python.ops.gen_nn_ops import *
 from backend.core import op_def_pb2
 from backend.python.framework import op_def_library
 from backend.python.framework import op_def_registry

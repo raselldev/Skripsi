@@ -14,7 +14,7 @@ from backend.python.framework import ops
 from backend.python.training import base as checkpointable
 from backend.python.util import compat
 #from backend.python.util import tf_should_use
-from backend.python.util.deprecation import deprecated
+#from backend.python.util.deprecation import deprecated
 
 class VariableSynchronization(enum.Enum):
   AUTO = 0

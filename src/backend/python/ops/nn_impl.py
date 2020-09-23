@@ -5,10 +5,8 @@ from __future__ import print_function
 import math
 
 from backend.python.framework import constant_op
-#from backend.python.framework import function
 from backend.python.framework import ops
 from backend.python.framework import dtypes
-#from backend.python.util.deprecation import deprecated_args
 from backend.python.ops import nn
 
 def fused_batch_norm(

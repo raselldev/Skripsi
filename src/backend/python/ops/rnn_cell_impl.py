@@ -21,7 +21,7 @@ from backend.python.ops import array_ops
 from backend.python.ops import math_ops
 from backend.python.training import base as checkpointable
 from backend.python.util import nest
-from backend.python.util.deprecation import deprecated
+#from backend.python.util.deprecation import deprecated
 
 _LSTMStateTuple = collections.namedtuple("LSTMStateTuple", ("c", "h"))
 _WEIGHTS_VARIABLE_NAME = "kernel"
