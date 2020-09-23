@@ -10,7 +10,7 @@ from backend.python import context
 from backend.python import execute
 #from backend.python.ops import control_flow_util
 from backend.core import op_def_pb2 as _op_def_pb2
-from backend.python.framework import tensor_util
+#from backend.python.framework import tensor_util
 from backend.python.framework import dtypes
 from backend.python.framework import ops
 from backend.python.framework import constant_op
