@@ -12,8 +12,8 @@ import numpy as np
 
 
 from backend.python.framework import errors_impl as errors
-from backend.python.util import compat
-from backend.python.util import nest
+from backend.util import compat
+from backend.util import nest
 from backend.python import pywrap_backend as tf_session
 from backend.python.ops import session_ops
 from backend.python.framework import ops

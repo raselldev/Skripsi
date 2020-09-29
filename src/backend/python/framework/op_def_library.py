@@ -27,8 +27,8 @@ from backend.core import tensor_shape_pb2
 from backend.core import attr_value_pb2
 from backend.core import op_def_pb2
 from backend.core import types_pb2
-from backend.python.util import tf_contextlib
-from backend.python.util import compat
+from backend.util import tf_contextlib
+from backend.util import compat
 from backend.python.framework import ops
 from backend.python.framework import tensor_shape
 from backend.python.framework import dtypes

@@ -30,13 +30,13 @@ from backend.python.framework import op_def_registry
 from backend.python.framework import traceable_stack
 from backend.python.framework import registry
 from backend.python.ops import control_flow_util
-from backend.python.util import function_utils
+from backend.util import function_utils
 #from backend.python.util import tf_stack
-from backend.python.util import compat
+from backend.util import compat
 #from backend.python.util import deprecation
 #from backend.python.util import decorator_utils
-from backend.python.util import tf_contextlib
-from backend.python.util import lock_util
+from backend.util import tf_contextlib
+from backend.util import lock_util
 #from backend.python.util.deprecation import deprecated_args
 #from backend.python.util.tf_export import tf_export
 

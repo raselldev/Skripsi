@@ -10,7 +10,7 @@ from backend.python.ops import variable_scope
 from backend.python.ops import resource_variable_ops
 #from backend.python.training import distribution_strategy_context
 from backend.python.framework import ops
-from backend.python.util.lazy_loader import LazyLoader
+from backend.util.lazy_loader import LazyLoader
 
 
 

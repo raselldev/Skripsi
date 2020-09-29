@@ -21,7 +21,7 @@ from backend.python.framework import ops
 from backend.python.framework import tensor_shape
 from backend.python.ops import variables
 from backend.python.ops import init_ops
-from backend.python.util import function_utils
+from backend.util import function_utils
 
 __all__ = [
     "AUTO_REUSE", "VariableScope", "get_variable_scope", "get_variable",

@@ -13,7 +13,7 @@ from backend.python.ops import array_ops
 from backend.python.ops import control_flow_util
 from backend.python.ops import variable_scope as vs
 from backend.python.ops import rnn_cell_impl
-from backend.python.util import nest
+from backend.util import nest
 
 _concat = rnn_cell_impl._concat
 

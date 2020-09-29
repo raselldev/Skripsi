@@ -8,8 +8,8 @@ import inspect as _inspect
 
 import six
 
-from backend.python.util import tf_decorator
-from backend.python.util import function_utils
+from backend.util import tf_decorator
+from backend.util import function_utils
 
 ArgSpec = _inspect.ArgSpec
 

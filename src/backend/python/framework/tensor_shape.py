@@ -19,7 +19,7 @@ from __future__ import print_function
 
 from backend.core import tensor_shape_pb2
 from backend.python.framework import dtypes
-from backend.python.util import compat
+from backend.util import compat
 #from backend.python.util.tf_export import tf_export
 
 

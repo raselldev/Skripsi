@@ -14,7 +14,7 @@ import six
 from backend.python import context
 from backend.python.framework import dtypes
 from backend.python.framework import ops
-from backend.python.util import tf_decorator
+from backend.util import tf_decorator
 
 CheckpointableReference = collections.namedtuple(
     "CheckpointableReference",

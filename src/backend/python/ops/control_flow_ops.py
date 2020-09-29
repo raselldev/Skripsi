@@ -21,7 +21,7 @@ from backend.python.ops import array_ops
 from backend.python.ops import math_ops
 from backend.python.ops import tensor_array_ops
 from backend.python.ops import control_flow_util as util
-from backend.python.util import nest
+from backend.util import nest
 
 from backend.core import op_def_pb2 as _op_def_pb2
 

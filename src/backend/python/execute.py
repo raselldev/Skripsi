@@ -2,7 +2,7 @@ import six
 
 from backend.python.framework import tensor_shape
 from backend.python.framework import dtypes
-from backend.python.util import compat
+from backend.util import compat
 
 
 def record_gradient(unused_op_name, unused_inputs, unused_attrs, unused_results,

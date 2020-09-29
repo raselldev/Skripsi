@@ -7,8 +7,8 @@ import functools
 import six
 import inspect as _inspect
 
-from backend.python.util.tf_decorator import TFDecorator
-from backend.python.util import tf_inspect
+from backend.util.tf_decorator import TFDecorator
+from backend.util import tf_inspect
 
 
 def fn_args(fn):

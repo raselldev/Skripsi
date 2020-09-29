@@ -11,7 +11,7 @@ import threading
 
 from backend.python.framework import device as pydev
 from backend.python import pywrap_backend
-from backend.python.util import tf_contextlib
+from backend.util import tf_contextlib
 
 
 

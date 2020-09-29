@@ -12,7 +12,7 @@ from backend.python.ops import state_ops
 from backend.python.ops import array_ops
 from backend.python.framework import ops
 from backend.python.training import base as checkpointable
-from backend.python.util import compat
+from backend.util import compat
 #from backend.python.util import tf_should_use
 #from backend.python.util.deprecation import deprecated
 

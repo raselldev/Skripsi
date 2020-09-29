@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import contextlib as _contextlib
 
-from backend.python.util import tf_decorator
+from backend.util import tf_decorator
 
 
 def contextmanager(target):

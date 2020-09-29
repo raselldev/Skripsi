@@ -4,7 +4,7 @@ from __future__ import print_function
 
 
 from backend.python import pywrap_backend as c_api
-from backend.python.util import tf_contextlib
+from backend.util import tf_contextlib
 
 class ScopedTFStatus(object):
   def __init__(self):

@@ -27,8 +27,8 @@ import hashlib
 
 from backend.python.framework import ops
 from backend.python.framework import dtypes
-from backend.python.util import tf_inspect
-from backend.python.util import tf_contextlib
+from backend.util import tf_inspect
+from backend.util import tf_contextlib
 
 
 class Defun(object):

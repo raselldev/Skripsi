@@ -11,7 +11,7 @@ import six
 
 from backend.python import pywrap_backend
 from backend.python.framework import errors_impl as errors
-from backend.python.util import compat
+from backend.util import compat
 
 _DEFAULT_BLOCK_SIZE = 16 * 1024 * 1024
 
