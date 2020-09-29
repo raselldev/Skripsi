@@ -360,3 +360,4 @@ def _is_keras_rnn_cell(rnn_cell):
   return (not isinstance(rnn_cell, rnn_cell_impl.RNNCell)
           and isinstance(rnn_cell, base_layer.Layer)
           and getattr(rnn_cell, "zero_state", None) is None)
+
