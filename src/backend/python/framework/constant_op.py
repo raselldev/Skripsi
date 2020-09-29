@@ -11,68 +11,8 @@ from backend.python.framework import dtypes
 from backend.python.framework import ops
 from backend.python.framework import tensor_shape
 from backend.python.framework import tensor_util
-#from backend.python.util.tf_export import tf_export
 
-#@tf_export("constant")
 def constant(value, dtype=None, shape=None, name="Const", verify_shape=False):
-  """Creates a constant tensor.
-
-  The resulting tensor is populated with values of type `dtype`, as
-  specified by arguments `value` and (optionally) `shape` (see examples
-  below).
-
-  The argument `value` can be a constant value, or a list of values of type
-  `dtype`. If `value` is a list, then the length of the list must be less
-  than or equal to the number of elements implied by the `shape` argument (if
-  specified). In the case where the list length is less than the number of
-  elements specified by `shape`, the last element in the list will be used
-  to fill the remaining entries.
-
-  The argument `shape` is optional. If present, it specifies the dimensions of
-  the resulting tensor. If not present, the shape of `value` is used.
-
-  If the argument `dtype` is not specified, then the type is inferred from
-  the type of `value`.
-
-  For example:
-
-  ```python
-  # Constant 1-D Tensor populated with value list.
-  tensor = tf.constant([1, 2, 3, 4, 5, 6, 7]) => [1 2 3 4 5 6 7]
-
-  # Constant 2-D tensor populated with scalar value -1.
-  tensor = tf.constant(-1.0, shape=[2, 3]) => [[-1. -1. -1.]
-                                               [-1. -1. -1.]]
-  ```
-
-  `tf.constant` differs from `tf.fill` in a few ways:
-
-  *   `tf.constant` supports arbitrary constants, not just uniform scalar
-      Tensors like `tf.fill`.
-  *   `tf.constant` creates a `Const` node in the computation graph with the
-      exact value at graph construction time. On the other hand, `tf.fill`
-      creates an Op in the graph that is expanded at runtime.
-  *   Because `tf.constant` only embeds constant values in the graph, it does
-      not support dynamic shapes based on other runtime Tensors, whereas
-      `tf.fill` does.
-
-  Args:
-    value:          A constant value (or list) of output type `dtype`.
-
-    dtype:          The type of the elements of the resulting tensor.
-
-    shape:          Optional dimensions of resulting tensor.
-
-    name:           Optional name for the tensor.
-
-    verify_shape:   Boolean that enables verification of a shape of values.
-
-  Returns:
-    A Constant Tensor.
-
-  Raises:
-    TypeError: if shape is incorrectly specified or unsupported.
-  """
   ctx = context.context()
   if ctx.executing_eagerly():
     t = convert_to_eager_tensor(value, ctx, dtype)
@@ -119,61 +59,14 @@ def _constant_tensor_conversion_function(v, dtype=None, name=None,
   return constant(v, dtype=dtype, name=name)
 
 
-ops.register_tensor_conversion_function(
-    (list, tuple), _constant_tensor_conversion_function, 100)
-ops.register_tensor_conversion_function(
-    np.ndarray, _constant_tensor_conversion_function, 100)
-ops.register_tensor_conversion_function(
-    np.generic, _constant_tensor_conversion_function, 100)
-ops.register_tensor_conversion_function(
-    object, _constant_tensor_conversion_function, 200)
+#ops.register_tensor_conversion_function( (list, tuple), _constant_tensor_conversion_function, 100)
+#ops.register_tensor_conversion_function( np.ndarray, _constant_tensor_conversion_function, 100)
+#ops.register_tensor_conversion_function(    np.generic, _constant_tensor_conversion_function, 100)
+ops.register_tensor_conversion_function(object, _constant_tensor_conversion_function, 200)
 
 
-def _tensor_shape_tensor_conversion_function(s,
-                                             dtype=None,
-                                             name=None,
-                                             as_ref=False):
-  """Function to convert TensorShape to Tensor."""
-  _ = as_ref
-  if not s.is_fully_defined():
-    raise ValueError(
-        "Cannot convert a partially known TensorShape to a Tensor: %s" % s)
-  s_list = s.as_list()
-  int64_value = 0
-  for dim in s_list:
-    if dim >= 2**31:
-      int64_value = dim
-      break
-
-  if dtype is not None:
-    if dtype not in (dtypes.int32, dtypes.int64):
-      raise TypeError("Cannot convert a TensorShape to dtype: %s" % dtype)
-    if dtype == dtypes.int32 and int64_value:
-      raise ValueError("Cannot convert a TensorShape to dtype int32; "
-                       "a dimension is too large (%s)" % int64_value)
-  else:
-    dtype = dtypes.int64 if int64_value else dtypes.int32
-  if name is None:
-    name = "shape_as_tensor"
-  return constant(s_list, dtype=dtype, name=name)
 
 
-def _dimension_tensor_conversion_function(d,
-                                          dtype=None,
-                                          name=None,
-                                          as_ref=False):
-  """Function to convert Dimension to Tensor."""
-  _ = as_ref
-  if d.value is None:
-    raise ValueError("Cannot convert an unknown Dimension to a Tensor: %s" % d)
-  if dtype is not None:
-    if dtype not in (dtypes.int32, dtypes.int64):
-      raise TypeError("Cannot convert a TensorShape to dtype: %s" % dtype)
-  else:
-    dtype = dtypes.int32
-  if name is None:
-    name = "shape_as_tensor"
-  return constant(d.value, dtype=dtype, name=name)
 
 
 

@@ -448,19 +448,6 @@ def zeros(shape, dtype=dtypes.float32, name=None):
     else:
       zero = 0
 
-    if not isinstance(shape, ops.Tensor):
-      try:
-        
-        output = _constant_if_small(zero, shape, dtype, name)
-        if output is not None:
-          return output
-
-        shape = constant_op._tensor_shape_tensor_conversion_function(
-            tensor_shape.TensorShape(shape))
-      except (TypeError, ValueError):
-        shape = ops.convert_to_tensor(shape, dtype=dtypes.int32)
-    if not shape._shape_tuple():
-      shape = reshape(shape, [-1])
     output = fill(shape, constant(zero, dtype=dtype), name=name)
   assert output.dtype.base_dtype == dtype
   return output

@@ -50,13 +50,6 @@ def _GradientsHelper(ys,
 
   func_graphs = []
   curr_graph = src_graph
-  while _IsFunction(curr_graph):
-    func_graphs.append(curr_graph)
-    if isinstance(curr_graph, _function.FuncGraph):
-      curr_graph = curr_graph.outer_graph
-    else:
-      assert isinstance(curr_graph, framework_function._FuncGraph)  
-      curr_graph = curr_graph._outer_graph  
 
   ys = _AsList(ys)
   xs = _AsList(xs)
@@ -296,8 +289,6 @@ def _PendingCount(to_ops, from_ops, colocate_gradients_with_ops, func_graphs,
       between_ops.add(op)
       between_op_list.append(op)
       reached_ops.remove(op)
-      for inp in _NonEagerInputs(op, xs):
-        queue.append(inp.op)
   loop_state = control_flow_ops.MaybeCreateControlFlowState(
       between_op_list, between_ops, colocate_gradients_with_ops)
 

@@ -58,18 +58,3 @@ class TFDecorator(object):
   def __call__(self, *args, **kwargs):
     return self._decorated_target(*args, **kwargs)
 
-  @property
-  def decorated_target(self):
-    return self._decorated_target
-
-  @property
-  def decorator_name(self):
-    return self._decorator_name
-
-  @property
-  def decorator_doc(self):
-    return self._decorator_doc
-
-  @property
-  def decorator_argspec(self):
-    return self._decorator_argspec

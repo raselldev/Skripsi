@@ -51,7 +51,3 @@ def smart_constant_value(pred):
   return pred_value
 
 
-def smart_case(pred_fn_pairs, default=None, exclusive=False, name="smart_case"):
-  return control_flow_ops._case_helper(  # pylint: disable=protected-access
-      smart_cond, pred_fn_pairs, default, exclusive, name,
-      allow_python_preds=True)
