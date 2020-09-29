@@ -165,8 +165,6 @@ def make_tensor_proto(values, dtype=None, shape=None, verify_shape=False):
 
     values = nparray
   else:
-    if values is None:
-      raise ValueError("None values not supported.")
     if dtype and dtype.is_numpy_compatible:
       np_dt = dtype.as_numpy_dtype
     else:
@@ -230,12 +228,7 @@ def make_tensor_proto(values, dtype=None, shape=None, verify_shape=False):
 
   if numpy_dtype == dtypes.string and not isinstance(values, np.ndarray):
     proto_values = _FlattenToStrings(values)
-    try:
-      str_values = [compat.as_bytes(x) for x in proto_values]
-    except TypeError:
-      raise TypeError("Failed to convert object of type %s to Tensor. "
-                      "Contents: %s. Consider casting elements to a "
-                      "supported type." % (type(values), values))
+    str_values = [compat.as_bytes(x) for x in proto_values]
     tensor_proto.string_val.extend(str_values)
     return tensor_proto
 

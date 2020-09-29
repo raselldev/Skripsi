@@ -296,11 +296,7 @@ class BaseSaverBuilder(object):
     for var in op_list:
       if isinstance(var, SaveableObject):
         names_to_saveables[var.name] = var
-      elif isinstance(var, variables.PartitionedVariable):
-        if var.name in names_to_saveables:
-          raise ValueError("At least two variables have the same name: %s" %
-                           var.name)
-        names_to_saveables[var.name] = var
+
       elif isinstance(var, variables.Variable) and var._save_slice_info:
         name = var._save_slice_info.full_name
         if name in names_to_saveables:
@@ -359,30 +355,7 @@ class BaseSaverBuilder(object):
           "checkpointable operations. Name is not a string: %s" % name)
     if isinstance(op, SaveableObject):
       yield op
-    elif isinstance(op, (list, tuple, variables.PartitionedVariable)):
-      if isinstance(op, variables.PartitionedVariable):
-        op = list(op)
-      slice_name = None
-      
-      for variable in op:
-        if not isinstance(variable, variables.Variable):
-          raise ValueError("Slices must all be Variables: %s" % variable)
-        if not variable._save_slice_info:
-          raise ValueError("Slices must all be slices: %s" % variable)
-        if slice_name is None:
-          slice_name = variable._save_slice_info.full_name
-        elif slice_name != variable._save_slice_info.full_name:
-          raise ValueError(
-              "Slices must all be from the same tensor: %s != %s" %
-              (slice_name, variable._save_slice_info.full_name))
-        if variable.op.type in ["Variable", "VariableV2",
-                                "AutoReloadVariable"]:
-          yield BaseSaverBuilder.VariableSaveable(
-              variable, variable._save_slice_info.spec, name)
-        else:
-          yield BaseSaverBuilder.ResourceVariableSaveable(
-              variable, variable._save_slice_info.spec, name)
-      
+ 
     elif isinstance(op, checkpointable.CheckpointableBase) and not isinstance(
         op, variables.Variable):
       
@@ -504,13 +477,6 @@ class BaseSaverBuilder(object):
     else:
       graph = ops.get_default_graph()
       check_collection_list = graph.get_all_collection_keys()
-      for collection_type in check_collection_list:
-        for element in graph.get_collection(collection_type):
-          if isinstance(element, variables.PartitionedVariable):
-            try:
-              graph.get_operation_by_name(element.name)
-            except KeyError:
-              element.as_tensor()
       return saver_pb2.SaverDef(
           filename_tensor_name=filename_tensor.name,
           save_tensor_name=save_tensor.name,

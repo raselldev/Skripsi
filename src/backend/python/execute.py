@@ -2,7 +2,7 @@ import six
 
 from backend.python.framework import tensor_shape
 from backend.python.framework import dtypes
-from backend.util import compat
+#from backend.util import compat
 
 
 def record_gradient(unused_op_name, unused_inputs, unused_attrs, unused_results,
@@ -16,17 +16,9 @@ def make_bool(v, arg_name):
                     (arg_name, repr(v)))
   return v
 
-def make_float(v, arg_name):
-  if not isinstance(v, compat.real_types):
-    raise TypeError("Expected float for argument '%s' not %s." %
-                    (arg_name, repr(v)))
-  return float(v)
 
-def make_str(v, arg_name):
-  if not isinstance(v, compat.bytes_or_text_types):
-    raise TypeError("Expected string for argument '%s' not %s." %
-                    (arg_name, repr(v)))
-  return compat.as_bytes(v)  # Convert unicode strings to bytes.
+
+
 
 def make_int(v, arg_name):
   if isinstance(v, six.string_types):

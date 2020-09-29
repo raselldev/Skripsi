@@ -9,7 +9,7 @@ import inspect as _inspect
 import six
 
 from backend.util import tf_decorator
-from backend.util import function_utils
+#from backend.util import function_utils
 
 ArgSpec = _inspect.ArgSpec
 
@@ -114,20 +114,6 @@ def getfullargspec(obj):
                for d in decorators
                if d.decorator_argspec is not None), _getfullargspec(target))
 
-
-def getcallargs(func, *positional, **named):
-  argspec = getfullargspec(func)
-  call_args = named.copy()
-  this = getattr(func, 'im_self', None) or getattr(func, '__self__', None)
-
-  remaining_positionals = [arg for arg in argspec.args if arg not in call_args]
-  call_args.update(dict(zip(remaining_positionals, positional)))
-  default_count = 0 if not argspec.defaults else len(argspec.defaults)
-  if default_count:
-    for arg, value in zip(argspec.args[-default_count:], argspec.defaults):
-      if arg not in call_args:
-        call_args[arg] = value
-  return call_args
 
 
 

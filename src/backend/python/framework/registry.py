@@ -5,7 +5,7 @@ from __future__ import print_function
 import traceback
 
 
-from backend.util import compat
+#from backend.util import compat
 
 _LOCATION_TAG = "location"
 _TYPE_TAG = "type"

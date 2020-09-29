@@ -32,7 +32,7 @@ def tensor_array_v3(size, dtype, element_shape=None, dynamic_size=False, clear_a
     identical_element_shapes = _execute.make_bool(identical_element_shapes, "identical_element_shapes")
     if tensor_array_name is None:
       tensor_array_name = ""
-    tensor_array_name = _execute.make_str(tensor_array_name, "tensor_array_name")
+    #tensor_array_name = _execute.make_str(tensor_array_name, "tensor_array_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayV3", size=size, dtype=dtype, element_shape=element_shape,
         dynamic_size=dynamic_size, clear_after_read=clear_after_read,
@@ -244,7 +244,7 @@ _TensorArrayGradV3Output = _collections.namedtuple(
 def tensor_array_grad_v3(handle, flow_in, source, name=None):
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    source = _execute.make_str(source, "source")
+    #source = _execute.make_str(source, "source")
     _, _, _op = _op_def_lib._apply_op_helper(
         "TensorArrayGradV3", handle=handle, flow_in=flow_in, source=source,
         name=name)
@@ -280,7 +280,7 @@ def stack_v2(max_size, elem_type, stack_name="", name=None):
     elem_type = _execute.make_type(elem_type, "elem_type")
     if stack_name is None:
       stack_name = ""
-    stack_name = _execute.make_str(stack_name, "stack_name")
+    #stack_name = _execute.make_str(stack_name, "stack_name")
     _, _, _op = _op_def_lib._apply_op_helper(
         "StackV2", max_size=max_size, elem_type=elem_type,
         stack_name=stack_name, name=name)

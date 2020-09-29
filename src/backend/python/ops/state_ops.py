@@ -7,7 +7,7 @@ import collections as _collections
 import six as _six
 
 from backend.python import context as _context
-from backend.python import execute as _execute
+#from backend.python import execute as _execute
 from backend.core import op_def_pb2 as _op_def_pb2
 from backend.python.framework import op_def_library as _op_def_library
 from backend.python.framework import op_def_registry as _op_def_registry
@@ -16,14 +16,7 @@ from backend.python.framework import op_def_registry as _op_def_registry
 def variable_v2(shape, dtype, container="", shared_name="", name=None):
   _ctx = _context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    shape = _execute.make_shape(shape, "shape")
-    dtype = _execute.make_type(dtype, "dtype")
-    if container is None:
-      container = ""
-    container = _execute.make_str(container, "container")
-    if shared_name is None:
-      shared_name = ""
-    shared_name = _execute.make_str(shared_name, "shared_name")
+
     _, _, _op = _op_def_lib._apply_op_helper(
         "VariableV2", shape=shape, dtype=dtype, container=container,
         shared_name=shared_name, name=name)
@@ -32,8 +25,6 @@ def variable_v2(shape, dtype, container="", shared_name="", name=None):
     _attrs = ("shape", _op.get_attr("shape"), "dtype", _op.get_attr("dtype"),
               "container", _op.get_attr("container"), "shared_name",
               _op.get_attr("shared_name"))
-    _execute.record_gradient(
-      "VariableV2", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
 
@@ -48,10 +39,10 @@ def assign(ref, value, validate_shape=True, use_locking=True, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if validate_shape is None:
       validate_shape = True
-    validate_shape = _execute.make_bool(validate_shape, "validate_shape")
+#    validate_shape = _execute.make_bool(validate_shape, "validate_shape")
     if use_locking is None:
       use_locking = True
-    use_locking = _execute.make_bool(use_locking, "use_locking")
+#    use_locking = _execute.make_bool(use_locking, "use_locking")
     _, _, _op = _op_def_lib._apply_op_helper(
         "Assign", ref=ref, value=value, validate_shape=validate_shape,
         use_locking=use_locking, name=name)
@@ -60,8 +51,7 @@ def assign(ref, value, validate_shape=True, use_locking=True, name=None):
     _attrs = ("T", _op.get_attr("T"), "validate_shape",
               _op.get_attr("validate_shape"), "use_locking",
               _op.get_attr("use_locking"))
-    _execute.record_gradient(
-      "Assign", _inputs_flat, _attrs, _result, name)
+#    _execute.record_gradient(     "Assign", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
 
@@ -76,15 +66,14 @@ def assign_sub(ref, value, use_locking=False, name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if use_locking is None:
       use_locking = False
-    use_locking = _execute.make_bool(use_locking, "use_locking")
+#    use_locking = _execute.make_bool(use_locking, "use_locking")
     _, _, _op = _op_def_lib._apply_op_helper(
         "AssignSub", ref=ref, value=value, use_locking=use_locking, name=name)
     _result = _op.outputs[:]
     _inputs_flat = _op.inputs
     _attrs = ("T", _op.get_attr("T"), "use_locking",
               _op.get_attr("use_locking"))
-    _execute.record_gradient(
-      "AssignSub", _inputs_flat, _attrs, _result, name)
+  #  _execute.record_gradient(    "AssignSub", _inputs_flat, _attrs, _result, name)
     _result, = _result
     return _result
 

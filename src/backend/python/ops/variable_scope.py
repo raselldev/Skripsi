@@ -21,7 +21,7 @@ from backend.python.framework import ops
 from backend.python.framework import tensor_shape
 from backend.python.ops import variables
 from backend.python.ops import init_ops
-from backend.util import function_utils
+#from backend.util import function_utils
 
 __all__ = [
     "AUTO_REUSE", "VariableScope", "get_variable_scope", "get_variable",
@@ -892,9 +892,7 @@ class _VariableStore(object):
       }
       # `fn_args` and `has_kwargs` can handle functions, `functools.partial`,
       # `lambda`.
-      if ("constraint" in function_utils.fn_args(custom_getter) or
-          function_utils.has_kwargs(custom_getter)):
-        custom_getter_kwargs["constraint"] = constraint
+      
       return custom_getter(**custom_getter_kwargs)
     else:
       return _true_getter(

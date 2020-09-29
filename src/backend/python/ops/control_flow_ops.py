@@ -2028,7 +2028,7 @@ _MergeOutput = collections.namedtuple(
 def enter(data, frame_name, is_constant=False, parallel_iterations=10, name=None):
   _ctx = context._context
   if _ctx is None or not _ctx._eager_context.is_eager:
-    frame_name = execute.make_str(frame_name, "frame_name")
+    #frame_name = execute.make_str(frame_name, "frame_name")
     if is_constant is None:
       is_constant = False
     is_constant = execute.make_bool(is_constant, "is_constant")

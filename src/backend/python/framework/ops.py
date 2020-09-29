@@ -30,7 +30,7 @@ from backend.python.framework import op_def_registry
 from backend.python.framework import traceable_stack
 from backend.python.framework import registry
 from backend.python.ops import control_flow_util
-from backend.util import function_utils
+#from backend.util import function_utils
 #from backend.python.util import tf_stack
 from backend.util import compat
 #from backend.python.util import deprecation
@@ -903,8 +903,7 @@ class Graph(object):
   @tf_contextlib.contextmanager
   def name_scope(self, name):
     if name:
-      if isinstance(name, compat.bytes_or_text_types):
-        name = compat.as_str(name)
+
 
       if self._name_stack:
         if not _VALID_SCOPE_NAME_REGEX.match(name):
@@ -2444,16 +2443,9 @@ class _UserDeviceSpec(object):
     self.display_name = str(self._device_name_or_function)
     if callable(self._device_name_or_function):
       dev_func = self._device_name_or_function
-      func_name = function_utils.get_func_name(dev_func)
-      func_code = function_utils.get_func_code(dev_func)
-      if func_code:
-        fname = func_code.co_filename
-        lineno = func_code.co_firstlineno
-      else:
-        fname = "unknown"
-        lineno = -1
-      self.display_name = "%s<%s, %d>" % (func_name, fname, lineno)
-
+      #func_name = function_utils.get_func_name(dev_func)
+      #func_code = function_utils.get_func_code(dev_func)
+      
     self.function = self._device_name_or_function
     if not (self._device_name_or_function is None or
             callable(self._device_name_or_function)):

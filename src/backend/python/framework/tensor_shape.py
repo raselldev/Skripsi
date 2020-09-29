@@ -19,7 +19,7 @@ from __future__ import print_function
 
 from backend.core import tensor_shape_pb2
 from backend.python.framework import dtypes
-from backend.util import compat
+#from backend.util import compat
 #from backend.python.util.tf_export import tf_export
 
 
@@ -35,9 +35,6 @@ class Dimension(object):
       raise TypeError("Cannot convert %s to Dimension" % value)
     else:
       self._value = int(value)
-      if (not isinstance(value, compat.bytes_or_text_types) and
-          self._value != value):
-        raise ValueError("Ambiguous dimension: %s" % value)
       if self._value < 0:
         raise ValueError("Dimension %d must be >= 0" % self._value)
 
@@ -517,9 +514,6 @@ class TensorShape(object):
     # TODO(irving): Eliminate the single integer special case.
     if dims is None:
       self._dims = None
-    elif isinstance(dims, compat.bytes_or_text_types):
-      raise TypeError("A string has ambiguous TensorShape, please wrap in a "
-                      "list or convert to an int: %s" % dims)
     elif isinstance(dims, tensor_shape_pb2.TensorShapeProto):
       if dims.unknown_rank:
         self._dims = None

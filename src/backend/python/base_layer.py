@@ -18,7 +18,7 @@ from backend.python.framework import ops
 from backend.python.framework import dtypes
 from backend.python.ops import variables as tf_variables
 from backend.python.training import base as checkpointable
-from backend.util import function_utils
+#from backend.util import function_utils
 from backend.util import tf_inspect
 from backend.util import nest
 from backend.python.ops.init_ops import GlorotUniform
@@ -73,9 +73,8 @@ class Layer(checkpointable.CheckpointableBase):
     self._losses = []
     self._in_call = False 
     self._dtype = None if dtype is None else dtypes.as_dtype(dtype).name
-    self._call_fn_args = function_utils.fn_args(self.call)
-    self._compute_previous_mask = ('mask' in self._call_fn_args or
-                                   hasattr(self, 'compute_mask'))
+    #self._call_fn_args = function_utils.fn_args(self.call)
+    #self._compute_previous_mask = ('mask' in self._call_fn_args or hasattr(self, 'compute_mask'))
     self._call_convention = CallConvention.EXPLICIT_INPUTS_ARGUMENT
 
     self._inbound_nodes = []
@@ -83,11 +82,6 @@ class Layer(checkpointable.CheckpointableBase):
 
     self.supports_masking = False
 
-    call_argspec = tf_inspect.getfullargspec(self.call)
-    if 'training' in call_argspec.args:
-      self._expects_training_arg = True
-    else:
-      self._expects_training_arg = False
 
     if 'input_shape' in kwargs or 'batch_input_shape' in kwargs:
       if 'batch_input_shape' in kwargs:
@@ -264,15 +258,7 @@ class Layer(checkpointable.CheckpointableBase):
     in_deferred_mode = isinstance(input_list[0], DeferredTensor)
 
     previous_mask = None
-    if build_graph and (not hasattr(self, '_compute_previous_mask') or
-                        self._compute_previous_mask):
-      previous_mask = collect_previous_mask(inputs)
-      if not hasattr(self, '_call_fn_args'):
-        self._call_fn_args = self._no_dependency(
-            function_utils.fn_args(self.call))
-      if ('mask' in self._call_fn_args and 'mask' not in kwargs and
-          not is_all_none(previous_mask)):
-        kwargs['mask'] = previous_mask
+    
 
     input_shapes = None
 

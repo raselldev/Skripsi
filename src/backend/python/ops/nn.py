@@ -361,14 +361,14 @@ def conv2d(input, filter, strides, padding, use_cudnn_on_gpu=True, data_format="
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'conv2d' Op, not %r." % strides)
-    strides = [execute.make_int(_i, "strides") for _i in strides]
-    padding = execute.make_str(padding, "padding")
+    #strides = [execute.make_int(_i, "strides") for _i in strides]
+    #padding = execute.make_str(padding, "padding")
     if use_cudnn_on_gpu is None:
       use_cudnn_on_gpu = True
     use_cudnn_on_gpu = execute.make_bool(use_cudnn_on_gpu, "use_cudnn_on_gpu")
     if data_format is None:
       data_format = "NHWC"
-    data_format = execute.make_str(data_format, "data_format")
+#    data_format = execute.make_str(data_format, "data_format")
     if dilations is None:
       dilations = [1, 1, 1, 1]
     if not isinstance(dilations, (list, tuple)):
@@ -446,10 +446,10 @@ def _fused_batch_norm(x, scale, offset, mean, variance, epsilon=0.0001, data_for
   if _ctx is None or not _ctx._eager_context.is_eager:
     if epsilon is None:
       epsilon = 0.0001
-    epsilon = execute.make_float(epsilon, "epsilon")
+    #epsilon = execute.make_float(epsilon, "epsilon")
     if data_format is None:
       data_format = "NHWC"
-    data_format = execute.make_str(data_format, "data_format")
+#    data_format = execute.make_str(data_format, "data_format")
     if is_training is None:
       is_training = True
     is_training = execute.make_bool(is_training, "is_training")
@@ -500,11 +500,11 @@ def max_pool(input, ksize, strides, padding, data_format="NHWC", name=None):
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'max_pool' Op, not %r." % strides)
-    strides = [execute.make_int(_i, "strides") for _i in strides]
-    padding = execute.make_str(padding, "padding")
+    #strides = [execute.make_int(_i, "strides") for _i in strides]
+    #padding = execute.make_str(padding, "padding")
     if data_format is None:
       data_format = "NHWC"
-    data_format = execute.make_str(data_format, "data_format")
+    #data_format = execute.make_str(data_format, "data_format")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MaxPool", input=input, ksize=ksize, strides=strides, padding=padding,
         data_format=data_format, name=name)
@@ -542,7 +542,7 @@ def bias_add(value, bias, data_format="NHWC", name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if data_format is None:
       data_format = "NHWC"
-    data_format = execute.make_str(data_format, "data_format")
+    #data_format = execute.make_str(data_format, "data_format")
     _, _, _op = _op_def_lib._apply_op_helper(
         "BiasAdd", value=value, bias=bias, data_format=data_format, name=name)
     _result = _op.outputs[:]
@@ -578,14 +578,14 @@ def conv2d_backprop_input(input_sizes, filter, out_backprop, strides, padding, u
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'conv2d_backprop_input' Op, not %r." % strides)
-    strides = [execute.make_int(_i, "strides") for _i in strides]
-    padding = execute.make_str(padding, "padding")
+    #strides = [execute.make_int(_i, "strides") for _i in strides]
+    #padding = execute.make_str(padding, "padding")
     if use_cudnn_on_gpu is None:
       use_cudnn_on_gpu = True
     use_cudnn_on_gpu = execute.make_bool(use_cudnn_on_gpu, "use_cudnn_on_gpu")
     if data_format is None:
       data_format = "NHWC"
-    data_format = execute.make_str(data_format, "data_format")
+    #data_format = execute.make_str(data_format, "data_format")
     if dilations is None:
       dilations = [1, 1, 1, 1]
     if not isinstance(dilations, (list, tuple)):
@@ -638,14 +638,14 @@ def conv2d_backprop_filter(input, filter_sizes, out_backprop, strides, padding, 
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'conv2d_backprop_filter' Op, not %r." % strides)
-    strides = [execute.make_int(_i, "strides") for _i in strides]
-    padding = execute.make_str(padding, "padding")
+    #strides = [execute.make_int(_i, "strides") for _i in strides]
+    #padding = execute.make_str(padding, "padding")
     if use_cudnn_on_gpu is None:
       use_cudnn_on_gpu = True
     use_cudnn_on_gpu = execute.make_bool(use_cudnn_on_gpu, "use_cudnn_on_gpu")
     if data_format is None:
       data_format = "NHWC"
-    data_format = execute.make_str(data_format, "data_format")
+    #data_format = execute.make_str(data_format, "data_format")
     if dilations is None:
       dilations = [1, 1, 1, 1]
     if not isinstance(dilations, (list, tuple)):
@@ -696,7 +696,7 @@ def bias_add_grad(out_backprop, data_format="NHWC", name=None):
   if _ctx is None or not _ctx._eager_context.is_eager:
     if data_format is None:
       data_format = "NHWC"
-    data_format = execute.make_str(data_format, "data_format")
+    #data_format = execute.make_str(data_format, "data_format")
     _, _, _op = _op_def_lib._apply_op_helper(
         "BiasAddGrad", out_backprop=out_backprop, data_format=data_format,
         name=name)
@@ -738,11 +738,11 @@ def max_pool_grad(orig_input, orig_output, grad, ksize, strides, padding, data_f
       raise TypeError(
           "Expected list for 'strides' argument to "
           "'max_pool_grad' Op, not %r." % strides)
-    strides = [execute.make_int(_i, "strides") for _i in strides]
-    padding = execute.make_str(padding, "padding")
+    #strides = [execute.make_int(_i, "strides") for _i in strides]
+    #padding = execute.make_str(padding, "padding")
     if data_format is None:
       data_format = "NHWC"
-    data_format = execute.make_str(data_format, "data_format")
+    #data_format = execute.make_str(data_format, "data_format")
     _, _, _op = _op_def_lib._apply_op_helper(
         "MaxPoolGrad", orig_input=orig_input, orig_output=orig_output,
         grad=grad, ksize=ksize, strides=strides, padding=padding,
@@ -811,10 +811,10 @@ def fused_batch_norm_grad(y_backprop, x, scale, reserve_space_1, reserve_space_2
   if _ctx is None or not _ctx._eager_context.is_eager:
     if epsilon is None:
       epsilon = 0.0001
-    epsilon = execute.make_float(epsilon, "epsilon")
+    #epsilon = execute.make_float(epsilon, "epsilon")
     if data_format is None:
       data_format = "NHWC"
-    data_format = execute.make_str(data_format, "data_format")
+    #data_format = execute.make_str(data_format, "data_format")
     if is_training is None:
       is_training = True
     is_training = execute.make_bool(is_training, "is_training")
