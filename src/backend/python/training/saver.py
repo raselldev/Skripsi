@@ -20,7 +20,7 @@ from backend.python.ops import control_flow_ops
 from backend.python.ops import io_ops
 from backend.python.ops import resource_variable_ops
 from backend.core import saver_pb2
-#from backend.python.training import saveable_object
+#from backend.training import saveable_object
 from backend.python.training import base as checkpointable
 from backend.python.training import checkpoint_management
 from backend.util import compat

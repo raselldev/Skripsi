@@ -341,12 +341,7 @@ class _InTowerThreadMode(_ThreadMode):
         self, tower_ctx.distribution_strategy, None, tower_ctx)
 
 
-def _push_per_thread_mode(context):
-  ops.get_default_graph()._distribution_strategy_stack.append(context)  
 
-
-def _pop_per_thread_mode():
-  ops.get_default_graph()._distribution_strategy_stack.pop(-1)  
 
 
 class _DefaultTowerThreadMode(_ThreadMode):
