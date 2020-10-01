@@ -11,7 +11,7 @@ import numpy as np
 import six
 
 
-from backend.python import context
+from backend import context
 from backend.python.framework import constant_op
 from backend.python.framework import ops
 from backend.python.ops import variables

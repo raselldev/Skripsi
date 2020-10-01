@@ -6,7 +6,7 @@ import numpy as np
 import six
 
 from backend.core import attr_value_pb2
-from backend.python import context
+from backend import context
 from backend.python.framework import dtypes
 from backend.python.framework import ops
 from backend.python.framework import tensor_shape

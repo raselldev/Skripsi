@@ -6,7 +6,7 @@ from __future__ import print_function
 import collections as _collections
 import six as _six
 
-from backend.python import context as _context
+from backend import context as _context
 #from backend.python import execute as _execute
 from backend.core import op_def_pb2 as _op_def_pb2
 from backend.python.framework import op_def_library as _op_def_library

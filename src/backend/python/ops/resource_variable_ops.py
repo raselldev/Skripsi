@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 import contextlib
-from backend.python import pywrap_backend
+from backend import pywrap_backend
 from backend.python.framework import ops
 from backend.core import variable_pb2
 from backend.python.ops import array_ops

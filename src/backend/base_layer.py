@@ -13,7 +13,7 @@ import weakref
 
 
 
-from backend.python import context
+from backend import context
 from backend.python.framework import ops
 from backend.python.framework import dtypes
 from backend.python.ops import variables as tf_variables

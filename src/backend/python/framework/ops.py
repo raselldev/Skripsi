@@ -18,9 +18,9 @@ from backend.core import op_def_pb2
 from backend.core import attr_value_pb2
 from backend.core import node_def_pb2
 from backend.core import versions_pb2
-from backend.python import pywrap_backend
-from backend.python import pywrap_backend as c_api
-from backend.python import context
+from backend import pywrap_backend
+from backend import pywrap_backend as c_api
+from backend import context
 from backend.python.framework import device as pydev
 from backend.python.framework import tensor_shape
 from backend.python.framework import errors_impl as errors

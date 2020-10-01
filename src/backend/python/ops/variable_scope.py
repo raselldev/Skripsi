@@ -15,7 +15,7 @@ from six import iteritems
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
 from backend.python.framework import dtypes
-from backend.python import context
+from backend import context
 #from backend.python import tf_logging as logging
 from backend.python.framework import ops
 from backend.python.framework import tensor_shape

@@ -2,8 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from backend.python import context
-from backend.python import base
+from backend import context
+from backend import base
 from backend.python.framework import tensor_shape
 from backend.python.framework import dtypes
 from backend.python.framework import ops

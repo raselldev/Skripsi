@@ -6,8 +6,8 @@ import numpy as np
 from backend.python.framework import dtypes
 from backend.python.framework import ops
 from backend.python.ops import math_ops
-from backend.python import context as _context
-from backend.python import execute as _execute
+from backend import context as _context
+from backend import execute as _execute
 from backend.core import op_def_pb2 as _op_def_pb2
 from backend.python.framework import dtypes as _dtypes
 from backend.python.framework import op_def_registry as _op_def_registry

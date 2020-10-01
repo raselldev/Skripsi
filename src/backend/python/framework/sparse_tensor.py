@@ -20,7 +20,7 @@ from __future__ import print_function
 
 import collections
 
-from backend.python import pywrap_backend
+from backend import pywrap_backend
 from backend.python.framework import dtypes
 from backend.python.framework import ops
 from backend.python.framework import tensor_util

@@ -9,8 +9,8 @@ import os
 
 import six
 
-from backend.python import context
-from backend.python import execute
+from backend import context
+from backend import execute
 from backend.core import control_flow_pb2
 from backend.python.framework import constant_op
 from backend.python.framework import sparse_tensor

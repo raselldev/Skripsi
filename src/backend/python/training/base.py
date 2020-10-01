@@ -11,7 +11,7 @@ import weakref
 import six
 
 
-from backend.python import context
+from backend import context
 from backend.python.framework import dtypes
 from backend.python.framework import ops
 from backend.util import tf_decorator

@@ -6,8 +6,8 @@ import collections
 import hashlib
 import numbers
 
-from backend.python import base as base_layer
-from backend.python import context
+from backend import base as base_layer
+from backend import context
 from backend.python.framework import ops
 from backend.python.framework import tensor_util
 from backend.python.framework import tensor_shape

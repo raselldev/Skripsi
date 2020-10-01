@@ -7,8 +7,8 @@ from six.moves import xrange
 import collections as _collections
 import six as _six
 
-from backend.python import context
-from backend.python import execute
+from backend import context
+from backend import execute
 from backend.python.framework import constant_op
 from backend.python.framework import ops
 from backend.python.framework import dtypes

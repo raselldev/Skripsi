@@ -2,8 +2,8 @@ import collections as _collections
 import six as _six
 
 
-from backend.python import execute as _execute
-from backend.python import context as _context
+from backend import execute as _execute
+from backend import context as _context
 from backend.python.framework import op_def_library as _op_def_library
 from backend.python.framework import op_def_registry as _op_def_registry
 #from backend.python.util.tf_export import tf_export

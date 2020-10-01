@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 
-from backend.python import pywrap_backend as c_api
+from backend import pywrap_backend as c_api
 from backend.util import tf_contextlib
 
 class ScopedTFStatus(object):

@@ -5,7 +5,7 @@ from __future__ import print_function
 import numpy as np
 
 from backend.core import types_pb2
-from backend.python import pywrap_backend
+from backend import pywrap_backend
 
 
 _np_bfloat16 = pywrap_backend.TF_bfloat16_type()

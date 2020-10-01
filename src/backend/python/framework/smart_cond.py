@@ -18,7 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from backend.python import pywrap_backend as c_api
+from backend import pywrap_backend as c_api
 from backend.python.framework import ops
 from backend.python.framework import tensor_util
 from backend.python.ops import control_flow_ops

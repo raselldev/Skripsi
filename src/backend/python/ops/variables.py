@@ -7,7 +7,7 @@ import enum  # pylint: disable=g-bad-import-order
 import six
 
 from backend.core import attr_value_pb2
-from backend.python import context
+from backend import context
 from backend.python.ops import state_ops
 from backend.python.ops import array_ops
 from backend.python.framework import ops

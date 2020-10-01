@@ -9,7 +9,7 @@ import uuid
 import six
 
 
-from backend.python import pywrap_backend
+from backend import pywrap_backend
 from backend.python.framework import errors_impl as errors
 from backend.util import compat
 

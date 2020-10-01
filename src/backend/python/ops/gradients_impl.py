@@ -11,7 +11,7 @@ import numpy as np
 import six
 from six.moves import xrange
 
-from backend.python import context
+from backend import context
 from backend.python.ops import control_flow_util
 from backend.python.ops import array_ops
 from backend.python.ops import control_flow_ops

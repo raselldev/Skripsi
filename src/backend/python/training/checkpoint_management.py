@@ -11,7 +11,7 @@ from google.protobuf import text_format
 
 
 from backend.python.training.checkpoint_state_pb2 import CheckpointState
-from backend.python import file_io
+from backend import file_io
 from backend.python.framework import errors_impl as errors
 from backend.core import saver_pb2
 

@@ -5,7 +5,7 @@ from __future__ import print_function
 import contextlib
 import weakref
 
-from backend.python import context
+from backend import context
 from backend.python.framework import tensor_shape
 from backend.python.framework import ops
 from backend.python.ops import math_ops

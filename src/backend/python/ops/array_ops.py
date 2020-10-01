@@ -6,8 +6,8 @@ import sys
 import collections
 
 import numpy as np
-from backend.python import context
-from backend.python import execute
+from backend import context
+from backend import execute
 from backend.core import op_def_pb2 as _op_def_pb2
 from backend.python.framework import dtypes
 from backend.python.framework import ops

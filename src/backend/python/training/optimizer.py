@@ -5,7 +5,7 @@ from __future__ import print_function
 import abc
 
 
-from backend.python import context
+from backend import context
 from backend.python.framework import ops
 from backend.python.framework import dtypes
 from backend.python.ops import control_flow_ops

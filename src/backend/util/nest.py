@@ -6,7 +6,7 @@ import collections as _collections
 
 import six as _six
 
-from backend.python import pywrap_backend as _pywrap_tensorflow
+from backend import pywrap_backend as _pywrap_tensorflow
 
 
 def _is_namedtuple(instance, strict=False):
