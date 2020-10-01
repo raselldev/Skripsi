@@ -715,7 +715,8 @@ class Graph(object):
     if temp_obj is not None:
       obj = temp_obj
 
-    if isinstance(obj, compat.bytes_or_text_types):
+    bytes_or_text_types = (bytes, six.text_type)
+    if isinstance(obj, bytes_or_text_types):
       name = compat.as_str(obj)
 
       if ":" in name and allow_tensor:

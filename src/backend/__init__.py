@@ -18,7 +18,7 @@ from backend.python.ops.ctc_ops import ctc_loss
 from backend.python.ops.ctc_ops import ctc_greedy_decoder
 
 #layers
-from backend.python.normalization import batch_normalization
+from backend.normalization import batch_normalization
 
 #train
 from backend.python.training.optimizer import RMSPropOptimizer

@@ -3,23 +3,21 @@ from __future__ import division
 from __future__ import print_function
 
 from backend.python import context
+from backend.python import base
+from backend.python.framework import tensor_shape
 from backend.python.framework import dtypes
 from backend.python.framework import ops
-from backend.python.framework import tensor_shape
-#from backend.python import constraints
-#from backend.python import initializers
-#from backend.python import regularizers
-from backend.python.base_layer import InputSpec
-from backend.python.base_layer import Layer
-#from backend.python import tf_utils
+from backend.python.framework import smart_cond
+from backend.base_layer import InputSpec
+from backend.base_layer import Layer
+from backend.python.ops import variables
+from backend.python.ops import init_ops
+from backend.python.ops import nn_impl
 from backend.python.ops import array_ops
 from backend.python.ops import init_ops
 from backend.python.ops import math_ops
-from backend.python.ops import nn_impl as nn
 from backend.python.ops import state_ops
-from backend.python.ops import variables as tf_variables
-from backend.python.training import distribute
-from backend.python.framework import smart_cond as smart_module
+
 
 def get(identifier):
   if identifier is None:
@@ -35,10 +33,7 @@ def get(identifier):
     raise ValueError('Could not interpret constraint identifier: ' +
                      str(identifier))
 
-
-
-class BatchNormalization(Layer):
-
+class LayerBatchNormalization(Layer):
   def __init__(self,
                axis=-1,
                momentum=0.99,
@@ -62,7 +57,7 @@ class BatchNormalization(Layer):
                adjustment=None,
                name=None,
                **kwargs):
-    super(BatchNormalization, self).__init__(
+    super(LayerBatchNormalization, self).__init__(
         name=name, trainable=trainable, **kwargs)
     if isinstance(axis, list):
       self.axis = axis[:]
@@ -72,12 +67,6 @@ class BatchNormalization(Layer):
     self.epsilon = epsilon
     self.center = center
     self.scale = scale
-#    self.beta_initializer = initializers.get(beta_initializer)
-#    self.gamma_initializer = initializers.get(gamma_initializer)
-#    self.moving_mean_initializer = initializers.get(moving_mean_initializer)
-#    self.moving_variance_initializer = initializers.get( moving_variance_initializer)
-#    self.beta_regularizer = regularizers.get(beta_regularizer)
-#    self.gamma_regularizer = regularizers.get(gamma_regularizer)
     self.beta_constraint = get(beta_constraint)
     self.gamma_constraint = get(gamma_constraint)
     self.renorm = renorm
@@ -151,8 +140,6 @@ class BatchNormalization(Layer):
           name='gamma',
           shape=param_shape,
           dtype=param_dtype,
-#          initializer=self.gamma_initializer,
-#          regularizer=self.gamma_regularizer,
           constraint=self.gamma_constraint,
           trainable=True)
     else:
@@ -166,8 +153,6 @@ class BatchNormalization(Layer):
           name='beta',
           shape=param_shape,
           dtype=param_dtype,
-#          initializer=self.beta_initializer,
-          #regularizer=self.beta_regularizer,
           constraint=self.beta_constraint,
           trainable=True)
     else:
@@ -187,19 +172,17 @@ class BatchNormalization(Layer):
           name='moving_mean',
           shape=param_shape,
           dtype=param_dtype,
-#          initializer=self.moving_mean_initializer,
-          synchronization=tf_variables.VariableSynchronization.ON_READ,
+          synchronization=variables.VariableSynchronization.ON_READ,
           trainable=False,
-          aggregation=tf_variables.VariableAggregation.MEAN)
+          aggregation=variables.VariableAggregation.MEAN)
 
       self.moving_variance = self.add_weight(
           name='moving_variance',
           shape=param_shape,
           dtype=param_dtype,
-#          initializer=self.moving_variance_initializer,
-          synchronization=tf_variables.VariableSynchronization.ON_READ,
+          synchronization=variables.VariableSynchronization.ON_READ,
           trainable=False,
-          aggregation=tf_variables.VariableAggregation.MEAN)
+          aggregation=variables.VariableAggregation.MEAN)
 
       if self.renorm:
         def _renorm_variable(name, shape):
@@ -208,9 +191,9 @@ class BatchNormalization(Layer):
               shape=shape,
               dtype=param_dtype,
               initializer=init_ops.zeros_initializer(),
-              synchronization=tf_variables.VariableSynchronization.ON_READ,
+              synchronization=variables.VariableSynchronization.ON_READ,
               trainable=False,
-              aggregation=tf_variables.VariableAggregation.MEAN)
+              aggregation=variables.VariableAggregation.MEAN)
           return var
 
         with distribution_strategy_context.get_distribution_strategy(
@@ -247,7 +230,7 @@ class BatchNormalization(Layer):
     gamma = self.gamma if self.scale else self._gamma_const
 
     def _fused_batch_norm_training():
-      return nn.fused_batch_norm(
+      return nn_impl.fused_batch_norm(
           inputs,
           gamma,
           beta,
@@ -255,7 +238,7 @@ class BatchNormalization(Layer):
           data_format=self._data_format)
 
     def _fused_batch_norm_inference():
-      return nn.fused_batch_norm(
+      return nn_impl.fused_batch_norm(
           inputs,
           gamma,
           beta,
@@ -265,7 +248,7 @@ class BatchNormalization(Layer):
           is_training=False,
           data_format=self._data_format)
 
-    output, mean, variance = smart_module.smart_cond(
+    output, mean, variance = smart_cond.smart_cond(
         training, _fused_batch_norm_training, _fused_batch_norm_inference)
     if not self._bessels_correction_test_only:
       # Remove Bessel's correction to be consistent with non-fused batch norm.
@@ -276,9 +259,9 @@ class BatchNormalization(Layer):
       factor = (sample_size - math_ops.cast(1.0, variance.dtype)) / sample_size
       variance *= factor
 
-    training_value = smart_module.smart_constant_value(training)
+    training_value = smart_cond.smart_constant_value(training)
     if training_value is None:
-      momentum = smart_module.smart_cond(training,
+      momentum = smart_cond.smart_cond(training,
                                      lambda: self.momentum,
                                      lambda: 1.0)
     else:
@@ -433,7 +416,7 @@ class BatchNormalization(Layer):
       # Some of the computations here are not necessary when training==False
       # but not a constant. However, this makes the code simpler.
       keep_dims = self.virtual_batch_size is not None or len(self.axis) > 1
-      mean, variance = nn.moments(inputs, reduction_axes, keep_dims=keep_dims)
+      mean, variance = nn_impl.moments(inputs, reduction_axes, keep_dims=keep_dims)
 
       moving_mean = self.moving_mean
       moving_variance = self.moving_variance
@@ -491,7 +474,7 @@ class BatchNormalization(Layer):
     variance = math_ops.cast(variance, inputs.dtype)
     if offset is not None:
       offset = math_ops.cast(offset, inputs.dtype)
-    outputs = nn.batch_normalization(inputs,
+    outputs = nn_impl.batch_normalization(inputs,
                                      _broadcast(mean),
                                      _broadcast(variance),
                                      offset,
@@ -539,3 +522,105 @@ class BatchNormalization(Layer):
     
     base_config = super(BatchNormalization, self).get_config()
     return dict(list(base_config.items()) + list(config.items()))
+
+class BatchNormalization(LayerBatchNormalization, base.Layer):
+  def __init__(self,
+               axis=-1,
+               momentum=0.99,
+               epsilon=1e-3,
+               center=True,
+               scale=True,
+               beta_initializer=init_ops.Zeros(),
+               gamma_initializer=init_ops.Ones(),
+               moving_mean_initializer=init_ops.Zeros(),
+               moving_variance_initializer=init_ops.Ones(),
+               beta_regularizer=None,
+               gamma_regularizer=None,
+               beta_constraint=None,
+               gamma_constraint=None,
+               renorm=False,
+               renorm_clipping=None,
+               renorm_momentum=0.99,
+               fused=None,
+               trainable=True,
+               virtual_batch_size=None,
+               adjustment=None,
+               name=None,
+               **kwargs):
+    super(BatchNormalization, self).__init__(
+        axis=axis,
+        momentum=momentum,
+        epsilon=epsilon,
+        center=center,
+        scale=scale,
+        beta_initializer=beta_initializer,
+        gamma_initializer=gamma_initializer,
+        moving_mean_initializer=moving_mean_initializer,
+        moving_variance_initializer=moving_variance_initializer,
+        beta_regularizer=beta_regularizer,
+        gamma_regularizer=gamma_regularizer,
+        beta_constraint=beta_constraint,
+        gamma_constraint=gamma_constraint,
+        renorm=renorm,
+        renorm_clipping=renorm_clipping,
+        renorm_momentum=renorm_momentum,
+        fused=fused,
+        trainable=trainable,
+        virtual_batch_size=virtual_batch_size,
+        adjustment=adjustment,
+        name=name,
+        **kwargs)
+
+  def call(self, inputs, training=False):
+    return super(BatchNormalization, self).call(inputs, training=training)
+
+def batch_normalization(inputs,
+                        axis=-1,
+                        momentum=0.99,
+                        epsilon=1e-3,
+                        center=True,
+                        scale=True,
+                        beta_initializer=init_ops.Zeros(),
+                        gamma_initializer=init_ops.Ones(),
+                        moving_mean_initializer=init_ops.Zeros(),
+                        moving_variance_initializer=init_ops.Ones(),
+                        beta_regularizer=None,
+                        gamma_regularizer=None,
+                        beta_constraint=None,
+                        gamma_constraint=None,
+                        training=False,
+                        trainable=True,
+                        name=None,
+                        reuse=None,
+                        renorm=False,
+                        renorm_clipping=None,
+                        renorm_momentum=0.99,
+                        fused=None,
+                        virtual_batch_size=None,
+                        adjustment=None):
+  layer = BatchNormalization(
+      axis=axis,
+      momentum=momentum,
+      epsilon=epsilon,
+      center=center,
+      scale=scale,
+      beta_initializer=beta_initializer,
+      gamma_initializer=gamma_initializer,
+      moving_mean_initializer=moving_mean_initializer,
+      moving_variance_initializer=moving_variance_initializer,
+      beta_regularizer=beta_regularizer,
+      gamma_regularizer=gamma_regularizer,
+      beta_constraint=beta_constraint,
+      gamma_constraint=gamma_constraint,
+      renorm=renorm,
+      renorm_clipping=renorm_clipping,
+      renorm_momentum=renorm_momentum,
+      fused=fused,
+      trainable=trainable,
+      virtual_batch_size=virtual_batch_size,
+      adjustment=adjustment,
+      name=name,
+      _reuse=reuse,
+      _scope=name)
+  return layer.apply(inputs, training=training)
+

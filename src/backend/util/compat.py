@@ -38,8 +38,4 @@ def as_str_any(value):
     return str(value)
 
 
-integral_types = (_numbers.Integral, _np.integer)
-real_types = (_numbers.Real, _np.integer, _np.floating)
-complex_types = (_numbers.Complex, _np.number)
-bytes_or_text_types = (bytes, _six.text_type)
 

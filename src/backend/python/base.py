@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import copy
 
-from backend.python import base_layer
+from backend import base_layer
 from backend.python.ops import variable_scope as vs
 from backend.python.framework import ops
 from backend.python.framework import dtypes
