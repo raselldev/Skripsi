@@ -5,7 +5,7 @@ import six as _six
 from backend import execute as _execute
 from backend import context as _context
 from backend.python.framework import op_def_library as _op_def_library
-from backend.python.framework import op_def_registry as _op_def_registry
+#from backend.python.framework import op_def_registry as _op_def_registry
 #from backend.python.util.tf_export import tf_export
 from backend.core import op_def_pb2 as _op_def_pb2
 
@@ -379,7 +379,7 @@ def stack_pop_v2(handle, elem_type, name=None):
 def _InitOpDefLibrary(op_list_proto_bytes):
   op_list = _op_def_pb2.OpList()
   op_list.ParseFromString(op_list_proto_bytes)
-  _op_def_registry.register_op_list(op_list)
+#  _op_def_registry.register_op_list(op_list)
   op_def_lib = _op_def_library.OpDefLibrary()
   op_def_lib.add_op_list(op_list)
   return op_def_lib

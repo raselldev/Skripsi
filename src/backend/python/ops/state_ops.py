@@ -10,7 +10,7 @@ from backend import context as _context
 #from backend.python import execute as _execute
 from backend.core import op_def_pb2 as _op_def_pb2
 from backend.python.framework import op_def_library as _op_def_library
-from backend.python.framework import op_def_registry as _op_def_registry
+#from backend.python.framework import op_def_registry as _op_def_registry
 
 
 def variable_v2(shape, dtype, container="", shared_name="", name=None):
@@ -86,7 +86,7 @@ def assign_sub(ref, value, use_locking=False, name=None):
 def _InitOpDefLibrary(op_list_proto_bytes):
   op_list = _op_def_pb2.OpList()
   op_list.ParseFromString(op_list_proto_bytes)
-  _op_def_registry.register_op_list(op_list)
+#  _op_def_registry.register_op_list(op_list)
   op_def_lib = _op_def_library.OpDefLibrary()
   op_def_lib.add_op_list(op_list)
   return op_def_lib

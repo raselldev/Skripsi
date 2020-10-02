@@ -14,7 +14,7 @@ from backend.python.framework import dtypes
 from backend.python.framework import ops
 from backend.core import op_def_pb2
 from backend.python.framework import op_def_library
-from backend.python.framework import op_def_registry
+#from backend.python.framework import op_def_registry
 
 def atrous_conv2d(value, filters, rate, padding, name=None):
   return convolution(
@@ -857,7 +857,7 @@ def fused_batch_norm_grad(y_backprop, x, scale, reserve_space_1, reserve_space_2
 def _InitOpDefLibrary(op_list_proto_bytes):
   op_list = op_def_pb2.OpList()
   op_list.ParseFromString(op_list_proto_bytes)
-  op_def_registry.register_op_list(op_list)
+  #op_def_registry.register_op_list(op_list)
   op_def_lib = op_def_library.OpDefLibrary()
   op_def_lib.add_op_list(op_list)
   return op_def_lib

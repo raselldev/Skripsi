@@ -18,8 +18,6 @@ from backend.python.framework import ops
 from backend.python.framework import dtypes
 from backend.python.ops import variables as tf_variables
 from backend.python.training import base as checkpointable
-#from backend.util import function_utils
-#from backend.util import tf_inspect
 from backend.util import nest
 from backend.python.ops.init_ops import GlorotUniform
 
@@ -158,7 +156,7 @@ class Layer(checkpointable.CheckpointableBase):
       else:
         return ops.convert_to_tensor(x)
 
-    updates = to_list(updates)
+    #updates = to_list(updates)
     updates = [process_update(x) for x in updates]
     self._updates += updates
     if inputs is None:
@@ -318,15 +316,7 @@ class Layer(checkpointable.CheckpointableBase):
         if len(outputs) == 1:
           outputs = outputs[0]
 
-      if build_graph:
-        self._handle_activity_regularization(inputs, outputs)
-        self._set_mask_metadata(inputs, outputs, previous_mask)
 
-      if in_deferred_mode or build_graph and have_all_keras_metadata(inputs):
-        inputs, outputs = self._set_connectivity_metadata_(
-            inputs, outputs, args, kwargs)
-      if context.executing_eagerly():
-        return outputs
 
       if hasattr(self, '_symbolic_set_inputs') and not self.inputs:
         self._symbolic_set_inputs(inputs, outputs)
@@ -538,9 +528,3 @@ def to_list(x):
     return x
   return [x]
 
-def have_all_keras_metadata(iterable_or_element):
-  if not isinstance(iterable_or_element, (list, tuple)):
-    iterable = [iterable_or_element]
-  else:
-    iterable = iterable_or_element
-  return all([hasattr(x, '_keras_history') for x in iterable])

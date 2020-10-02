@@ -26,7 +26,7 @@ from backend.python.framework import tensor_shape
 from backend.python.framework import errors_impl as errors
 from backend.python.framework import dtypes
 from backend.python.framework import c_api_util
-from backend.python.framework import op_def_registry
+#from backend.python.framework import op_def_registry
 from backend.python.framework import traceable_stack
 from backend.python.framework import registry
 from backend.python.ops import control_flow_util
@@ -390,7 +390,7 @@ class Graph(object):
     self._graph_key = "grap-key-%d/" % (uid(),)
     self._last_loss_reduction = None
     self._container = ""
-    self._registered_ops = op_def_registry.get_registered_ops()
+    #self._registered_ops = op_def_registry.get_registered_ops()
 
 
     self._scoped_c_graph = c_api_util.ScopedTFGraph()

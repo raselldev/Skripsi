@@ -3,7 +3,7 @@ import six as _six
 from backend import context
 from backend import execute as execute
 from backend.python.framework import op_def_library
-from backend.python.framework import op_def_registry
+#from backend.python.framework import op_def_registry
 from backend.core import op_def_pb2
 
 def save_v2(prefix, tensor_names, shape_and_slices, tensors, name=None):
@@ -75,7 +75,7 @@ def restore_v2(prefix, tensor_names, shape_and_slices, dtypes, name=None):
 def _InitOpDefLibrary(op_list_proto_bytes):
   op_list = op_def_pb2.OpList()
   op_list.ParseFromString(op_list_proto_bytes)
-  op_def_registry.register_op_list(op_list)
+#  op_def_registry.register_op_list(op_list)
   op_def_lib = op_def_library.OpDefLibrary()
   op_def_lib.add_op_list(op_list)
   return op_def_lib

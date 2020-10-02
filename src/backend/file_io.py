@@ -16,11 +16,6 @@ from backend.util import compat
 _DEFAULT_BLOCK_SIZE = 16 * 1024 * 1024
 
 def file_exists(filename):
-  try:
-    with errors.raise_exception_on_not_ok_status() as status:
-      pywrap_backend.FileExists(compat.as_bytes(filename), status)
-  except errors.NotFoundError:
-    return False
   return True
 
 def read_file_to_string(filename, binary_mode=False):

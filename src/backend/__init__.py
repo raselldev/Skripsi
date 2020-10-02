@@ -28,17 +28,17 @@ from backend.python.training.checkpoint_management import latest_checkpoint
 from backend.python.ops import rnn_cell_impl as rnn
 from backend.python.ops.array_ops import placeholder
 from backend.python.ops.array_ops import expand_dims
-from backend.python.ops.variables import VariableV1 as Variable
-from backend.python.ops.random_ops import truncated_normal
 from backend.python.ops.array_ops import squeeze
 from backend.python.ops.array_ops import concat
 from backend.python.ops.array_ops import transpose
+from backend.python.ops.variables import VariableV1 as Variable
+from backend.python.ops.random_ops import truncated_normal
 from backend.python.framework.sparse_tensor import SparseTensor
-from backend.python.ops.math_ops import reduce_mean
 from backend.python.framework.ops import get_collection
 from backend.python.framework.ops import GraphKeys
 from backend.python.framework.ops import control_dependencies
 from backend.session import BaseSession
+from backend.python.ops.math_ops import reduce_mean
 
 from backend.python.framework.dtypes import bool
 from backend.python.framework.dtypes import float32
