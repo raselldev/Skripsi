@@ -1,27 +1,9 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-"""Helper classes for tensor shape inference."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 from backend.core import tensor_shape_pb2
 from backend.python.framework import dtypes
-#from backend.util import compat
-#from backend.python.util.tf_export import tf_export
-
 
 #@tf_export("Dimension")
 class Dimension(object):
@@ -934,56 +916,13 @@ class TensorShape(object):
 
 
 def as_shape(shape):
-  """Converts the given object to a TensorShape."""
-  if isinstance(shape, TensorShape):
-    return shape
-  else:
-    return TensorShape(shape)
+  return TensorShape(shape)
 
 
 def unknown_shape(ndims=None):
-  """Returns an unknown TensorShape, optionally with a known rank.
-
-  Args:
-    ndims: (Optional) If specified, the number of dimensions in the shape.
-
-  Returns:
-    An unknown TensorShape.
-  """
   if ndims is None:
     return TensorShape(None)
   else:
     return TensorShape([Dimension(None)] * ndims)
 
 
-_SCALAR_SHAPE = TensorShape([])
-
-
-def scalar():
-  """Returns a shape representing a scalar."""
-  return _SCALAR_SHAPE
-
-
-def vector(length):
-  """Returns a shape representing a vector.
-
-  Args:
-    length: The length of the vector, which may be None if unknown.
-
-  Returns:
-    A TensorShape representing a vector of the given length.
-  """
-  return TensorShape([length])
-
-
-def matrix(rows, cols):
-  """Returns a shape representing a matrix.
-
-  Args:
-    rows: The number of rows in the matrix, which may be None if unknown.
-    cols: The number of columns in the matrix, which may be None if unknown.
-
-  Returns:
-    A TensorShape representing a matrix of the given size.
-  """
-  return TensorShape([rows, cols])

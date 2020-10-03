@@ -12,7 +12,7 @@ from backend.base_layer import InputSpec
 from backend.base_layer import Layer
 from backend.python.ops import variables
 from backend.python.ops import init_ops
-from backend.python.ops import nn_impl
+from backend.python.ops import nn
 from backend.python.ops import array_ops
 from backend.python.ops import init_ops
 from backend.python.ops import math_ops
@@ -230,7 +230,7 @@ class LayerBatchNormalization(Layer):
     gamma = self.gamma if self.scale else self._gamma_const
 
     def _fused_batch_norm_training():
-      return nn_impl.fused_batch_norm(
+      return nn.fused_batch_norm(
           inputs,
           gamma,
           beta,
@@ -238,7 +238,7 @@ class LayerBatchNormalization(Layer):
           data_format=self._data_format)
 
     def _fused_batch_norm_inference():
-      return nn_impl.fused_batch_norm(
+      return nn.fused_batch_norm(
           inputs,
           gamma,
           beta,
@@ -416,7 +416,7 @@ class LayerBatchNormalization(Layer):
       # Some of the computations here are not necessary when training==False
       # but not a constant. However, this makes the code simpler.
       keep_dims = self.virtual_batch_size is not None or len(self.axis) > 1
-      mean, variance = nn_impl.moments(inputs, reduction_axes, keep_dims=keep_dims)
+      mean, variance = nn.moments(inputs, reduction_axes, keep_dims=keep_dims)
 
       moving_mean = self.moving_mean
       moving_variance = self.moving_variance
@@ -474,7 +474,7 @@ class LayerBatchNormalization(Layer):
     variance = math_ops.cast(variance, inputs.dtype)
     if offset is not None:
       offset = math_ops.cast(offset, inputs.dtype)
-    outputs = nn_impl.batch_normalization(inputs,
+    outputs = nn.batch_normalization(inputs,
                                      _broadcast(mean),
                                      _broadcast(variance),
                                      offset,

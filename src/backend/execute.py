@@ -52,7 +52,7 @@ def make_type(v, arg_name):
   return i
 
 def make_shape(v, arg_name):
-  shape = tensor_shape.as_shape(v)
+  shape = tensor_shape.TensorShape(v)
   if shape.ndims is None:
     return None
   else:

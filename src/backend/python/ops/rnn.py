@@ -21,8 +21,8 @@ def bidirectional_dynamic_rnn(cell_fw, cell_bw, inputs, sequence_length=None,
                               initial_state_fw=None, initial_state_bw=None,
                               dtype=None, parallel_iterations=None,
                               swap_memory=False, time_major=False, scope=None):
-  rnn_cell_impl.assert_like_rnncell("cell_fw", cell_fw)
-  rnn_cell_impl.assert_like_rnncell("cell_bw", cell_bw)
+  assert_like_rnncell("cell_fw", cell_fw)
+  assert_like_rnncell("cell_bw", cell_bw)
 
   with vs.variable_scope(scope or "bidirectional_rnn"):
     with vs.variable_scope("fw") as fw_scope:
@@ -74,7 +74,7 @@ def bidirectional_dynamic_rnn(cell_fw, cell_bw, inputs, sequence_length=None,
 def dynamic_rnn(cell, inputs, sequence_length=None, initial_state=None,
                 dtype=None, parallel_iterations=None, swap_memory=False,
                 time_major=False, scope=None):
-  rnn_cell_impl.assert_like_rnncell("cell", cell)
+  assert_like_rnncell("cell", cell)
 
   with vs.variable_scope(scope or "rnn") as varscope:
     if _should_cache():
@@ -360,4 +360,34 @@ def _is_keras_rnn_cell(rnn_cell):
   return (not isinstance(rnn_cell, rnn_cell_impl.RNNCell)
           and isinstance(rnn_cell, base_layer.Layer)
           and getattr(rnn_cell, "zero_state", None) is None)
+
+def _zero_state_tensors(state_size, batch_size, dtype):
+  def get_state_shape(s):
+    c = _concat(batch_size, s)
+    size = array_ops.zeros(c, dtype=dtype)
+    if not context.executing_eagerly():
+      c_static = _concat(batch_size, s, static=True)
+      size.set_shape(c_static)
+    return size
+  return nest.map_structure(get_state_shape, state_size)
+
+def assert_like_rnncell(cell_name, cell):
+  conditions = [
+      hasattr(cell, "output_size"),
+      hasattr(cell, "state_size"),
+      hasattr(cell, "get_initial_state") or hasattr(cell, "zero_state"),
+      callable(cell),
+  ]
+  errors = [
+      "'output_size' property is missing",
+      "'state_size' property is missing",
+      "either 'zero_state' or 'get_initial_state' method is required",
+      "is not callable"
+  ]
+
+  if not all(conditions):
+
+    errors = [error for error, cond in zip(errors, conditions) if not cond]
+    raise TypeError("The argument {!r} ({}) is not an RNNCell: {}.".format(
+        cell_name, cell, ", ".join(errors)))
 

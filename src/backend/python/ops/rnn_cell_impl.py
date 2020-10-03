@@ -14,6 +14,7 @@ from backend.python.framework import tensor_shape
 from backend.python.framework import constant_op
 from backend.python.framework import dtypes
 from backend.python.ops import nn as nn_ops
+from backend.python.ops import rnn
 from backend.python.ops import init_ops
 from backend.python.ops import variables as tf_variables
 from backend.python.ops import variable_scope as vs
@@ -156,7 +157,7 @@ class RNNCell(base_layer.Layer):
           last_state_size == state_size):
         return last_output
     with ops.name_scope(type(self).__name__ + "ZeroState", values=[batch_size]):
-      output = _zero_state_tensors(state_size, batch_size, dtype)
+      output = rnn._zero_state_tensors(state_size, batch_size, dtype)
     if is_eager:
       self._last_zero_state = (state_size, batch_size, dtype, output)
     return output
@@ -419,34 +420,4 @@ class LSTMStateTuple(_LSTMStateTuple):
       raise TypeError("Inconsistent internal state: %s vs %s" %
                       (str(c.dtype), str(h.dtype)))
     return c.dtype
-
-def assert_like_rnncell(cell_name, cell):
-  conditions = [
-      hasattr(cell, "output_size"),
-      hasattr(cell, "state_size"),
-      hasattr(cell, "get_initial_state") or hasattr(cell, "zero_state"),
-      callable(cell),
-  ]
-  errors = [
-      "'output_size' property is missing",
-      "'state_size' property is missing",
-      "either 'zero_state' or 'get_initial_state' method is required",
-      "is not callable"
-  ]
-
-  if not all(conditions):
-
-    errors = [error for error, cond in zip(errors, conditions) if not cond]
-    raise TypeError("The argument {!r} ({}) is not an RNNCell: {}.".format(
-        cell_name, cell, ", ".join(errors)))
-
-def _zero_state_tensors(state_size, batch_size, dtype):
-  def get_state_shape(s):
-    c = _concat(batch_size, s)
-    size = array_ops.zeros(c, dtype=dtype)
-    if not context.executing_eagerly():
-      c_static = _concat(batch_size, s, static=True)
-      size.set_shape(c_static)
-    return size
-  return nest.map_structure(get_state_shape, state_size)
 
