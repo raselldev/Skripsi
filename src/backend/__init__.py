@@ -25,7 +25,7 @@ from backend.python.training.optimizer import RMSPropOptimizer
 from backend.python.training.saver import Saver
 from backend.python.training.checkpoint_management import latest_checkpoint
 
-from backend.python.ops import rnn_cell_impl as rnn
+#from backend.python.ops import rnn_cell_impl as rnn
 from backend.python.ops.array_ops import placeholder
 from backend.python.ops.array_ops import expand_dims
 from backend.python.ops.array_ops import squeeze
