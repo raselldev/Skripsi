@@ -9,7 +9,7 @@ import random
 import threading
 
 
-from backend.python.framework import device as pydev
+from backend.framework import device as pydev
 from backend import pywrap_backend
 from backend.util import tf_contextlib
 

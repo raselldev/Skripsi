@@ -1,7 +1,7 @@
 import six
 
-from backend.python.framework import tensor_shape
-from backend.python.framework import dtypes
+from backend.framework import tensor_shape
+from backend.framework import dtypes
 #from backend.util import compat
 
 

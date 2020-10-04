@@ -14,12 +14,12 @@ import weakref
 
 
 from backend import context
-from backend.python.framework import ops
-from backend.python.framework import dtypes
-from backend.python.ops import variables as tf_variables
-from backend.python.training import base as checkpointable
+from backend.framework import ops
+from backend.framework import dtypes
+from backend.ops import variables as tf_variables
+from backend.training import base as checkpointable
 from backend.util import nest
-from backend.python.ops.init_ops import GlorotUniform
+from backend.ops.init_ops import GlorotUniform
 
 PER_GRAPH_LAYER_NAME_UIDS = weakref.WeakKeyDictionary()
 

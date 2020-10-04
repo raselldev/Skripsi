@@ -11,13 +11,13 @@ import warnings
 import numpy as np
 
 
-from backend.python.framework import errors_impl as errors
+from backend.framework import errors_impl as errors
 from backend.util import compat
 from backend.util import nest
 from backend import pywrap_backend as tf_session
-from backend.python.ops import session_ops
-from backend.python.framework import ops
-from backend.python.framework import sparse_tensor
+from backend.ops import session_ops
+from backend.framework import ops
+from backend.framework import sparse_tensor
 
 
 

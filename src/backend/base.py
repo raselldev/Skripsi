@@ -6,9 +6,9 @@ from __future__ import print_function
 import copy
 
 from backend import base_layer
-from backend.python.ops import variable_scope as vs
-from backend.python.framework import ops
-from backend.python.framework import dtypes
+from backend.ops import variable_scope as vs
+from backend.framework import ops
+from backend.framework import dtypes
 
 InputSpec = base_layer.InputSpec  # pylint: disable=invalid-name
 

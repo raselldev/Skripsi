@@ -4,19 +4,19 @@ from __future__ import print_function
 
 from backend import context
 from backend import base
-from backend.python.framework import tensor_shape
-from backend.python.framework import dtypes
-from backend.python.framework import ops
-from backend.python.framework import smart_cond
+from backend.framework import tensor_shape
+from backend.framework import dtypes
+from backend.framework import ops
+from backend.framework import smart_cond
 from backend.base_layer import InputSpec
 from backend.base_layer import Layer
-from backend.python.ops import variables
-from backend.python.ops import init_ops
-from backend.python.ops import nn
-from backend.python.ops import array_ops
-from backend.python.ops import init_ops
-from backend.python.ops import math_ops
-from backend.python.ops import state_ops
+from backend.ops import variables
+from backend.ops import init_ops
+from backend.ops import nn
+from backend.ops import array_ops
+from backend.ops import init_ops
+from backend.ops import math_ops
+from backend.ops import state_ops
 
 
 def get(identifier):
