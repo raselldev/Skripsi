@@ -5,7 +5,7 @@ from __future__ import print_function
 import contextlib
 from backend import pywrap_backend
 from backend.framework import ops
-from backend.core import variable_pb2
+from backend.protobuf import variable_pb2
 from backend.ops import array_ops
 #from backend.python.ops import math_ops
 from backend.ops import variables

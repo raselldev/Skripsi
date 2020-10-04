@@ -7,10 +7,10 @@ import six
 import numpy as np
 
 
-from backend.core import tensor_shape_pb2
-from backend.core import attr_value_pb2
-from backend.core import op_def_pb2
-from backend.core import types_pb2
+from backend.protobuf import tensor_shape_pb2
+from backend.protobuf import attr_value_pb2
+from backend.protobuf import op_def_pb2
+from backend.protobuf import types_pb2
 from backend.util import tf_contextlib
 from backend.util import compat
 from backend.framework import ops

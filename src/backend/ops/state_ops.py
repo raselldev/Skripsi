@@ -8,7 +8,7 @@ import six as _six
 
 from backend import context as _context
 #from backend.python import execute as _execute
-from backend.core import op_def_pb2 as _op_def_pb2
+from backend.protobuf import op_def_pb2 as _op_def_pb2
 from backend.framework import op_def_library as _op_def_library
 #from backend.framework import op_def_registry as _op_def_registry
 

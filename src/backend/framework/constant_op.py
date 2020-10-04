@@ -5,7 +5,7 @@ from __future__ import print_function
 import numpy as np
 import six
 
-from backend.core import attr_value_pb2
+from backend.protobuf import attr_value_pb2
 from backend import context
 from backend.framework import dtypes
 from backend.framework import ops

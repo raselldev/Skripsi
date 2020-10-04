@@ -8,7 +8,7 @@ import collections
 import numpy as np
 from backend import context
 from backend import execute
-from backend.core import op_def_pb2 as _op_def_pb2
+from backend.protobuf import op_def_pb2 as _op_def_pb2
 from backend.framework import dtypes
 from backend.framework import ops
 from backend.framework import constant_op

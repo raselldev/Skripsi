@@ -13,7 +13,7 @@ from backend.framework import constant_op
 from backend.framework import tensor_util
 from backend.framework import dtypes
 from backend.framework import ops
-from backend.core import op_def_pb2
+from backend.protobuf import op_def_pb2
 from backend.framework import op_def_library
 #from backend.framework import op_def_registry
 

@@ -5,8 +5,8 @@ from __future__ import print_function
 import numpy as np
 import six
 
-from backend.core import tensor_pb2
-from backend.core import tensor_shape_pb2
+from backend.protobuf import tensor_pb2
+from backend.protobuf import tensor_shape_pb2
 from backend.framework import ops
 from backend.framework import tensor_shape
 from backend.util import compat

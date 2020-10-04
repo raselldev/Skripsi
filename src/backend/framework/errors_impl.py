@@ -5,7 +5,7 @@ from __future__ import print_function
 import traceback
 import warnings
 
-from backend.core import error_codes_pb2
+from backend.protobuf import error_codes_pb2
 from backend import pywrap_backend as c_api
 from backend.framework import c_api_util
 

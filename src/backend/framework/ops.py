@@ -14,10 +14,10 @@ import six
 from six.moves import xrange
 
 
-from backend.core import op_def_pb2
-from backend.core import attr_value_pb2
-from backend.core import node_def_pb2
-from backend.core import versions_pb2
+from backend.protobuf import op_def_pb2
+from backend.protobuf import attr_value_pb2
+from backend.protobuf import node_def_pb2
+from backend.protobuf import versions_pb2
 from backend import pywrap_backend
 from backend import pywrap_backend as c_api
 from backend import context

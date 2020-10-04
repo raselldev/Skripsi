@@ -12,9 +12,9 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from backend.core import tensor_pb2 as tensorflow_dot_core_dot_framework_dot_tensor__pb2
-from backend.core import tensor_shape_pb2 as tensorflow_dot_core_dot_framework_dot_tensor__shape__pb2
-from backend.core import types_pb2 as tensorflow_dot_core_dot_framework_dot_types__pb2
+from backend.protobuf import tensor_pb2 as tensorflow_dot_core_dot_framework_dot_tensor__pb2
+from backend.protobuf import tensor_shape_pb2 as tensorflow_dot_core_dot_framework_dot_tensor__shape__pb2
+from backend.protobuf import types_pb2 as tensorflow_dot_core_dot_framework_dot_types__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(

@@ -11,7 +11,7 @@ import six
 
 from backend import context
 from backend import execute
-from backend.core import control_flow_pb2
+from backend.protobuf import control_flow_pb2
 from backend.framework import constant_op
 from backend.framework import sparse_tensor
 from backend.framework import ops
@@ -23,7 +23,7 @@ from backend.ops import tensor_array_ops
 from backend.ops import control_flow_util as util
 from backend.util import nest
 
-from backend.core import op_def_pb2 as _op_def_pb2
+from backend.protobuf import op_def_pb2 as _op_def_pb2
 
 
 

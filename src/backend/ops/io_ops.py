@@ -4,7 +4,7 @@ from backend import context
 from backend import execute as execute
 from backend.framework import op_def_library
 #from backend.framework import op_def_registry
-from backend.core import op_def_pb2
+from backend.protobuf import op_def_pb2
 
 def save_v2(prefix, tensor_names, shape_and_slices, tensors, name=None):
   _ctx = context._context

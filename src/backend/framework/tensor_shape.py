@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from backend.core import tensor_shape_pb2
+from backend.protobuf import tensor_shape_pb2
 from backend.framework import dtypes
 
 #@tf_export("Dimension")

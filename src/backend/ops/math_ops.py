@@ -15,7 +15,7 @@ from backend.framework import dtypes
 from backend.framework import op_def_library
 #from backend.framework import op_def_registry
 #from backend.python.util import deprecation
-from backend.core import op_def_pb2
+from backend.protobuf import op_def_pb2
 
 
 

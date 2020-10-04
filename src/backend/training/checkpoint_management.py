@@ -13,7 +13,7 @@ from google.protobuf import text_format
 from backend.training.checkpoint_state_pb2 import CheckpointState
 from backend import file_io
 from backend.framework import errors_impl as errors
-from backend.core import saver_pb2
+from backend.protobuf import saver_pb2
 
 
 def get_checkpoint_state(checkpoint_dir, latest_filename=None):

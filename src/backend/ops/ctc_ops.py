@@ -11,7 +11,7 @@ from backend import context as _context
 from backend.ops import array_ops
 #from backend.python.ops import gen_ctc_ops
 from backend.framework import op_def_library as _op_def_library
-from backend.core import op_def_pb2 as _op_def_pb2
+from backend.protobuf import op_def_pb2 as _op_def_pb2
 #from backend.python.ops.nn_grad import _BroadcastMul
 
 def ctc_loss(labels, inputs, sequence_length,

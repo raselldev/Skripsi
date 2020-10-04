@@ -9,7 +9,7 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from backend.core import attr_value_pb2 as tensorflow_dot_core_dot_framework_dot_attr__value__pb2
+from backend.protobuf import attr_value_pb2 as tensorflow_dot_core_dot_framework_dot_attr__value__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(

@@ -19,7 +19,7 @@ from backend.ops import state_ops
 from backend.ops import control_flow_ops
 from backend.ops import io_ops
 from backend.ops import resource_variable_ops
-from backend.core import saver_pb2
+from backend.protobuf import saver_pb2
 #from backend.training import saveable_object
 from backend.training import base as checkpointable
 from backend.training import checkpoint_management

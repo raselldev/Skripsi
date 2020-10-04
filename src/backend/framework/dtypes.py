@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import numpy as np
 
-from backend.core import types_pb2
+from backend.protobuf import types_pb2
 from backend import pywrap_backend
 
 

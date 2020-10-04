@@ -8,7 +8,7 @@ from backend.framework import ops
 from backend.ops import math_ops
 from backend import context as _context
 from backend import execute as _execute
-from backend.core import op_def_pb2 as _op_def_pb2
+from backend.protobuf import op_def_pb2 as _op_def_pb2
 from backend.framework import dtypes as _dtypes
 #from backend.framework import op_def_registry as _op_def_registry
 from backend.framework import op_def_library as _op_def_library

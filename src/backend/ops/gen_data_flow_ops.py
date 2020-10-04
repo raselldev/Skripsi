@@ -7,7 +7,7 @@ from backend import context as _context
 from backend.framework import op_def_library as _op_def_library
 #from backend.framework import op_def_registry as _op_def_registry
 #from backend.python.util.tf_export import tf_export
-from backend.core import op_def_pb2 as _op_def_pb2
+from backend.protobuf import op_def_pb2 as _op_def_pb2
 
 
 _tensor_array_v3_outputs = ["handle", "flow"]
