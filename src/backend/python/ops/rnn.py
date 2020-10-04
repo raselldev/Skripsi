@@ -18,7 +18,7 @@ from backend.python.ops import array_ops
 from backend.python.ops import init_ops
 from backend.python.ops import control_flow_util
 from backend.python.ops import variable_scope as vs
-from backend.python.ops import rnn_cell_impl
+#from backend.python.ops import rnn_cell_impl
 from backend.python.ops import variables as tf_variables
 from backend.python.training import base as checkpointable
 from backend.util import nest
